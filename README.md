@@ -12,7 +12,7 @@ This can be built with .Net Framework 3.5 and the dll references that's currentl
 I have also changed the version number to 1.4.1.1. 
 
 Compared to the original 1.4.0, this version has:
-- Female hair SetRenderQueue / CustomRenderQueue issue fixes
+- Female hair SetRenderQueue / CustomRenderQueue issue fixes (the CustomRenderQueue part require a small update to HoneyPotInspector.exe: https://mega.nz/file/liASiBKA#OX0FPlv4MhrXTHJzHzWnDEou1Fex4N6RXLDTFxadIGM , and regenerate the HoneyPotInspector.txt file)
 - Basic HS male clothes support
 - Color discrepancy between what's loaded on the character and what's in the color picker UI fix. 
 - Experimental HS female eyebrow and eyelash support. 
