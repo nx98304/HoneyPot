@@ -544,14 +544,20 @@ namespace ClassLibrary4
 					{
 						shaderKeywords[i].Contains("ALPHA");
 					}
-					if (((!renderer.name.Contains("_body_") && renderer.tag.Contains("ObjColor")) || forceColorable) && !material.name.Contains("cf_m_body_CustomMaterial"))
+					if (((!renderer.name.Contains("_body_") && renderer.tag.Contains("ObjColor")) || forceColorable) && 
+                        !material.name.Contains("cf_m_body_CustomMaterial") &&
+                        !material.name.Contains("cm_m_body_CustomMaterial"))
 					{
 						list.Add(material.name.Replace(" (Instance)", ""));
 					}
 					if ("".Equals(material.shader.name))
 					{
 						flag = true;
-						if ((!material.name.Contains("cf_m_body_CustomMaterial") && !renderer.name.Contains("_body_") && !renderer.tag.Contains("New tag (8)")) || !isTop)
+						if ((!material.name.Contains("cf_m_body_CustomMaterial") && 
+                             !material.name.Contains("cm_m_body_CustomMaterial") && 
+                             !renderer.name.Contains("_body_") && 
+                             !renderer.tag.Contains("New tag (8)")) 
+                            || !isTop)
 						{
 							Shader shader = this.getShader(wearID, material.name);
 							material.shader = shader;
