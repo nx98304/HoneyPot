@@ -118,12 +118,12 @@ namespace ClassLibrary4
 				Renderer[] componentsInChildren = gameObject.GetComponentsInChildren<Renderer>(true);
 				this.orgShader = componentsInChildren[0].materials[0].shader;
                 gameObject.SetActive(false); 
-				GameObject gameObject2 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, "wear/cf_top_hsad", "p_cf_yayoi_top");
+				GameObject gameObject2 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, "wear/cf_top_02ph", "cf_body_top_04_00ph");
 				Renderer[] componentsInChildren2 = gameObject2.GetComponentsInChildren<Renderer>(true);
-				this.mats = componentsInChildren2[0].materials;
-				gameObject2.SetActive(false);
+                this.mats = componentsInChildren2[0].materials;
+                gameObject2.SetActive(false);
                 this.mc = gameObject2.GetComponentInChildren<MaterialCustoms>();
-				foreach (KeyValuePair<string, PresetShader> keyValuePair in this.presets)
+                foreach (KeyValuePair<string, PresetShader> keyValuePair in this.presets)
 				{
 					PresetShader value = keyValuePair.Value;
 					if (value.assetBundleName.Contains("cf_m_"))
@@ -140,16 +140,16 @@ namespace ClassLibrary4
 						value.shader = value.material.shader;
 						gameObject3.SetActive(false);
                     }
-				}
-				foreach (string key in this.presetKeys)
-				{
-					PresetShader presetShader = this.oldPresets[key];
-					GameObject gameObject4 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, presetShader.assetBundleName, presetShader.assetName);
-					Renderer[] componentsInChildren4 = gameObject4.GetComponentsInChildren<Renderer>(true);
-					presetShader.material = componentsInChildren4[presetShader.rendererIdx].materials[presetShader.materialIdx];
-					presetShader.shader = presetShader.material.shader;
-					gameObject4.SetActive(false);
                 }
+				//foreach (string key in this.presetKeys)
+				//{
+    //                PresetShader presetShader = this.oldPresets[key];
+				//	GameObject gameObject4 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, presetShader.assetBundleName, presetShader.assetName);
+				//	Renderer[] componentsInChildren4 = gameObject4.GetComponentsInChildren<Renderer>(true);
+				//	presetShader.material = componentsInChildren4[presetShader.rendererIdx].materials[presetShader.materialIdx];
+				//	presetShader.shader = presetShader.material.shader;
+				//	gameObject4.SetActive(false);
+    //            }
 			}
 			catch (Exception ex)
 			{
@@ -161,26 +161,26 @@ namespace ClassLibrary4
 		public List<string> readOldPresetShaderString()
 		{
 			List<string> list = new List<string>();
-			string @string = ModPrefs.GetString("HoneyPot", "PresetShader_000", "accessory/ca_megane_hs00|p_asc_glasses_04_00|2|0|0", false);
-			string string2 = ModPrefs.GetString("HoneyPot", "PresetShader_001", "wear/cf_bra_hsad|p_cf_bra_09_00|0|0|0", false);
-			string string3 = ModPrefs.GetString("HoneyPot", "PresetShader_002", "wear/cf_top_hsad|p_cf_yayoi_top|1|0|0", false);
-			string string4 = ModPrefs.GetString("HoneyPot", "PresetShader_003", "wear/cf_top_hsad|p_cf_top_idol1_00|1|0|0", false);
-			string string5 = ModPrefs.GetString("HoneyPot", "PresetShader_004", "wear/cf_top_hsad|p_cf_top_miko1|0|0|0", false);
-			string string6 = ModPrefs.GetString("HoneyPot", "PresetShader_005", "", false);
-			string string7 = ModPrefs.GetString("HoneyPot", "PresetShader_006", "", false);
-			list.Add(@string);
-			list.Add(string2);
-			list.Add(string3);
-			list.Add(string4);
-			list.Add(string5);
-			if (!string.IsNullOrEmpty(string6))
+			string str1 = ModPrefs.GetString("HoneyPot", "PresetShader_000", "accessory/ca_megane_hs00|p_asc_glasses_04_00|2|0|0", false);
+			string str2 = ModPrefs.GetString("HoneyPot", "PresetShader_001", "wear/cf_bra_hsad|p_cf_bra_09_00|0|0|0", false);
+			string str3 = ModPrefs.GetString("HoneyPot", "PresetShader_002", "wear/cf_top_hsad|p_cf_yayoi_top|1|0|0", false);
+			string str4 = ModPrefs.GetString("HoneyPot", "PresetShader_003", "wear/cf_top_hsad|p_cf_top_idol1_00|1|0|0", false);
+			string str5 = ModPrefs.GetString("HoneyPot", "PresetShader_004", "wear/cf_top_hsad|p_cf_top_miko1|0|0|0", false);
+			string str6 = ModPrefs.GetString("HoneyPot", "PresetShader_005", "", false);
+			string str7 = ModPrefs.GetString("HoneyPot", "PresetShader_006", "", false);
+			list.Add(str1);
+			list.Add(str2);
+			list.Add(str3);
+			list.Add(str4);
+			list.Add(str5);
+			if (!string.IsNullOrEmpty(str6))
 			{
 				this.SHADER_NORMAL_MAX = 5;
-				list.Add(string6);
-				if (!string.IsNullOrEmpty(string7))
+				list.Add(str6);
+				if (!string.IsNullOrEmpty(str7))
 				{
 					this.SHADER_NORMAL_MAX = 6;
-					list.Add(string7);
+					list.Add(str7);
 				}
 			}
 			return list;
@@ -249,9 +249,12 @@ namespace ClassLibrary4
 			Array array = (Array)this.hairObjField.GetValue(hairs);
 			for (int i = 0; i < array.Length; i++)
 			{
-				int id = h.customParam.hair.parts[i].ID;
-				HairData hair_Female = CustomDataManager.GetHair_Female((HAIR_TYPE)i, id);
-				this.setHairShaderObj(array.GetValue(i), hair_Female.assetbundleName);
+                if (array.GetValue(i) != null)
+                {
+                    int id = h.customParam.hair.parts[i].ID;
+                    HairData hair_Female = CustomDataManager.GetHair_Female((HAIR_TYPE)i, id);
+                    this.setHairShaderObj(array.GetValue(i), hair_Female.assetbundleName);
+                }
 			}
 			h.hairs.ChangeColor(h.customParam.hair);
 		}
@@ -505,17 +508,19 @@ namespace ClassLibrary4
 							wearCustomEdit.LoadedCoordinate(type);
 						}
 					}
-					if (wearObj.enableColorCustom)
-					{
-						f.customParam.wear.wears[idx].color.mainColor1 = (wearObj.materialCustom.datas[0] as MaterialCustoms.Data_Color).Value;
-						f.customParam.wear.wears[idx].color.specColor1 = (wearObj.materialCustom.datas[1] as MaterialCustoms.Data_Color).Value;
-						f.customParam.wear.wears[idx].color.specular1 = (wearObj.materialCustom.datas[2] as MaterialCustoms.Data_Float).Value;
-						f.customParam.wear.wears[idx].color.smooth1 = (wearObj.materialCustom.datas[3] as MaterialCustoms.Data_Float).Value;
-						f.customParam.wear.wears[idx].color.mainColor2 = (wearObj.materialCustom.datas[4] as MaterialCustoms.Data_Color).Value;
-						f.customParam.wear.wears[idx].color.specColor2 = (wearObj.materialCustom.datas[5] as MaterialCustoms.Data_Color).Value;
-						f.customParam.wear.wears[idx].color.specular2 = (wearObj.materialCustom.datas[6] as MaterialCustoms.Data_Float).Value;
-						f.customParam.wear.wears[idx].color.smooth2 = (wearObj.materialCustom.datas[7] as MaterialCustoms.Data_Float).Value;
-					}
+                    // HACK: So this is a hack, because HoneyPot somehow is able to cause customParam.wear to have different
+                    // colors than what is loaded from the game, from the chara cards or clothing cards, and if you switch
+                    // between characters that wear the same piece of clothing, after the latter character is loaded, 
+                    // the former chara's customParam.wear colors will somehow stay in the color picker UI of the same piece
+                    // of clothing on the latter chara. Thus causing a lot of confusion. 
+                    // 
+                    // I was not able to track down the reason for this, so instead I use this spot to force the 
+                    // customParam.wear to be overwritten by whatever color you are seeing that the current character
+                    // is wearing. 
+                    if (wearObj.enableColorCustom)
+                    {
+                        assignCustomParamColor(f.customParam.wear.wears[idx].color, wearObj.materialCustom);
+                    }
 				}
 			}
 			catch (Exception ex)
@@ -648,6 +653,10 @@ namespace ClassLibrary4
 					{
 						int id = accessoryData.id;
 					}
+                    else
+                    {
+                        continue;
+                    }
 					try
 					{
 						GameObject gameObject = (GameObject)field.GetValue(obj);
@@ -718,6 +727,7 @@ namespace ClassLibrary4
 		// Token: 0x06000037 RID: 55 RVA: 0x0000205B File Offset: 0x0000025B
 		public void logSave(string txt)
 		{
+            Console.WriteLine(txt);
 		}
 
 		// Token: 0x06000038 RID: 56 RVA: 0x00003C08 File Offset: 0x00001E08
@@ -1872,7 +1882,7 @@ namespace ClassLibrary4
 				this.exportConflict();
 				this.transportDicts();
 				this.createCatecory();
-			}
+            }
 			if (Input.GetKeyDown(KeyCode.F12) || this.doAutoUpdate() || HoneyPot.doUpdate)
 			{
 				HoneyPot.doUpdate = false;
@@ -2216,41 +2226,36 @@ namespace ClassLibrary4
 				WearObj wearObj = m.wears.GetWearObj(type);
 				if (wearObj != null)
 				{
-					int wearID = m.customParam.wear.GetWearID(type);
-					MaterialCustomData.GetWear(type, m.customParam.wear.wears[idx]);
-					WearCustomEdit wearCustomEdit = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
-					bool isSelected = false;
+                    int error_progress = 0;
+					int wearID = m.customParam.wear.GetWearID(type); 
+                    MaterialCustomData.GetWear(type, m.customParam.wear.wears[idx]);
+                    WearCustomEdit wearCustomEdit = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
+                    bool isSelected = false;
 					if (wearCustomEdit != null)
 					{
 						isSelected = ((int)this.nowTabField.GetValue(wearCustomEdit) == idx);
 					}
-					string hideObj = "";
-					if (this.setShader(wearObj.obj, maxColorRendererQueue, maxTransparentRenderQueue, transparentShaderIdx, forceColorable, wearID, isSelected, isTop, hideObj))
+                    string hideObj = "";
+                    if (this.setShader(wearObj.obj, maxColorRendererQueue, maxTransparentRenderQueue, transparentShaderIdx, forceColorable, wearID, isSelected, isTop, hideObj))
 					{
-						Assembly.GetAssembly(typeof(WearObj)).GetType("WearObj").GetMethod("SetupMaterials", new Type[]
+                        Assembly.GetAssembly(typeof(WearObj)).GetType("WearObj").GetMethod("SetupMaterials", new Type[]
 						{
 							typeof(WearData)
 						}).Invoke(wearObj, new object[]
 						{
 							m.wears.GetWearData(type)
 						});
-						wearObj.UpdateColorCustom();
-						if (wearCustomEdit != null && wearCustomEdit.isActiveAndEnabled)
+                        wearObj.UpdateColorCustom();
+                        if (wearCustomEdit != null && wearCustomEdit.isActiveAndEnabled)
 						{
 							wearObj.hasSecondColor = true;
 							wearCustomEdit.LoadedCoordinate(type);
 						}
-					}
-					if (wearObj.enableColorCustom)
+                    }
+                    // HACK: Same as Female version of setWearShader ; should really think of combining the two.
+                    if (wearObj.enableColorCustom)
 					{
-						m.customParam.wear.wears[idx].color.mainColor1 = (wearObj.materialCustom.datas[0] as MaterialCustoms.Data_Color).Value;
-						m.customParam.wear.wears[idx].color.specColor1 = (wearObj.materialCustom.datas[1] as MaterialCustoms.Data_Color).Value;
-						m.customParam.wear.wears[idx].color.specular1 = (wearObj.materialCustom.datas[2] as MaterialCustoms.Data_Float).Value;
-						m.customParam.wear.wears[idx].color.smooth1 = (wearObj.materialCustom.datas[3] as MaterialCustoms.Data_Float).Value;
-						m.customParam.wear.wears[idx].color.mainColor2 = (wearObj.materialCustom.datas[4] as MaterialCustoms.Data_Color).Value;
-						m.customParam.wear.wears[idx].color.specColor2 = (wearObj.materialCustom.datas[5] as MaterialCustoms.Data_Color).Value;
-						m.customParam.wear.wears[idx].color.specular2 = (wearObj.materialCustom.datas[6] as MaterialCustoms.Data_Float).Value;
-						m.customParam.wear.wears[idx].color.smooth2 = (wearObj.materialCustom.datas[7] as MaterialCustoms.Data_Float).Value;
+                        assignCustomParamColor(m.customParam.wear.wears[idx].color, wearObj.materialCustom);
 					}
 				}
 			}
@@ -2260,8 +2265,41 @@ namespace ClassLibrary4
 			}
 		}
 
-		// Token: 0x04000007 RID: 7
-		public static bool doUpdate = false;
+        private void assignCustomParamColor(ColorParameter_PBR2 color, MaterialCustoms matcustom)
+        {
+            for (int i = 0; i < matcustom.datas.Length; i++)
+            {
+                if (matcustom.datas[i].param.name.Equals("MainColor"))
+                    color.mainColor1 = (matcustom.datas[i] as MaterialCustoms.Data_Color).Value;
+                else if (matcustom.datas[i].param.name.Equals("MainSpecColor"))
+                    color.specColor1 = (matcustom.datas[i] as MaterialCustoms.Data_Color).Value;
+                else if (matcustom.datas[i].param.name.Equals("MaiMainMetallicnColor"))
+                    color.specular1  = (matcustom.datas[i] as MaterialCustoms.Data_Float).Value;
+                else if (matcustom.datas[i].param.name.Equals("MainSmoothness"))
+                    color.smooth1    = (matcustom.datas[i] as MaterialCustoms.Data_Float).Value;
+                else if (matcustom.datas[i].param.name.Equals("SubColor"))
+                    color.mainColor2 = (matcustom.datas[i] as MaterialCustoms.Data_Color).Value;
+                else if (matcustom.datas[i].param.name.Equals("SubSpecColor"))
+                    color.specColor2 = (matcustom.datas[i] as MaterialCustoms.Data_Color).Value;
+                else if (matcustom.datas[i].param.name.Equals("SubMetallic"))
+                    color.specular2  = (matcustom.datas[i] as MaterialCustoms.Data_Float).Value;
+                else if (matcustom.datas[i].param.name.Equals("SubSmoothness"))
+                {
+                    if (matcustom.datas[i].param.type == MaterialCustoms.Parameter.TYPE.ALPHA)
+                    {
+                        // This seem to be the only exceptional case -- SubSmoothness can be inited as Data_Alpha.
+                        color.smooth2 = (matcustom.datas[i] as MaterialCustoms.Data_Alpha).Value;
+                    }
+                    else
+                    {
+                        color.smooth2 = (matcustom.datas[i] as MaterialCustoms.Data_Float).Value;
+                    }
+                }
+            }
+        }
+
+        // Token: 0x04000007 RID: 7
+        public static bool doUpdate = false;
 
 		// Token: 0x04000008 RID: 8
 		private long step;
@@ -2275,11 +2313,11 @@ namespace ClassLibrary4
 		// Token: 0x0400000B RID: 11
 		protected MaterialCustoms mc;
 
-		// Token: 0x0400000C RID: 12
-		protected Material[] mats;
+        // Token: 0x0400000C RID: 12
+        protected Material[] mats;
 
-		// Token: 0x0400000D RID: 13
-		protected Material matGlass;
+        // Token: 0x0400000D RID: 13
+        protected Material matGlass;
 
 		// Token: 0x0400000E RID: 14
 		private Type typeHairs = typeof(Hairs);
