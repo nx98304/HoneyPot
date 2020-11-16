@@ -118,8 +118,9 @@ namespace ClassLibrary4
 				Renderer[] componentsInChildren = gameObject.GetComponentsInChildren<Renderer>(true);
 				this.orgShader = componentsInChildren[0].materials[0].shader;
                 gameObject.SetActive(false); 
-				GameObject gameObject2 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, "wear/cf_top_02ph", "cf_body_top_04_00ph");
-				Renderer[] componentsInChildren2 = gameObject2.GetComponentsInChildren<Renderer>(true);
+				//GameObject gameObject2 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, "wear/cf_top_02ph", "cf_body_top_04_00ph");
+                GameObject gameObject2 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, "wear/cf_top_hsad", "p_cf_yayoi_top");
+                Renderer[] componentsInChildren2 = gameObject2.GetComponentsInChildren<Renderer>(true);
                 this.mats = componentsInChildren2[0].materials;
                 gameObject2.SetActive(false);
                 this.mc = gameObject2.GetComponentInChildren<MaterialCustoms>();
@@ -539,36 +540,27 @@ namespace ClassLibrary4
 			}
 			List<string> list = new List<string>();
 			Renderer[] componentsInChildren = obj.GetComponentsInChildren<Renderer>(true);
-			bool flag = false;
 			foreach (Renderer renderer in componentsInChildren)
 			{
 				foreach (Material material in renderer.materials)
 				{
-					string[] shaderKeywords = material.shaderKeywords;
-					for (int i = 0; i < shaderKeywords.Length; i++)
-					{
-						shaderKeywords[i].Contains("ALPHA");
-					}
-					if (((!renderer.name.Contains("_body_") && renderer.tag.Contains("ObjColor")) || forceColorable) && 
+                    if (((!renderer.name.Contains("_body_") && renderer.tag.Contains("ObjColor")) || forceColorable ) &&
+                         !material.name.Contains("cf_m_body_CustomMaterial") &&
+                         !material.name.Contains("cm_m_body_CustomMaterial") &&
+                         "".Equals(material.shader.name) )
+                    {
+                        list.Add(material.name.Replace(" (Instance)", ""));
+                    }
+                    if ("".Equals(material.shader.name) &&
+                        (!renderer.name.Contains("_body_") &&
                         !material.name.Contains("cf_m_body_CustomMaterial") &&
-                        !material.name.Contains("cm_m_body_CustomMaterial"))
-					{
-						list.Add(material.name.Replace(" (Instance)", ""));
-					}
-					if ("".Equals(material.shader.name))
-					{
-						flag = true;
-						if ((!material.name.Contains("cf_m_body_CustomMaterial") && 
-                             !material.name.Contains("cm_m_body_CustomMaterial") && 
-                             !renderer.name.Contains("_body_") && 
-                             !renderer.tag.Contains("New tag (8)")) 
-                            || !isTop)
-						{
-							Shader shader = this.getShader(wearID, material.name);
-							material.shader = shader;
-							result = true;
-						}
-					}
+                        !material.name.Contains("cm_m_body_CustomMaterial") &&
+                        !renderer.tag.Contains("New tag (8)") || !isTop))
+                    {
+                        Shader shader = this.getShader(wearID, material.name);
+                        material.shader = shader;
+                        result = true;
+                    }
 				}
 				if (!string.IsNullOrEmpty(hideObj))
 				{
@@ -583,9 +575,9 @@ namespace ClassLibrary4
 					}
 				}
 			}
-			if (flag)
+			if (result)
 			{
-				MaterialCustoms materialCustoms = obj.GetComponent<MaterialCustoms>();
+                MaterialCustoms materialCustoms = obj.GetComponent<MaterialCustoms>();
 				if (materialCustoms == null)
 				{
 					materialCustoms = obj.AddComponent<MaterialCustoms>();
@@ -2226,7 +2218,6 @@ namespace ClassLibrary4
 				WearObj wearObj = m.wears.GetWearObj(type);
 				if (wearObj != null)
 				{
-                    int error_progress = 0;
 					int wearID = m.customParam.wear.GetWearID(type); 
                     MaterialCustomData.GetWear(type, m.customParam.wear.wears[idx]);
                     WearCustomEdit wearCustomEdit = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
