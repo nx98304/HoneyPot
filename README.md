@@ -18,3 +18,12 @@ Compared to the original 1.4.0, this version has:
 - Experimental HS female eyebrow and eyelash support. 
 - No NullReferenceException I know so far
 - A couple of small code cleanups.
+
+Now that we have made the decompiled source compile again and maintains all the previous fixes without creating new issues, we can gradually aim for future updates: 
+
+- Try to figure out if there's anything to be done with Studio Items' colors. 
+- Try to figure out a better way to anticipating HS clothing's custom color material properties. Right now it will yell at you for mismatching the material properties, and some colors will act weirdly if you try to change them, and a lot of items / clothing sets will have custom color UI, but nothing changes when you try to change the color. (usually mean it wasn't supposed to be changed to begin with, even though HoneyPot forces color-changability to all HS clothing.) 
+- Further code clean up to make variables in the code humanly readable, and start to annotate the code with comments
+- What's up with the Studio Item category changes? I cannot determine the original reason of doing it. 
+- Performance optimizations? Not sure what exactly can be done about it, since most time it spends on is reading the lists and loading the assets, which would be expected to be slow. 
+- Welcome further comments about the project. 
