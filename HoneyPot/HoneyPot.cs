@@ -47,8 +47,9 @@ namespace ClassLibrary4
 				this.transportDict(wearDictionary_Female3, wearDictionary_Female6, 826100, 92);
 				this.transportDict(wearDictionary_Female7, wearDictionary_Female6, 827100, 93);
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+                this.logSave(ex.ToString());
 			}
 		}
 
@@ -118,8 +119,7 @@ namespace ClassLibrary4
 				Renderer[] componentsInChildren = gameObject.GetComponentsInChildren<Renderer>(true);
 				this.orgShader = componentsInChildren[0].materials[0].shader;
                 gameObject.SetActive(false); 
-				//GameObject gameObject2 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, "wear/cf_top_02ph", "cf_body_top_04_00ph");
-                GameObject gameObject2 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, "wear/cf_top_hsad", "p_cf_yayoi_top");
+				GameObject gameObject2 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, "wear/cf_top_hsad", "p_cf_yayoi_top");
                 Renderer[] componentsInChildren2 = gameObject2.GetComponentsInChildren<Renderer>(true);
                 this.mats = componentsInChildren2[0].materials;
                 gameObject2.SetActive(false);
@@ -142,15 +142,6 @@ namespace ClassLibrary4
 						gameObject3.SetActive(false);
                     }
                 }
-				//foreach (string key in this.presetKeys)
-				//{
-    //                PresetShader presetShader = this.oldPresets[key];
-				//	GameObject gameObject4 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, presetShader.assetBundleName, presetShader.assetName);
-				//	Renderer[] componentsInChildren4 = gameObject4.GetComponentsInChildren<Renderer>(true);
-				//	presetShader.material = componentsInChildren4[presetShader.rendererIdx].materials[presetShader.materialIdx];
-				//	presetShader.shader = presetShader.material.shader;
-				//	gameObject4.SetActive(false);
-    //            }
 			}
 			catch (Exception ex)
 			{
@@ -238,9 +229,11 @@ namespace ClassLibrary4
 		{
 			foreach (KeyValuePair<int, ObjectCtrlInfo> keyValuePair in Singleton<Studio.Studio>.Instance.dicObjectCtrl)
 			{
-				this.logSave("きたよ");
-				OCIItem itemShader = keyValuePair.Value as OCIItem;
-				this.setItemShader(itemShader);
+				OCIItem item = keyValuePair.Value as OCIItem;
+                if (item != null)
+                {
+                    this.setItemShader(item);
+                }
 			}
 		}
 
@@ -386,28 +379,28 @@ namespace ClassLibrary4
 				if (female.isActiveAndEnabled)
 				{
 					this.setAccsShader(false, female);
-					this.setWearShader(female, 9, WEAR_TYPE.SOCKS, 3000, 3000, 1, false, false);
-					this.setWearShader(female, 10, WEAR_TYPE.SHOES, 3000, 3000, 1, false, false);
-					this.setWearShader(female, 6, WEAR_TYPE.SWIM_BOTTOM, 3000, 3000, 1, false, false);
-					this.setWearShader(female, 4, WEAR_TYPE.SWIM, 3000, 3000, 1, false, false);
-					this.setWearShader(female, 5, WEAR_TYPE.SWIM_TOP, 3000, 3000, 1, false, false);
-					this.setWearShader(female, 2, WEAR_TYPE.BRA, 3100, 2900, 1, true, false);
-					this.setWearShader(female, 3, WEAR_TYPE.SHORTS, 3100, 2900, 1, true, false);
-					this.setWearShader(female, 7, WEAR_TYPE.GLOVE, 3000, 3000, 1, false, false);
-					this.setWearShader(female, 8, WEAR_TYPE.PANST, 3000, 3000, 1, false, false);
-					this.setWearShader(female, 1, WEAR_TYPE.BOTTOM, 3000, 3000, 1, false, false);
-					this.setWearShader(female, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
-				}
-			}
+                    this.setWearShader(female, 9, WEAR_TYPE.SOCKS, 3000, 3000, 1, false, false);
+                    this.setWearShader(female, 10, WEAR_TYPE.SHOES, 3000, 3000, 1, false, false);
+                    this.setWearShader(female, 6, WEAR_TYPE.SWIM_BOTTOM, 3000, 3000, 1, false, false);
+                    this.setWearShader(female, 4, WEAR_TYPE.SWIM, 3000, 3000, 1, false, false);
+                    this.setWearShader(female, 5, WEAR_TYPE.SWIM_TOP, 3000, 3000, 1, false, false);
+                    this.setWearShader(female, 2, WEAR_TYPE.BRA, 3100, 2900, 1, true, false);
+                    this.setWearShader(female, 3, WEAR_TYPE.SHORTS, 3100, 2900, 1, true, false);
+                    this.setWearShader(female, 7, WEAR_TYPE.GLOVE, 3000, 3000, 1, false, false);
+                    this.setWearShader(female, 8, WEAR_TYPE.PANST, 3000, 3000, 1, false, false);
+                    this.setWearShader(female, 1, WEAR_TYPE.BOTTOM, 3000, 3000, 1, false, false);
+                    this.setWearShader(female, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
+                }
+            }
 			foreach (Male male in Resources.FindObjectsOfTypeAll(typeof(Male)))
 			{
 				if (male.isActiveAndEnabled)
 				{
 					this.setAccsShader(false, male);
-					this.setWearShader(male, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
-					this.setWearShader(male, 10, WEAR_TYPE.SHOES, 3000, 3000, 1, false, false);
-				}
-			}
+                    this.setWearShader(male, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
+                    this.setWearShader(male, 10, WEAR_TYPE.SHOES, 3000, 3000, 1, false, false);
+                }
+            }
 		}
 
 		// Token: 0x06000031 RID: 49 RVA: 0x00003210 File Offset: 0x00001410
@@ -415,7 +408,7 @@ namespace ClassLibrary4
 		{
 			try
 			{
-				if (Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(item.itemInfo.no))
+                if (Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(item.itemInfo.no))
 				{
 					Info.ItemLoadInfo itemLoadInfo = Singleton<Info>.Instance.dicItemLoadInfo[item.itemInfo.no];
 					this.setItemShader(item.objectItem, itemLoadInfo.bundlePath);
@@ -468,132 +461,6 @@ namespace ClassLibrary4
 			}
 		}
 
-		// Token: 0x06000033 RID: 51
-		public void setWearShader(Female f, int idx, WEAR_TYPE type, int maxColorRendererQueue, int maxTransparentRenderQueue, int transparentShaderIdx, bool forceColorable, bool isTop = false)
-		{
-			try
-			{
-				WearObj wearObj = f.wears.GetWearObj(type);
-				if (wearObj != null)
-				{
-					int wearID = f.customParam.wear.GetWearID(type);
-					MaterialCustomData.GetWear(type, f.customParam.wear.wears[idx]);
-					WearCustomEdit wearCustomEdit = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
-					bool isSelected = false;
-					if (wearCustomEdit != null)
-					{
-						isSelected = ((int)this.nowTabField.GetValue(wearCustomEdit) == idx);
-					}
-					string hideObj = "";
-					if (type == WEAR_TYPE.SHORTS)
-					{
-						hideObj = "shorts";
-					}
-					if (type == WEAR_TYPE.BRA)
-					{
-						hideObj = "bra";
-					}
-					if (this.setShader(wearObj.obj, maxColorRendererQueue, maxTransparentRenderQueue, transparentShaderIdx, forceColorable, wearID, isSelected, isTop, hideObj))
-					{
-						Assembly.GetAssembly(typeof(WearObj)).GetType("WearObj").GetMethod("SetupMaterials", new Type[]
-						{
-							typeof(WearData)
-						}).Invoke(wearObj, new object[]
-						{
-							f.wears.GetWearData(type)
-						});
-						wearObj.UpdateColorCustom();
-						if (wearCustomEdit != null && wearCustomEdit.isActiveAndEnabled)
-						{
-							wearObj.hasSecondColor = true;
-							wearCustomEdit.LoadedCoordinate(type);
-						}
-					}
-                    // HACK: So this is a hack, because HoneyPot somehow is able to cause customParam.wear to have different
-                    // colors than what is loaded from the game, from the chara cards or clothing cards, and if you switch
-                    // between characters that wear the same piece of clothing, after the latter character is loaded, 
-                    // the former chara's customParam.wear colors will somehow stay in the color picker UI of the same piece
-                    // of clothing on the latter chara. Thus causing a lot of confusion. 
-                    // 
-                    // I was not able to track down the reason for this, so instead I use this spot to force the 
-                    // customParam.wear to be overwritten by whatever color you are seeing that the current character
-                    // is wearing. 
-                    if (wearObj.enableColorCustom)
-                    {
-                        assignCustomParamColor(f.customParam.wear.wears[idx].color, wearObj.materialCustom);
-                    }
-				}
-			}
-			catch (Exception ex)
-			{
-				this.logSave(ex.ToString());
-			}
-		}
-
-		// Token: 0x06000034 RID: 52
-		public bool setShader(GameObject obj, int maxColorRendererQueue, int maxTransparentRenderQueue, int transparentShaderIdx, bool forceColorable, int wearID, bool isSelected, bool isTop = false, string hideObj = "")
-		{
-			bool result = false;
-			if (obj.GetComponent<Destroyer>() == null)
-			{
-				obj.AddComponent<Destroyer>();
-			}
-			List<string> list = new List<string>();
-			Renderer[] componentsInChildren = obj.GetComponentsInChildren<Renderer>(true);
-			foreach (Renderer renderer in componentsInChildren)
-			{
-				foreach (Material material in renderer.materials)
-				{
-                    if (((!renderer.name.Contains("_body_") && renderer.tag.Contains("ObjColor")) || forceColorable ) &&
-                         !material.name.Contains("cf_m_body_CustomMaterial") &&
-                         !material.name.Contains("cm_m_body_CustomMaterial") &&
-                         "".Equals(material.shader.name) )
-                    {
-                        list.Add(material.name.Replace(" (Instance)", ""));
-                    }
-                    if ("".Equals(material.shader.name) &&
-                        (!renderer.name.Contains("_body_") &&
-                        !material.name.Contains("cf_m_body_CustomMaterial") &&
-                        !material.name.Contains("cm_m_body_CustomMaterial") &&
-                        !renderer.tag.Contains("New tag (8)") || !isTop))
-                    {
-                        Shader shader = this.getShader(wearID, material.name);
-                        material.shader = shader;
-                        result = true;
-                    }
-				}
-				if (!string.IsNullOrEmpty(hideObj))
-				{
-					GameObject gameObject = renderer.transform.parent.gameObject;
-					if ("shorts".Equals(hideObj) && (gameObject.name.Contains("bot_b") || gameObject.name.Contains("top_a") || gameObject.name.Contains("top_b")))
-					{
-						gameObject.SetActive(false);
-					}
-					if ("bra".Equals(hideObj) && (gameObject.name.Contains("bot_b") || gameObject.name.Contains("bot_a") || gameObject.name.Contains("top_b")))
-					{
-						gameObject.SetActive(false);
-					}
-				}
-			}
-			if (result)
-			{
-                MaterialCustoms materialCustoms = obj.GetComponent<MaterialCustoms>();
-				if (materialCustoms == null)
-				{
-					materialCustoms = obj.AddComponent<MaterialCustoms>();
-					materialCustoms.parameters = new MaterialCustoms.Parameter[this.mc.parameters.Length];
-				}
-				int num = 0;
-				foreach (MaterialCustoms.Parameter copy in this.mc.parameters)
-				{
-					materialCustoms.parameters[num] = new MaterialCustoms.Parameter(copy);
-					materialCustoms.parameters[num++].materialNames = list.ToArray();
-				}
-				Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms").GetMethod("Setup", new Type[0]).Invoke(materialCustoms, new object[0]);
-			}
-			return result;
-		}
-
 		// Token: 0x06000035 RID: 53 RVA: 0x000037CC File Offset: 0x000019CC
 		public int getShaderIdx(int wearID, bool doChange)
 		{
@@ -627,9 +494,6 @@ namespace ClassLibrary4
 				Type type = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj");
 				object value = typeof(Accessories).GetField("acceObjs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(accessories);
 				FieldInfo field = type.GetField("obj", BindingFlags.Instance | BindingFlags.Public);
-				type.GetField("enableColorCustom", BindingFlags.Instance | BindingFlags.Public);
-				type.GetField("materialCustom", BindingFlags.Instance | BindingFlags.Public);
-				type.GetMethod("UpdateColorCustom", new Type[0]);
 				MethodInfo method = type.GetMethod("SetupMaterials", new Type[]
 				{
 					typeof(AccessoryData)
@@ -641,18 +505,14 @@ namespace ClassLibrary4
 				{
 					num++;
 					AccessoryData accessoryData = accessories.GetAccessoryData(h.customParam.acce, num);
-					if (accessoryData != null)
+					if (accessoryData == null)
 					{
-						int id = accessoryData.id;
-					}
-                    else
-                    {
                         continue;
                     }
 					try
 					{
 						GameObject gameObject = (GameObject)field.GetValue(obj);
-						Renderer[] componentsInChildren = gameObject.GetComponentsInChildren<Renderer>(true);
+						Renderer[] renderers_in_acceobj = gameObject.GetComponentsInChildren<Renderer>(true);
 						if (gameObject.GetComponent<Destroyer>() == null)
 						{
 							gameObject.AddComponent<Destroyer>();
@@ -660,10 +520,9 @@ namespace ClassLibrary4
 						MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
 						materialCustoms.parameters = new MaterialCustoms.Parameter[this.mc.parameters.Length];
 						List<string> list = new List<string>();
-						Renderer[] array = componentsInChildren;
-						for (int i = 0; i < array.Length; i++)
+						foreach (Renderer renderer in renderers_in_acceobj)
 						{
-							foreach (Material material in array[i].materials)
+							foreach (Material material in renderer.materials)
 							{
 								if (material.renderQueue <= 3000)
 								{
@@ -716,8 +575,92 @@ namespace ClassLibrary4
 			}
 		}
 
-		// Token: 0x06000037 RID: 55 RVA: 0x0000205B File Offset: 0x0000025B
-		public void logSave(string txt)
+        public void setWearShader(Human h, int idx, WEAR_TYPE type, int maxColorRendererQueue, int maxTransparentRenderQueue, int transparentShaderIdx, bool forceColorable = false, bool isTop = false)
+        {
+            WearObj wearobj = h.wears.GetWearObj(type);
+            if (wearobj == null)
+            {
+                return;
+            }
+            try
+            {
+                Type typeWearObj = Assembly.GetAssembly(typeof(WearObj)).GetType("WearObj");
+                WearData wearData = h.wears.GetWearData(type);
+                MethodInfo method = typeWearObj.GetMethod("SetupMaterials", new Type[]
+                {
+                    typeof(WearData)
+                });
+                MethodInfo method2 = Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms").GetMethod("Setup", new Type[0]);
+                int wearID = h.customParam.wear.GetWearID(type);
+                bool is_a_HS_cloth_parts_that_remmapped_shader = false;
+                GameObject gameObject = wearobj.obj;
+                Renderer[] renderers_in_wearobj = gameObject.GetComponentsInChildren<Renderer>(true);
+                if (gameObject.GetComponent<Destroyer>() == null)
+                {
+                    gameObject.AddComponent<Destroyer>();
+                }
+                MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
+                materialCustoms.parameters = new MaterialCustoms.Parameter[this.mc.parameters.Length];
+                List<string> list = new List<string>();
+                foreach (Renderer renderer in renderers_in_wearobj)
+                {
+                    foreach (Material material in renderer.materials)
+                    {
+                        if (((!renderer.name.Contains("_body_") && renderer.tag.Contains("ObjColor")) || forceColorable) &&
+                            !material.name.Contains("cf_m_body_CustomMaterial") &&
+                            !material.name.Contains("cm_m_body_CustomMaterial") &&
+                            "".Equals(material.shader.name))
+                        {
+                            list.Add(material.name.Replace(" (Instance)", ""));
+                        }
+                        if ("".Equals(material.shader.name) &&
+                            (!renderer.name.Contains("_body_") &&
+                            !material.name.Contains("cf_m_body_CustomMaterial") &&
+                            !material.name.Contains("cm_m_body_CustomMaterial") &&
+                            !renderer.tag.Contains("New tag (8)") || !isTop))
+                        {
+                            Shader shader = this.getShader(wearID, material.name);
+                            material.shader = shader;
+                            is_a_HS_cloth_parts_that_remmapped_shader = true;
+                        }
+                    }
+                            
+                    GameObject parent_obj = renderer.transform.parent.gameObject;
+                    if (type == WEAR_TYPE.SHORTS && (parent_obj.name.Contains("bot_b") || parent_obj.name.Contains("top_a") || parent_obj.name.Contains("top_b")))
+                    {
+                        parent_obj.SetActive(false);
+                    }
+                    else if (type == WEAR_TYPE.BRA && (parent_obj.name.Contains("bot_b") || parent_obj.name.Contains("bot_a") || parent_obj.name.Contains("top_b")))
+                    {
+                        parent_obj.SetActive(false);
+                    }
+                            
+                }
+                if (is_a_HS_cloth_parts_that_remmapped_shader)
+                {
+                    int num2 = 0;
+                    foreach (MaterialCustoms.Parameter copy in this.mc.parameters)
+                    {
+                        materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
+                        materialCustoms.parameters[num2++].materialNames = list.ToArray();
+                    }
+                    method2.Invoke(materialCustoms, new object[0]);
+                    method.Invoke(wearobj, new object[]
+                    {
+                        wearData
+                    });
+                    wearobj.UpdateColorCustom();
+                }
+            }
+            catch (Exception ex)
+            {
+                this.logSave(ex.ToString());
+            }
+                
+        }
+
+        // Token: 0x06000037 RID: 55 RVA: 0x0000205B File Offset: 0x0000025B
+        public void logSave(string txt)
 		{
             Console.WriteLine(txt);
 		}
@@ -2203,91 +2146,6 @@ namespace ClassLibrary4
 				return 99;
 			}
 		}
-
-		// Token: 0x0600004D RID: 77 RVA: 0x0000224B File Offset: 0x0000044B
-		public bool materialOnlyAssetChangedHS()
-		{
-			return false;
-		}
-
-		// Token: 0x0600004E RID: 78
-		public void setWearShader(Male m, int idx, WEAR_TYPE type, int maxColorRendererQueue, int maxTransparentRenderQueue, int transparentShaderIdx, bool forceColorable, bool isTop = false)
-		{
-			try
-			{
-				WearObj wearObj = m.wears.GetWearObj(type);
-				if (wearObj != null)
-				{
-					int wearID = m.customParam.wear.GetWearID(type); 
-                    MaterialCustomData.GetWear(type, m.customParam.wear.wears[idx]);
-                    WearCustomEdit wearCustomEdit = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
-                    bool isSelected = false;
-					if (wearCustomEdit != null)
-					{
-						isSelected = ((int)this.nowTabField.GetValue(wearCustomEdit) == idx);
-					}
-                    string hideObj = "";
-                    if (this.setShader(wearObj.obj, maxColorRendererQueue, maxTransparentRenderQueue, transparentShaderIdx, forceColorable, wearID, isSelected, isTop, hideObj))
-					{
-                        Assembly.GetAssembly(typeof(WearObj)).GetType("WearObj").GetMethod("SetupMaterials", new Type[]
-						{
-							typeof(WearData)
-						}).Invoke(wearObj, new object[]
-						{
-							m.wears.GetWearData(type)
-						});
-                        wearObj.UpdateColorCustom();
-                        if (wearCustomEdit != null && wearCustomEdit.isActiveAndEnabled)
-						{
-							wearObj.hasSecondColor = true;
-							wearCustomEdit.LoadedCoordinate(type);
-						}
-                    }
-                    // HACK: Same as Female version of setWearShader ; should really think of combining the two.
-                    if (wearObj.enableColorCustom)
-					{
-                        assignCustomParamColor(m.customParam.wear.wears[idx].color, wearObj.materialCustom);
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				this.logSave(ex.ToString());
-			}
-		}
-
-        private void assignCustomParamColor(ColorParameter_PBR2 color, MaterialCustoms matcustom)
-        {
-            for (int i = 0; i < matcustom.datas.Length; i++)
-            {
-                if (matcustom.datas[i].param.name.Equals("MainColor"))
-                    color.mainColor1 = (matcustom.datas[i] as MaterialCustoms.Data_Color).Value;
-                else if (matcustom.datas[i].param.name.Equals("MainSpecColor"))
-                    color.specColor1 = (matcustom.datas[i] as MaterialCustoms.Data_Color).Value;
-                else if (matcustom.datas[i].param.name.Equals("MaiMainMetallicnColor"))
-                    color.specular1  = (matcustom.datas[i] as MaterialCustoms.Data_Float).Value;
-                else if (matcustom.datas[i].param.name.Equals("MainSmoothness"))
-                    color.smooth1    = (matcustom.datas[i] as MaterialCustoms.Data_Float).Value;
-                else if (matcustom.datas[i].param.name.Equals("SubColor"))
-                    color.mainColor2 = (matcustom.datas[i] as MaterialCustoms.Data_Color).Value;
-                else if (matcustom.datas[i].param.name.Equals("SubSpecColor"))
-                    color.specColor2 = (matcustom.datas[i] as MaterialCustoms.Data_Color).Value;
-                else if (matcustom.datas[i].param.name.Equals("SubMetallic"))
-                    color.specular2  = (matcustom.datas[i] as MaterialCustoms.Data_Float).Value;
-                else if (matcustom.datas[i].param.name.Equals("SubSmoothness"))
-                {
-                    if (matcustom.datas[i].param.type == MaterialCustoms.Parameter.TYPE.ALPHA)
-                    {
-                        // This seem to be the only exceptional case -- SubSmoothness can be inited as Data_Alpha.
-                        color.smooth2 = (matcustom.datas[i] as MaterialCustoms.Data_Alpha).Value;
-                    }
-                    else
-                    {
-                        color.smooth2 = (matcustom.datas[i] as MaterialCustoms.Data_Float).Value;
-                    }
-                }
-            }
-        }
 
         // Token: 0x04000007 RID: 7
         public static bool doUpdate = false;
