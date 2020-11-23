@@ -29,7 +29,8 @@ namespace ClassLibrary4
 			bool result;
 			try
 			{
-				if (_loadInfo != null && _loadInfo.bones.Count > 0)
+				if ((_loadInfo != null && _loadInfo.bones.Count > 0) || 
+                    (_ociItem.animator != null && _ociItem.animator.enabled) )
 				{
 					result = true;
 				}
