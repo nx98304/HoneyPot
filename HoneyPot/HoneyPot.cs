@@ -442,8 +442,10 @@ namespace ClassLibrary4
 						this.logSave("item!");
 						foreach (string text2 in material.shaderKeywords)
 						{
-							if (text2.Contains("ALPHAPRE") || text2.Contains("TRANS"))
-							{
+							if (text2.Contains("ALPHAPRE") || 
+                                text2.Contains("TRANS") ||
+                                text2.Contains("_ALPHATEST_ON") )
+                            {
 								isTrans = true;
 							}
 							this.logSave("item:" + text2);
