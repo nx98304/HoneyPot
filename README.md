@@ -12,8 +12,10 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 
 ## Current Status
 
-### 1.4.1.2
-- HoneyPot no longer adds FK control points to any items that is loaded with an active animator, preventing breaking the built-in animation when forceably adding the FK controls. 
+### 1.4.1.3
+- Making most trees/leaves and glasses-like materials work. The materials has to be basic -- any custom materials that are not in vanilla HS build will probably find no substitution in PH. 
+- Making the SetItemShader's guessing process somewhat more robust, and make the warning logs much more readable. It will use the inspector-to-preset mapping first, and if that fails, try to guess a few important/often-used alpha materials based on Shader Keywords. 
+- Importing HS particle effects mods would be the next thing to try, but it will be in a very limited fashion.  
 
 ### Note
 If your HS hair has CustomRenderQueue (meaning: When inspecting the hair prefab with SB3Utility, the hair doesn't use SetRenderQueue Monobehavior, but it has seemingly correct CustomRenderQueue values set to each hair mesh's materials, then it will need an specialized version of HoneyPotInspector.exe to help HoneyPot prepare that info in-game. Specialized version here: https://mega.nz/file/liASiBKA#OX0FPlv4MhrXTHJzHzWnDEou1Fex4N6RXLDTFxadIGM , and regenerate the HoneyPotInspector.txt file )
@@ -21,7 +23,7 @@ If your HS hair has CustomRenderQueue (meaning: When inspecting the hair prefab 
 ## Possible Roadmap
 Now that we have made the decompiled source compile again and maintains all the previous fixes without creating new issues, we can gradually aim for future updates: 
 
-- Try to figure out if there's anything to be done with Studio Items' missing shaders. 
+- Determine what is the limited of guessing and remapping Studio Item's shaders. 
 - Try to figure out a better way to anticipating HS clothing's custom color material properties. Right now it will yell at you for mismatching the material properties, and some colors will act weirdly if you try to change them, and a lot of items / clothing sets will have custom color UI, but nothing changes when you try to change the color. (usually mean it wasn't supposed to be changed to begin with, even though HoneyPot forces color-changability to all HS clothing.) 
 - Further code clean up to make variables in the code humanly readable, and start to annotate the code with comments
 - What's up with the Studio Item category changes? I cannot determine the original reason of doing it. 
@@ -30,6 +32,9 @@ Now that we have made the decompiled source compile again and maintains all the 
 - Welcome further comments about the project. 
 
 ## Past updates
+
+### 1.4.1.2
+- HoneyPot no longer adds FK control points to any items that is loaded with an active animator, preventing breaking the built-in animation when forceably adding the FK controls. 
 
 ### 1.4.1.1
 - Female hair SetRenderQueue / CustomRenderQueue issue fixes (the CustomRenderQueue part require a small update to HoneyPotInspector.exe: https://mega.nz/file/liASiBKA#OX0FPlv4MhrXTHJzHzWnDEou1Fex4N6RXLDTFxadIGM , and regenerate the HoneyPotInspector.txt file)

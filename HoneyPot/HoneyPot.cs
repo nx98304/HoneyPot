@@ -153,7 +153,7 @@ namespace ClassLibrary4
 		public List<string> readOldPresetShaderString()
 		{
 			List<string> list = new List<string>();
-			string str1 = ModPrefs.GetString("HoneyPot", "PresetShader_000", "accessory/ca_megane_hs00|p_asc_glasses_04_00|2|0|0", false);
+			string str1 = ModPrefs.GetString("HoneyPot", "PresetShader_000", "accessory/ca_megane_hs00|p_asc_glasses_11_00|0|0|0", false);
 			string str2 = ModPrefs.GetString("HoneyPot", "PresetShader_001", "wear/cf_bra_hsad|p_cf_bra_09_00|0|0|0", false);
 			string str3 = ModPrefs.GetString("HoneyPot", "PresetShader_002", "wear/cf_top_hsad|p_cf_yayoi_top|1|0|0", false);
 			string str4 = ModPrefs.GetString("HoneyPot", "PresetShader_003", "wear/cf_top_hsad|p_cf_top_idol1_00|1|0|0", false);
@@ -411,7 +411,7 @@ namespace ClassLibrary4
                 if (Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(item.itemInfo.no))
 				{
 					Info.ItemLoadInfo itemLoadInfo = Singleton<Info>.Instance.dicItemLoadInfo[item.itemInfo.no];
-					this.setItemShader(item.objectItem, itemLoadInfo.bundlePath);
+                    this.setItemShader(item.objectItem, itemLoadInfo.bundlePath);
 					if (item.isColor2 || item.isChangeColor)
 					{
 						item.UpdateColor();
@@ -424,47 +424,83 @@ namespace ClassLibrary4
 			}
 		}
 
-		// Token: 0x06000032 RID: 50 RVA: 0x000032A0 File Offset: 0x000014A0
-		public void setItemShader(GameObject obj, string fileName)
-		{
-			new List<string>();
-			Renderer[] componentsInChildren = obj.GetComponentsInChildren<Renderer>(true);
-			for (int i = 0; i < componentsInChildren.Length; i++)
-			{
-				foreach (Material material in componentsInChildren[i].materials)
-				{
-					bool isTrans = false;
-					foreach (string text in material.shaderKeywords)
-					{
-					}
-					if ("".Equals(material.shader.name))
-					{
-						this.logSave("item!");
-						foreach (string text2 in material.shaderKeywords)
-						{
-							if (text2.Contains("ALPHAPRE") || 
-                                text2.Contains("TRANS") ||
-                                text2.Contains("_ALPHATEST_ON") )
-                            {
-								isTrans = true;
-							}
-							this.logSave("item:" + text2);
-						}
-						this.logSave("materla:" + fileName + material.name);
-						Shader shader = this.getShader(fileName, material.name.Replace(" (Instance)", ""), true, isTrans);
-						material.shader = shader;
-						this.logSave("shader:" + shader.name);
-						foreach (string str in material.shaderKeywords)
-						{
-							this.logSave("item:" + str);
-						}
-					}
-				}
-			}
-		}
+        public void setItemShader(GameObject obj, string fileName)
+        {
+            new List<string>();
+            Renderer[] componentsInChildren = obj.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < componentsInChildren.Length; i++)
+            {
+                foreach (Material material in componentsInChildren[i].materials)
+                {
+                    string shader_name = "";
+                    int guessing_renderqueue = -1;
+                    if ("".Equals(material.shader.name))
+                    {
+                        this.logSave("item!");
+                        this.logSave("material:" + fileName + "|" + material.name);
+                        string inspector_key = fileName + "|" + material.name.Replace(" (Instance)", "");
 
-		// Token: 0x06000035 RID: 53 RVA: 0x000037CC File Offset: 0x000019CC
-		public int getShaderIdx(int wearID, bool doChange)
+                        if (this.inspector.ContainsKey(inspector_key))
+                        {
+                            shader_name = this.inspector[inspector_key];
+                            if (shader_name.Length == 0)
+                            {
+                                this.logSave("HoneyPotInspector.txt have record of this material, but failed to read its original shader name, likely the shader used by this prefab was not present in the assetbundle. ");
+                            }
+                        }
+                        else
+                        {
+                            this.logSave("HoneyPotInspector.txt have no record of this material. Resort to default (usually means you have to regenerate HoneyPotInspector.txt)");
+                        }
+
+                        if ( shader_name.Length == 0 )
+                        {
+                            this.logSave("Inspector failed to resolve the original shader name from HS. Testing a few shader keywords to salvage.");
+                            foreach (string text2 in material.shaderKeywords)
+                            {
+                                this.logSave("shader keywords found:" + text2);
+                                if (text2.Contains("ALPHAPRE") && !(text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH")))
+                                {
+                                    this.logSave("Possible transparent glasses-like material.");
+                                    shader_name = "accessory/ca_megane_hs00|p_asc_glasses_11_00";
+                                    guessing_renderqueue = 2501;
+                                }
+                                else if (text2.Contains("TRANS"))
+                                {
+                                    this.logSave("Possible unspecified transparent material.");
+                                    shader_name = "PBRsp_alpha";
+                                }
+                                else if (text2.Contains("ALPHATEST") || text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH"))
+                                {
+                                    this.logSave("Possible plant / tree / leaf / branch -like materials.");
+                                    shader_name = "_"; // I actually have no idea what is this. Fix later
+                                }
+                            }
+                        }
+
+                        this.logSave("shader_name:" + shader_name);
+                        if (this.presets.ContainsKey(shader_name))
+                        {
+                            material.shader = this.presets[shader_name].shader;
+                        }
+                        else
+                        {
+                            this.logSave("The preset shaders weren't prepared for this specific HS shader. Likely it was a custom shader, or (less likely) we didn't explore PH shaders enough to find the substitute. Resort to default.");
+                            material.shader = this.presets["standard"].shader;
+                        }
+                        if (guessing_renderqueue > 0)
+                        {
+                            material.renderQueue = guessing_renderqueue;
+                        }
+                        this.logSave("shader:" + material.shader.name);
+                        this.logSave("-- end of one material processing --");
+                    }
+                }
+            }
+        }
+
+        // Token: 0x06000035 RID: 53 RVA: 0x000037CC File Offset: 0x000019CC
+        public int getShaderIdx(int wearID, bool doChange)
 		{
 			int num = this.SHADER_NORMAL_1;
 			string @string = ModPrefs.GetString("HoneyPot", wearID.ToString(), this.SHADER_NORMAL_1.ToString(), false);
