@@ -688,6 +688,13 @@ namespace ClassLibrary4
                         wearData
                     });
                     wearobj.UpdateColorCustom();
+                    if( this.wearCustomEdit != null && (int)this.nowTabField.GetValue(this.wearCustomEdit) == idx )
+                    {
+                        // After a HS clothing is loaded, if wearCustomEdit is present and it is choosing the this wear slot
+                        // Try to force the LoadedCoordinate() to enable color UI. Because before this point in time
+                        // This HS clothing is deemed non-colorchangable because of its MaterialCustom is not set.
+                        this.wearCustomEdit.LoadedCoordinate(type);
+                    }
                 }
             }
             catch (Exception ex)
@@ -1860,7 +1867,8 @@ namespace ClassLibrary4
 			{
 				HoneyPot.doUpdate = false;
 				this.currentFemaleList = (Resources.FindObjectsOfTypeAll(typeof(Female)) as Female[]);
-				this.setAccsShaders();
+                this.wearCustomEdit    = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
+                this.setAccsShaders();
 				this.setHairShaders();
 				this.setItemShaders();
 			}
@@ -2223,6 +2231,8 @@ namespace ClassLibrary4
 
 		// Token: 0x04000013 RID: 19
 		private Type typeWearCustomEdit = typeof(WearCustomEdit);
+
+        private WearCustomEdit wearCustomEdit = null;
 
 		// Token: 0x04000014 RID: 20
 		private FieldInfo nowTabField;
