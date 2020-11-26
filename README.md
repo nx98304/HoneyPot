@@ -12,19 +12,23 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 
 ## Current Status
 
-### 1.4.1.3
-- Making most trees/leaves and glasses-like materials work. The materials has to be basic -- any custom materials that are not in vanilla HS build will probably find no substitution in PH. 
-- Making the SetItemShader's guessing process somewhat more robust, and make the warning logs much more readable. It will use the inspector-to-preset mapping first, and if that fails, try to guess a few important/often-used alpha materials based on Shader Keywords. 
-- Importing HS particle effects mods would be the next thing to try, but it will be in a very limited fashion.  
+### 1.4.2
+- Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases).
+- Fixed an issue where when in chara maker, you won't see the color options right after choosing a piece of HS clothing. 
+- Added basic support for HS particle effects for Studio. If the particle effects are simple, the current shader remapping *may* work. If the effects are very complicated, comprising of custom Monobehaviors, distortion effects, material projectors and more, this will 99.9% *NOT* work. 
 
-### Note
-If your HS hair has CustomRenderQueue (meaning: When inspecting the hair prefab with SB3Utility, the hair doesn't use SetRenderQueue Monobehavior, but it has seemingly correct CustomRenderQueue values set to each hair mesh's materials, then it will need an specialized version of HoneyPotInspector.exe to help HoneyPot prepare that info in-game. Specialized version here: https://mega.nz/file/liASiBKA#OX0FPlv4MhrXTHJzHzWnDEou1Fex4N6RXLDTFxadIGM , and regenerate the HoneyPotInspector.txt file )
+### Important Accompanying Files
+- If you downloaded the latest package from the release page, all the following files are already there.
+- For HS hair that has CustomRenderQueue (meaning: When inspecting the hair prefab with SB3Utility, the hair doesn't use SetRenderQueue Monobehavior, but it has seemingly correct CustomRenderQueue values set to each hair mesh's materials, then it will need an specialized version of HoneyPotInspector.exe to help HoneyPot prepare that info in-game. Specialized version here: https://mega.nz/file/oqZgjBaA#5KileCYsM06witMoHlIVZavz63uFH_GC2EJ1EJ3jylk , and regenerate the HoneyPotInspector.txt file )
+- If you want to use the experimental particle effect support, also download the HoneyPotInspector.exe above.
+- shader.txt was updated for experimental particle effect shader remapping: https://mega.nz/file/NiYwBT7A#L3JaVGA59F00o8kssdyxWrxQtx_yuPsobYADiK5ol1s
 
 ## Possible Roadmap
+
 Now that we have made the decompiled source compile again and maintains all the previous fixes without creating new issues, we can gradually aim for future updates: 
 
-- Determine what is the limited of guessing and remapping Studio Item's shaders. 
-- Try to figure out a better way to anticipating HS clothing's custom color material properties. Right now it will yell at you for mismatching the material properties, and some colors will act weirdly if you try to change them, and a lot of items / clothing sets will have custom color UI, but nothing changes when you try to change the color. (usually mean it wasn't supposed to be changed to begin with, even though HoneyPot forces color-changability to all HS clothing.) 
+- Determine what is the limitation of guessing and remapping Studio Item's shaders. 
+- Try to figure out a better way to anticipating HS clothing's custom color material properties. Right now it will yell at you for mismatching the material properties, and some colors will act weirdly if you try to change them, and a lot of items & clothing sets will have custom color UI, but nothing changes when you try to change the color. (usually mean it wasn't supposed to be changed to begin with, even though HoneyPot forces color-changability to all HS clothing.) 
 - Further code clean up to make variables in the code humanly readable, and start to annotate the code with comments
 - What's up with the Studio Item category changes? I cannot determine the original reason of doing it. 
 - Moving the plugin from IPA to fully BepinEx. 
@@ -33,11 +37,16 @@ Now that we have made the decompiled source compile again and maintains all the 
 
 ## Past updates
 
+### 1.4.1.3
+- Making most trees/leaves and glasses-like materials work. The materials has to be basic -- any custom materials that are not in vanilla HS build will probably find no substitution in PH. 
+- Making the SetItemShader's guessing process somewhat more robust, and make the warning logs much more readable. It will use the inspector-to-preset mapping first, and if that fails, try to guess a few important/often-used alpha materials based on Shader Keywords. 
+- Importing HS particle effects mods would be the next thing to try, but it will be in a very limited fashion. 
+
 ### 1.4.1.2
 - HoneyPot no longer adds FK control points to any items that is loaded with an active animator, preventing breaking the built-in animation when forceably adding the FK controls. 
 
 ### 1.4.1.1
-- Female hair SetRenderQueue / CustomRenderQueue issue fixes (the CustomRenderQueue part require a small update to HoneyPotInspector.exe: https://mega.nz/file/liASiBKA#OX0FPlv4MhrXTHJzHzWnDEou1Fex4N6RXLDTFxadIGM , and regenerate the HoneyPotInspector.txt file)
+- Female hair SetRenderQueue / CustomRenderQueue issue fixes
 - Basic HS male clothes support
 - Color discrepancy between what's loaded on the character and what's in the color picker UI fix. 
 - Experimental HS female eyebrow and eyelash support. 
