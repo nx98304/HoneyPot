@@ -142,6 +142,18 @@ namespace ClassLibrary4
 						gameObject3.SetActive(false);
                     }
                 }
+
+                // Adding two specific PresetShader only for simple particle effects: 
+                if (!this.presets.ContainsKey("Particle Add"))
+                {
+                    this.presets.Add("Particle Add", new PresetShader());
+                    this.presets["Particle Add"].shader = Shader.Find("Particles/Additive");
+                }
+                if (!this.presets.ContainsKey("Particle Alpha Blend"))
+                {
+                    this.presets.Add("Particle Alpha Blend", new PresetShader());
+                    this.presets["Particle Alpha Blend"].shader = Shader.Find("Particles/Alpha Blended");
+                }
 			}
 			catch (Exception ex)
 			{
@@ -427,73 +439,177 @@ namespace ClassLibrary4
         public void setItemShader(GameObject obj, string fileName)
         {
             new List<string>();
-            Renderer[] componentsInChildren = obj.GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < componentsInChildren.Length; i++)
+            Renderer[] renderers_in_children = obj.GetComponentsInChildren<Renderer>(true);
+            Projector[] projectors_in_childern = obj.GetComponentsInChildren<Projector>(true);
+            foreach(Projector p in projectors_in_childern)
             {
-                foreach (Material material in componentsInChildren[i].materials)
+                // test
+                p.material.shader = this.presets["Particle Add"].shader;
+            }
+            foreach(Renderer r in renderers_in_children)
+            {
+                Type renderertype = r.GetType();
+                if (renderertype == typeof(ParticleSystemRenderer) ||
+                    renderertype == typeof(LineRenderer) ||
+                    renderertype == typeof(TrailRenderer) ||
+                    renderertype == typeof(ParticleRenderer) )
                 {
+                    this.logSave(r.name + " is probably an effects renderer, needs special guesses.");
+                    Material particle_mat = r.materials[0]; // assume one particle renderer only uses 1 material.
+                    this.logSave("particles!");
+                    this.logSave("material:" + fileName + "|" + particle_mat.name);
+
                     string shader_name = "";
-                    int guessing_renderqueue = -1;
-                    if ("".Equals(material.shader.name))
+                    string inspector_key = fileName + "|" + particle_mat.name.Replace(" (Instance)", "");
+
+                    if (this.inspector.ContainsKey(inspector_key))
                     {
-                        this.logSave("item!");
-                        this.logSave("material:" + fileName + "|" + material.name);
-                        string inspector_key = fileName + "|" + material.name.Replace(" (Instance)", "");
-
-                        if (this.inspector.ContainsKey(inspector_key))
+                        shader_name = this.inspector[inspector_key];
+                        if (shader_name.Length == 0)
                         {
-                            shader_name = this.inspector[inspector_key];
-                            if (shader_name.Length == 0)
-                            {
-                                this.logSave("HoneyPotInspector.txt have record of this material, but failed to read its original shader name, likely the shader used by this prefab was not present in the assetbundle. ");
-                            }
+                            this.logSave("HoneyPotInspector.txt have record of this PARTICLE material, but failed to read its original shader name, likely the shader used by this prefab was not present in the assetbundle. ");
                         }
-                        else
-                        {
-                            this.logSave("HoneyPotInspector.txt have no record of this material. Resort to default (usually means you have to regenerate HoneyPotInspector.txt)");
-                        }
+                    }
+                    else
+                    {
+                        this.logSave("HoneyPotInspector.txt have no record of this PARTICLE material. Regenerate HoneyPotInspector.txt is recommended, but it rarely helps with particle effects.");
+                    }
 
-                        if ( shader_name.Length == 0 )
-                        {
-                            this.logSave("Inspector failed to resolve the original shader name from HS. Testing a few shader keywords to salvage.");
-                            foreach (string text2 in material.shaderKeywords)
-                            {
-                                this.logSave("shader keywords found:" + text2);
-                                if (text2.Contains("ALPHAPRE") && !(text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH")))
-                                {
-                                    this.logSave("Possible transparent glasses-like material.");
-                                    shader_name = "accessory/ca_megane_hs00|p_asc_glasses_11_00";
-                                    guessing_renderqueue = 2501;
-                                }
-                                else if (text2.Contains("TRANS"))
-                                {
-                                    this.logSave("Possible unspecified transparent material.");
-                                    shader_name = "PBRsp_alpha";
-                                }
-                                else if (text2.Contains("ALPHATEST") || text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH"))
-                                {
-                                    this.logSave("Possible plant / tree / leaf / branch -like materials.");
-                                    shader_name = "_"; // I actually have no idea what is this. Fix later
-                                }
-                            }
-                        }
-
-                        this.logSave("shader_name:" + shader_name);
+                    this.logSave("shader_name:" + shader_name);
+                    if (shader_name.Length > 0)
+                    {
                         if (this.presets.ContainsKey(shader_name))
                         {
-                            material.shader = this.presets[shader_name].shader;
+                            particle_mat.shader = this.presets[shader_name].shader;
                         }
                         else
                         {
-                            this.logSave("The preset shaders weren't prepared for this specific HS shader. Likely it was a custom shader, or (less likely) we didn't explore PH shaders enough to find the substitute. Resort to default.");
-                            material.shader = this.presets["standard"].shader;
+                            this.logSave("The preset shaders weren't prepared for this specific HS particle shader. Likely it was a custom shader. Which we can only guess from now on.");
+                            bool is_probably_add = false;
+                            bool is_probably_blend = false;
+                            bool is_probably_opaque = false;
+                            foreach (string s in particle_mat.shaderKeywords)
+                            {
+                                if (s.Contains("ADD") || s.Contains("Add") || s.Contains("add")) // given ADD is the most usual type, giving it highest priority
+                                {
+                                    is_probably_add = true;
+                                }
+                                else if (s.Contains("BLEND") || s.Contains("Blend") || s.Contains("blend"))
+                                {
+                                    is_probably_blend = true;
+                                }
+                                else if (s.Contains("NORMAL") || s.Contains("Normal") || s.Contains("normal"))
+                                {
+                                    is_probably_opaque = true; // like small flying rocks
+                                }
+                            }
+
+                            if (shader_name.Contains("Distortion"))
+                            {
+                                this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
+                                particle_mat.shader = this.presets["Particle Add"].shader;
+                            }
+                            else if (is_probably_add || shader_name.Contains("Add") || shader_name.Contains("add"))
+                            {
+                                particle_mat.shader = this.presets["Particle Add"].shader;
+                            }
+                            else if (is_probably_blend || shader_name.Contains("Blend") || shader_name.Contains("blend"))
+                            {
+                                particle_mat.shader = this.presets["Particle Alpha Blend"].shader;
+                            }
+                            else if (is_probably_opaque || shader_name.Contains("Cutout") || shader_name.Contains("Diffuse"))
+                            {
+                                particle_mat.shader = this.presets["standard"].shader;
+                            }
+                            else
+                            {
+                                particle_mat.shader = this.presets["Particle Add"].shader; // catch-all for particles
+                            }
                         }
-                        if (guessing_renderqueue > 0)
+                    }
+                    else
+                    {
+                        this.logSave("Inspector failed to resolve the particle shader name from HS. Which is entirely normal -- however we are going to try guessing what it should map to.");
+                        particle_mat.shader = this.presets["Particle Add"].shader; // catch-all for particles
+                    }
+                    this.logSave("shader:" + particle_mat.shader.name);
+                    this.logSave("-- end of one material processing --");
+                }
+                else
+                {
+                    foreach (Material material in r.materials)
+                    {
+                        string shader_name = "";
+                        int guessing_renderqueue = -1;
+                        if ("".Equals(material.shader.name))
                         {
-                            material.renderQueue = guessing_renderqueue;
+                            this.logSave("item!");
+                            this.logSave("material:" + fileName + "|" + material.name);
+                            string inspector_key = fileName + "|" + material.name.Replace(" (Instance)", "");
+
+                            if (this.inspector.ContainsKey(inspector_key))
+                            {
+                                shader_name = this.inspector[inspector_key];
+                                if (shader_name.Length == 0)
+                                {
+                                    this.logSave("HoneyPotInspector.txt have record of this material, but failed to read its original shader name, likely the shader used by this prefab was not present in the assetbundle. ");
+                                }
+                            }
+                            else
+                            {
+                                this.logSave("HoneyPotInspector.txt have no record of this material. Resort to default (usually means you have to regenerate HoneyPotInspector.txt)");
+                            }
+
+                            if (shader_name.Length == 0)
+                            {
+                                this.logSave("Inspector failed to resolve the original shader name from HS. Testing a few shader keywords to salvage.");
+                                foreach (string text2 in material.shaderKeywords)
+                                {
+                                    this.logSave("shader keywords found:" + text2);
+                                    if (text2.Contains("ALPHAPRE") && !(text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH")))
+                                    {
+                                        this.logSave("Possible transparent glasses-like material.");
+                                        shader_name = "accessory/ca_megane_hs00|p_asc_glasses_11_00";
+                                        guessing_renderqueue = 2501;
+                                    }
+                                    else if (text2.Contains("TRANS") || text2.Contains("BLEND") || text2.Contains("Blend"))
+                                    {
+                                        this.logSave("Possible unspecified transparent material.");
+                                        shader_name = "PBRsp_alpha";
+                                    }
+                                    else if (text2.Contains("ALPHATEST") || text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH"))
+                                    {
+                                        this.logSave("Possible plant / tree / leaf / branch -like materials.");
+                                        shader_name = "_"; // I actually have no idea what is this. Fix later
+                                    }
+                                }
+                            }
+
+                            this.logSave("shader_name:" + shader_name);
+                            if (this.presets.ContainsKey(shader_name))
+                            {
+                                material.shader = this.presets[shader_name].shader;
+                            }
+                            else
+                            {
+                                if (shader_name.Contains("Distortion"))
+                                {
+                                    this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
+                                    material.shader = this.presets["Particle Add"].shader;
+                                }
+                                else
+                                {
+                                    this.logSave("The preset shaders weren't prepared for this specific HS shader. Likely it was a custom shader, or (less likely) we didn't explore PH shaders enough to find the substitute. Resort to default.");
+                                    material.shader = this.presets["standard"].shader;
+                                }
+                            }
+                            if (guessing_renderqueue > 0)
+                            {
+                                material.renderQueue = guessing_renderqueue;
+                            }
+                            this.logSave("shader:" + material.shader.name);
+                            this.logSave("-- end of one material processing --");
                         }
-                        this.logSave("shader:" + material.shader.name);
-                        this.logSave("-- end of one material processing --");
                     }
                 }
             }
