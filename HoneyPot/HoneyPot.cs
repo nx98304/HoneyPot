@@ -673,26 +673,38 @@ namespace ClassLibrary4
 						}
 						MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
 						materialCustoms.parameters = new MaterialCustoms.Parameter[this.mc.parameters.Length];
-						List<string> list = new List<string>();
+						List<string> list = new List<string>(); 
 						foreach (Renderer renderer in renderers_in_acceobj)
 						{
 							foreach (Material material in renderer.materials)
 							{
-								if (material.renderQueue <= 3000)
+                                string material_name = material.name.Replace(" (Instance)", "");
+                                string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
+                                if (material.renderQueue <= 3000)
 								{
-									list.Add(material.name.Replace(" (Instance)", ""));
+									list.Add(material_name);
 								}
 								if ("".Equals(material.shader.name) || doStep)
 								{
-									Shader shader;
-									if (material.renderQueue <= 3000)
-									{
-										shader = this.presets[this.presetKeys[this.SHADER_NORMAL_1]].shader;
-									}
-									else
-									{
-										shader = this.presets[this.presetKeys[this.SHADER_ACCS_TRANSPARENT]].shader;
-									}
+                                    this.logSave("Acce material: " + inspector_key);
+                                    Shader shader;
+                                    if (this.inspector.ContainsKey(inspector_key) && this.presets.ContainsKey(this.inspector[inspector_key]))
+                                    {
+                                        this.logSave("shader_name: " + this.inspector[inspector_key]);
+                                        shader = this.presets[this.inspector[inspector_key]].shader;
+                                        if (material.renderQueue >= 3000) material.renderQueue += 100;
+                                    }
+                                    else
+                                    {
+                                        if (material.renderQueue <= 3000)
+                                        {
+                                            shader = this.presets[this.presetKeys[this.SHADER_NORMAL_1]].shader;
+                                        }
+                                        else
+                                        {
+                                            shader = this.presets[this.presetKeys[this.SHADER_ACCS_TRANSPARENT]].shader;
+                                        }
+                                    }
 									material.shader = shader;
 								}
 							}
