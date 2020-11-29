@@ -2143,7 +2143,7 @@ namespace ClassLibrary4
 								itemLoadInfo.no = int.Parse(array[0]);
 								itemLoadInfo.group = this.toNewCategoly(int.Parse(array[1]));
 								itemLoadInfo.name = array[2];
-								itemLoadInfo.manifest = array[3];
+                                itemLoadInfo.manifest = ""; //array[3]; manifest doesn't seem to be really utilized, and we dump everything into abdata anyway. 
 								itemLoadInfo.bundlePath = array[4];
 								itemLoadInfo.fileName = array[5];
 								itemLoadInfo.childRoot = array[6];
