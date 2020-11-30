@@ -22,6 +22,9 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - For HS hair that has CustomRenderQueue (meaning: When inspecting the hair prefab with SB3Utility, the hair doesn't use SetRenderQueue Monobehavior, but it has seemingly correct CustomRenderQueue values set to each hair mesh's materials, then it will need an specialized version of HoneyPotInspector.exe to help HoneyPot prepare that info in-game. Specialized version here: https://mega.nz/file/oqZgjBaA#5KileCYsM06witMoHlIVZavz63uFH_GC2EJ1EJ3jylk , and regenerate the HoneyPotInspector.txt file )
 - If you want to use the experimental particle effect support, also download the HoneyPotInspector.exe above.
 - shader.txt was updated for experimental particle effect shader remapping: https://mega.nz/file/NiYwBT7A#L3JaVGA59F00o8kssdyxWrxQtx_yuPsobYADiK5ol1s
+- If you see items in Studio that doesn't even show the "Purple Error Shader", and yet the item seems to be in workspace:
+  - you will need this template file: https://mega.nz/file/5yJRhYqC#57mqMEF7_9y8pmFU1duNGHyL7JXBVfzHS2_y1lAooSs
+  - explanation: https://imgur.com/a/C7miWe7
 
 ## Possible Roadmap
 
