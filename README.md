@@ -26,13 +26,29 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
   - you will need this template file: https://mega.nz/file/5yJRhYqC#57mqMEF7_9y8pmFU1duNGHyL7JXBVfzHS2_y1lAooSs
   - explanation: https://imgur.com/a/C7miWe7
 
+### Known issues that you need some (easy) manual procedures to fix yourself
+- Some studio items only show up in the workspace menu. (see above)
+- Water surfaces in scene/map-like studio items looks solid. (remove it using SB3U, and put in standalone water items in studio)
+
+### Known issues in the current functionalities that might be fixed down the line
+- Some clothing / accessories interacts with the custom color in a weird way. (Not to be confused with colors you can't change to begin with)
+- Detection for some glass-like materials are still wrong. 
+- Clothing shaders that should've been almost 100% remapped still has small defects, like the bump map loses its effect.
+- Clothing and accessories should have a more unified shader remapping process. 
+- Discrepancies between HS and PH's asset loading process which result in assets seemingly broken (not just shader) in PH, but otherwise fine in HS. Like bone issues.
+- Hair's render queue issue can occur on any item that has a hair-like quality. E.g. Horse mane, thatched roof, etc.
+
+### Known issues that this mod probably will NEVER fix
+- Custom shader-heavy stuff. Like fancy particle effects, complex water effects, etc. 
+- Some clothing / accessories / items' shaders are not complex, and its material & texture settings might be reuseable after shader remapping, but the shader name cannot be automatically determined or unavailable - usually resulted from custom shader, or external shaders that's not embedded inside the asset bundle. In such case, even if the shader is not complex, there's no way to anticipate which remapping rule to use. 
+- Clothing / accessories or items that rely on other additional HS mods to work properly. 
+
 ## Possible Roadmap
 
 Now that we have made the decompiled source compile again and maintains all the previous fixes without creating new issues, we can gradually aim for future updates: 
 
 - Find a way to just disable every surface water / ground water HoneyPot detects. There cannot be any sensible way to remap water shaders.
 - AttachBoneWeight.SetupRenderer() has a very questionable behavior that needs to be patched.
-- Determine what is the limitation of guessing and remapping Studio Item's shaders. 
 - Try to figure out a better way to anticipating HS clothing's custom color material properties. Right now it will yell at you for mismatching the material properties, and some colors will act weirdly if you try to change them, and a lot of items & clothing sets will have custom color UI, but nothing changes when you try to change the color. (usually mean it wasn't supposed to be changed to begin with, even though HoneyPot forces color-changability to all HS clothing.) 
 - Further code clean up to make variables in the code humanly readable, and start to annotate the code with comments
 - What's up with the Studio Item category changes? I cannot determine the original reason of doing it. 
