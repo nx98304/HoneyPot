@@ -37,6 +37,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - Clothing and accessories should have a more unified shader remapping process. 
 - Discrepancies between HS and PH's asset loading process which result in assets seemingly broken (not just shader) in PH, but otherwise fine in HS. Like bone issues.
 - Hair's render queue issue can occur on any item that has a hair-like quality. E.g. Horse mane, thatched roof, etc.
+- Nipple is always disabled with HS clothing for some reason. 
 
 ### Known issues that this mod probably will NEVER fix
 - Custom shader-heavy stuff. Like fancy particle effects, complex water effects, etc. 
