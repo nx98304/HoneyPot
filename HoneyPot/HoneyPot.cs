@@ -259,7 +259,7 @@ namespace ClassLibrary4
                 {
                     int id = h.customParam.hair.parts[i].ID;
                     HairData hair_Female = CustomDataManager.GetHair_Female((HAIR_TYPE)i, id);
-                    this.setHairShaderObj(array.GetValue(i), hair_Female.assetbundleName);
+                    this.setHairShaderObj(array.GetValue(i), hair_Female.assetbundleName.Replace("\\", "/"));
                 }
 			}
 			h.hairs.ChangeColor(h.customParam.hair);
@@ -322,7 +322,7 @@ namespace ClassLibrary4
 		{
 			if (HoneyPot.idFileDict.ContainsKey(id))
 			{
-				return HoneyPot.idFileDict[id];
+				return HoneyPot.idFileDict[id].Replace("\\", "/");
 			}
 			return "";
 		}
@@ -423,7 +423,7 @@ namespace ClassLibrary4
                 if (Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(item.itemInfo.no))
 				{
 					Info.ItemLoadInfo itemLoadInfo = Singleton<Info>.Instance.dicItemLoadInfo[item.itemInfo.no];
-                    this.setItemShader(item.objectItem, itemLoadInfo.bundlePath);
+                    this.setItemShader(item.objectItem, itemLoadInfo.bundlePath.Replace("\\", "/"));
 					if (item.isColor2 || item.isChangeColor)
 					{
 						item.UpdateColor();
@@ -566,11 +566,34 @@ namespace ClassLibrary4
                                 foreach (string text2 in material.shaderKeywords)
                                 {
                                     this.logSave("shader keywords found:" + text2);
-                                    if (text2.Contains("ALPHAPRE") && !(text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH")))
+                                    if ((text2.Contains("ALPHAPRE") || material.name.Contains("glass") || material.name.Contains("Glass") || material.name.Contains("GLASS")) && 
+                                       !(text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH"))) //super last-ditch tests for glass-like material
                                     {
                                         this.logSave("Possible transparent glasses-like material.");
                                         shader_name = "accessory/ca_megane_hs00|p_asc_glasses_11_00";
                                         guessing_renderqueue = 2501;
+                                        // more hacking for HS glass shaders that I know of. 
+                                        if (material.HasProperty("_Glossiness"))
+                                        {
+                                            float glossiness = material.GetFloat("_Glossiness");
+                                            glossiness += (1.0f-glossiness) / 2;
+                                            material.SetFloat("_Glossiness", glossiness);
+                                        }
+                                        if (material.HasProperty("_DstBlend"))
+                                        {
+                                            float dstblend = material.GetFloat("_DstBlend");
+                                            if( dstblend < 1.0f ) material.SetFloat("_DstBlend", 1.0f);
+                                        }
+                                        if (material.HasProperty("_ZWrite"))
+                                        {
+                                            float zwrite = material.GetFloat("_ZWrite");
+                                            if (zwrite > 0.0f) material.SetFloat("_ZWrite", 0.0f);
+                                        }
+                                        Color c = material.color;
+                                        c.r *= c.a;
+                                        c.g *= c.a;
+                                        c.b *= c.a;
+                                        material.color = c;
                                     }
                                     else if (text2.Contains("TRANS") || text2.Contains("BLEND") || text2.Contains("Blend"))
                                     {
