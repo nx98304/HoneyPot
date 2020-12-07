@@ -557,7 +557,7 @@ namespace ClassLibrary4
                             }
                             else
                             {
-                                this.logSave("HoneyPotInspector.txt have no record of this material. Resort to default (usually means you have to regenerate HoneyPotInspector.txt)");
+                                this.logSave(inspector_key + " not found in HoneyPotInspector.txt. Resort to default (usually means you have to regenerate HoneyPotInspector.txt)");
                             }
 
                             if (shader_name.Length == 0)
@@ -601,6 +601,15 @@ namespace ClassLibrary4
                                 {
                                     this.logSave("The preset shaders weren't prepared for this specific HS shader. Likely it was a custom shader, or (less likely) we didn't explore PH shaders enough to find the substitute. Resort to default.");
                                     material.shader = this.presets["standard"].shader;
+                                    if( material.HasProperty("_Glossiness") )
+                                    {
+                                        float glossiness = material.GetFloat("_Glossiness");
+                                        if( glossiness > 0.2f )
+                                        {   // It does seem like the standard shader of PH is somewhat too glossy
+                                            // when it is used as a fallback shader.
+                                            material.SetFloat("_Glossiness", 0.2f);
+                                        } 
+                                    }
                                 }
                             }
                             if (guessing_renderqueue > 0)
