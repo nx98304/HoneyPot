@@ -29,6 +29,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 ### Known issues that you need some (easy) manual procedures to fix yourself
 - Some studio items only show up in the workspace menu. (see above)
 - Water surfaces in scene/map-like studio items looks solid. (remove it using SB3U, and put in standalone water items in studio)
+- Always make sure the filepaths and filenames in your HS mod's list file (or studio resolver) *EXACTLY* match the uppercase / lowercase of your actual filepaths on disk. However, always use slashes (/) instead of backslashes (\) in the path strings.
 
 ### Known issues in the current functionalities that might be fixed down the line
 - Some clothing / accessories interacts with the custom color in a weird way. (Not to be confused with colors you can't change to begin with)
