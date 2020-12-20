@@ -23,7 +23,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - If you want to use the experimental particle effect support, also download the HoneyPotInspector.exe above.
 - shader.txt was updated for experimental particle effect shader remapping: https://mega.nz/file/NiYwBT7A#L3JaVGA59F00o8kssdyxWrxQtx_yuPsobYADiK5ol1s
 - If you see items in Studio that doesn't even show the "Purple Error Shader", and yet the item seems to be in workspace:
-  - you will need this template file: https://mega.nz/file/5yJRhYqC#57mqMEF7_9y8pmFU1duNGHyL7JXBVfzHS2_y1lAooSs
+  - you will need this template file: https://mega.nz/file/ItdFVC6b#5Qko4kzkMmL6nVSDvXYx2MzhXYDhdnqKcOLest1kUw0
   - explanation: https://imgur.com/a/C7miWe7
 
 ### Known issues that you need some (easy) manual procedures to fix yourself
