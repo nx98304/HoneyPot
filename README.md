@@ -42,6 +42,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - Nipple is always disabled with HS clothing for some reason. 
 - Is fur shader remapping possible? 
 - PH standard shader's glossiness issue. Tune it down across the board?
+- Some male top clothing's purpose is to replace the whole body. Possible to distinguish?
 
 ### Known issues that this mod probably will NEVER fix
 - Custom shader-heavy stuff. Like fancy particle effects, complex water effects, etc. 
