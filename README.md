@@ -34,6 +34,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 ### Known issues in the current functionalities that might be fixed down the line
 - Some clothing / accessories interacts with the custom color in a weird way. (Not to be confused with colors you can't change to begin with)
 - Detection for some glass-like materials are still wrong. 
+- Inspector.exe somehow failed to determine some of the shader's name when they can be read in SB3U. (see RM50's post) 
 - Clothing shaders that should've been almost 100% remapped still has small defects, like the bump map loses its effect.
 - Clothing and accessories should have a more unified shader remapping process. 
 - Discrepancies between HS and PH's asset loading process which result in assets seemingly broken (not just shader) in PH, but otherwise fine in HS. Like bone issues.
