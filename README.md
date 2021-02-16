@@ -12,10 +12,11 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 
 ## Current Status
 
-### 1.4.2
-- Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases).
-- Fixed an issue where when in chara maker, you won't see the color options right after choosing a piece of HS clothing. 
-- Added basic support for HS particle effects for Studio. If the particle effects are simple, the current shader remapping *may* work. If the effects are very complicated, comprising of custom Monobehaviors, distortion effects, material projectors and more, this will 99.9% *NOT* work. 
+### 1.4.3
+- Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases). (updating)
+- Inspector.exe can now identify shaders at the same capacity as SB3U. If it cannot identify the name, it will record PathID instead. This makes it possible to further expand shader.txt for arbitrary remapping targets. 
+- Making sure hair, wear, acc and studio item all go through the same RQ assignment process. Not only "hair-like" things such as horse mane, thatched roof etc, HoneyPot now respects the CRQ value and SRQ MB value (higher priority) of all imported items. So if there are still render queue issues, we can be almost certain that it's the mod itself has the wrong settings, and should be easily adjustable by editing the HS mod with SB3U directly. 
+- (male hair next)
 
 ### Important Accompanying Files
 - If you downloaded the latest package from the release page, all the following files are already there.
@@ -34,12 +35,9 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 ### Known issues in the current functionalities that might be fixed down the line
 - Some clothing / accessories interacts with the custom color in a weird way. (Not to be confused with colors you can't change to begin with)
 - Detection for some glass-like materials are still wrong. 
-- Inspector.exe somehow failed to determine some of the shader's name when they can be read in SB3U. (see RM50's post) 
 - Clothing shaders that should've been almost 100% remapped still has small defects, like the bump map loses its effect.
 - Clothing and accessories should have a more unified shader remapping process. 
 - Discrepancies between HS and PH's asset loading process which result in assets seemingly broken (not just shader) in PH, but otherwise fine in HS. Like bone issues.
-- Hair's render queue issue can occur on any item that has a hair-like quality. E.g. Horse mane, thatched roof, etc.
-- Hair's render queue issue will occur when the mod is being assigned as an accessory. 
 - Nipple is always disabled with HS clothing for some reason. 
 - Is fur shader remapping possible? 
 - PH standard shader's glossiness issue. Tune it down across the board?
@@ -64,6 +62,10 @@ Now that we have made the decompiled source compile again and maintains all the 
 - Welcome further comments about the project. 
 
 ## Past updates
+
+### 1.4.2
+- Fixed an issue where when in chara maker, you won't see the color options right after choosing a piece of HS clothing. 
+- Added basic support for HS particle effects for Studio. If the particle effects are simple, the current shader remapping *may* work. If the effects are very complicated, comprising of custom Monobehaviors, distortion effects, material projectors and more, this will 99.9% *NOT* work. 
 
 ### 1.4.1.3
 - Making most trees/leaves and glasses-like materials work. The materials has to be basic -- any custom materials that are not in vanilla HS build will probably find no substitution in PH. 
