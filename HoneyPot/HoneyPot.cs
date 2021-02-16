@@ -338,7 +338,7 @@ namespace ClassLibrary4
 					gameObject.AddComponent<Destroyer>();
 				}
 				Renderer[] componentsInChildren = gameObject.GetComponentsInChildren<Renderer>(true);
-				SetRenderQueue[] componentsInChildren2 = gameObject.GetComponentsInChildren<SetRenderQueue>(true);
+				SetRenderQueue[] setRQ_MBs = gameObject.GetComponentsInChildren<SetRenderQueue>(true);
 				for (int i = 0; i < componentsInChildren.Length; i++)
 				{
 					foreach (Material material in componentsInChildren[i].materials)
@@ -359,21 +359,10 @@ namespace ClassLibrary4
 								material.shader = this.orgShader;
 							}
 							material.shader = this.orgShader;
-							material.renderQueue += 100;
-							string key = (assetBundleName + "|" + material.name).Replace(" (Instance)", "");
-							if (HoneyPot.material_rq.ContainsKey(key))
-							{
-								material.renderQueue = HoneyPot.material_rq[key];
-							}
-							if (i < componentsInChildren2.Length)
-							{
-								int[] array = componentsInChildren2[i].Get();
-								if (array.Length != 0)
-								{
-									material.renderQueue = array[0];
-								}
-							}
-						}
+                            //material.renderQueue += 100;
+                            string key = (assetBundleName + "|" + material.name).Replace(" (Instance)", "");
+                            material.renderQueue = getRenderQueue(key, i, setRQ_MBs);
+                        }
 					}
 				}
 			}
@@ -441,13 +430,16 @@ namespace ClassLibrary4
             new List<string>();
             Renderer[] renderers_in_children = obj.GetComponentsInChildren<Renderer>(true);
             Projector[] projectors_in_childern = obj.GetComponentsInChildren<Projector>(true);
-            foreach(Projector p in projectors_in_childern)
+            SetRenderQueue[] setRQ_MBs = obj.GetComponentsInChildren<SetRenderQueue>(true);
+            foreach (Projector p in projectors_in_childern)
             {
                 // test
                 p.material.shader = this.presets["Particle Add"].shader;
             }
+            int renderer_idx = -1;
             foreach(Renderer r in renderers_in_children)
             {
+                renderer_idx++;
                 Type renderertype = r.GetType();
                 if (renderertype == typeof(ParticleSystemRenderer) ||
                     renderertype == typeof(LineRenderer) ||
@@ -537,15 +529,16 @@ namespace ClassLibrary4
                 }
                 else
                 {
+                    int i = 0;
                     foreach (Material material in r.materials)
                     {
                         string shader_name = "";
-                        int guessing_renderqueue = -1;
+                        string inspector_key = fileName + "|" + material.name.Replace(" (Instance)", "");
+                        int guessing_renderqueue = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
                         if ("".Equals(material.shader.name))
                         {
                             this.logSave("item!");
-                            this.logSave("material:" + fileName + "|" + material.name);
-                            string inspector_key = fileName + "|" + material.name.Replace(" (Instance)", "");
+                            this.logSave("material:" + inspector_key);
 
                             if (this.inspector.ContainsKey(inspector_key))
                             {
@@ -571,7 +564,6 @@ namespace ClassLibrary4
                                     {
                                         this.logSave("Possible transparent glasses-like material.");
                                         shader_name = "accessory/ca_megane_hs00|p_asc_glasses_11_00";
-                                        guessing_renderqueue = 2501;
                                         // more hacking for HS glass shaders that I know of. 
                                         if (material.HasProperty("_Glossiness"))
                                         {
@@ -594,16 +586,23 @@ namespace ClassLibrary4
                                         c.g *= c.a;
                                         c.b *= c.a;
                                         material.color = c;
+
+                                        // guessing any glass like item should have a very high render queue;
+                                        // in this case anything you can get from getRenderQueue() is probably wrong and not suitable.
+                                        guessing_renderqueue = 4001; 
                                     }
                                     else if (text2.Contains("TRANS") || text2.Contains("BLEND") || text2.Contains("Blend"))
                                     {
                                         this.logSave("Possible unspecified transparent material.");
                                         shader_name = "PBRsp_alpha";
+                                        // another guess, but make the number different so it's easier to tell.
+                                        guessing_renderqueue = 3123;
                                     }
                                     else if (text2.Contains("ALPHATEST") || text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH"))
                                     {
                                         this.logSave("Possible plant / tree / leaf / branch -like materials.");
                                         shader_name = "_"; // I actually have no idea what is this. Fix later
+                                        // in this case, you can probably rely on getRenderQueue() results.
                                     }
                                 }
                             }
@@ -635,16 +634,38 @@ namespace ClassLibrary4
                                     }
                                 }
                             }
-                            if (guessing_renderqueue > 0)
-                            {
-                                material.renderQueue = guessing_renderqueue;
-                            }
-                            this.logSave("shader:" + material.shader.name);
+                            //if (guessing_renderqueue > 0)
+                            //{
+                            //    material.renderQueue = guessing_renderqueue;
+                            //}
+                            material.renderQueue = guessing_renderqueue;
+                            this.logSave("shader:" + material.shader.name + ", final RQ = " + material.renderQueue);
                             this.logSave("-- end of one material processing --");
                         }
                     }
                 }
             }
+        }
+
+        //Generalized Render Queue retrival: SRQ MB will have the last say if it is present, 
+        //                                   otherwise use the CustomRenderQueue value. 
+        private int getRenderQueue(string inspector_key, int renderer_idx, SetRenderQueue[] setRQ_MBs)
+        {
+            int result = 2500; //is this default value good?
+            if (HoneyPot.material_rq.ContainsKey(inspector_key))
+            {
+                result = HoneyPot.material_rq[inspector_key];
+            }
+            if (renderer_idx < setRQ_MBs.Length)
+            {
+                int[] array = setRQ_MBs[renderer_idx].Get();
+                if (array.Length != 0)
+                {
+                    result = array[0];
+                }
+            }
+            //this.logSave("set RQ: " + inspector_key + " = " + result);
+            return result;
         }
 
         // Token: 0x06000035 RID: 53 RVA: 0x000037CC File Offset: 0x000019CC
@@ -699,20 +720,23 @@ namespace ClassLibrary4
 					{
 						GameObject gameObject = (GameObject)field.GetValue(obj);
 						Renderer[] renderers_in_acceobj = gameObject.GetComponentsInChildren<Renderer>(true);
-						if (gameObject.GetComponent<Destroyer>() == null)
+                        SetRenderQueue[] setRQ_MBs = gameObject.GetComponentsInChildren<SetRenderQueue>(true);
+                        if (gameObject.GetComponent<Destroyer>() == null)
 						{
 							gameObject.AddComponent<Destroyer>();
 						}
 						MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
 						materialCustoms.parameters = new MaterialCustoms.Parameter[this.mc.parameters.Length];
-						List<string> list = new List<string>(); 
-						foreach (Renderer renderer in renderers_in_acceobj)
+						List<string> list = new List<string>();
+                        int renderer_idx = -1;
+                        foreach (Renderer renderer in renderers_in_acceobj)
 						{
+                            renderer_idx++;
 							foreach (Material material in renderer.materials)
 							{
                                 string material_name = material.name.Replace(" (Instance)", "");
                                 string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
-                                if (material.renderQueue <= 3000)
+                                if (material.renderQueue <= 2500)
 								{
 									list.Add(material_name);
 								}
@@ -724,11 +748,11 @@ namespace ClassLibrary4
                                     {
                                         this.logSave("shader_name: " + this.inspector[inspector_key]);
                                         shader = this.presets[this.inspector[inspector_key]].shader;
-                                        if (material.renderQueue >= 3000) material.renderQueue += 100;
+                                        //if (material.renderQueue >= 2500) material.renderQueue += 100;
                                     }
                                     else
                                     {
-                                        if (material.renderQueue <= 3000)
+                                        if (material.renderQueue <= 2500)
                                         {
                                             shader = this.presets[this.presetKeys[this.SHADER_NORMAL_1]].shader;
                                         }
@@ -738,8 +762,11 @@ namespace ClassLibrary4
                                         }
                                     }
 									material.shader = shader;
-								}
-							}
+                                    material.renderQueue = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
+                                    //important: RQ assignment has to go after shader assignment. 
+                                    //           fucking implicit setter changes stuff... 
+                                }                               
+                            }                            
 						}
 						int num2 = 0;
 						foreach (MaterialCustoms.Parameter copy in this.mc.parameters)
@@ -752,7 +779,7 @@ namespace ClassLibrary4
 						{
 							accessoryData
 						});
-					}
+                    }
 					catch (Exception ex)
 					{
 						this.logSave(ex.ToString());
@@ -793,6 +820,7 @@ namespace ClassLibrary4
                 bool is_a_HS_cloth_parts_that_remmapped_shader = false;
                 GameObject gameObject = wearobj.obj;
                 Renderer[] renderers_in_wearobj = gameObject.GetComponentsInChildren<Renderer>(true);
+                SetRenderQueue[] setRQ_MBs = gameObject.GetComponentsInChildren<SetRenderQueue>(true);
                 if (gameObject.GetComponent<Destroyer>() == null)
                 {
                     gameObject.AddComponent<Destroyer>();
@@ -800,16 +828,20 @@ namespace ClassLibrary4
                 MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
                 materialCustoms.parameters = new MaterialCustoms.Parameter[this.mc.parameters.Length];
                 List<string> list = new List<string>();
+                int renderer_idx = -1;
                 foreach (Renderer renderer in renderers_in_wearobj)
                 {
+                    renderer_idx++;
                     foreach (Material material in renderer.materials)
                     {
+                        string material_name = material.name.Replace(" (Instance)", "");
+                        string inspector_key = wearData.assetbundleName.Replace("\\", "/") + "|" + material_name;
                         if (((!renderer.name.Contains("_body_") && renderer.tag.Contains("ObjColor")) || forceColorable) &&
                             !material.name.Contains("cf_m_body_CustomMaterial") &&
                             !material.name.Contains("cm_m_body_CustomMaterial") &&
                             "".Equals(material.shader.name))
                         {
-                            list.Add(material.name.Replace(" (Instance)", ""));
+                            list.Add(material_name);
                         }
                         if ("".Equals(material.shader.name) &&
                             (!renderer.name.Contains("_body_") &&
@@ -819,6 +851,7 @@ namespace ClassLibrary4
                         {
                             Shader shader = this.getShader(wearID, material.name);
                             material.shader = shader;
+                            material.renderQueue = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
                             is_a_HS_cloth_parts_that_remmapped_shader = true;
                         }
                     }
