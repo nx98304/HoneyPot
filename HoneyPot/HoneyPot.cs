@@ -234,6 +234,14 @@ namespace ClassLibrary4
 					this.setHairShaders(hairs, female);
 				}
 			}
+            foreach (Male male in this.currentMaleList)
+            {
+                if (male.isActiveAndEnabled)
+                {
+                    Hairs hairs = male.hairs;
+                    this.setHairShaders(hairs, male);
+                }
+            }
 		}
 
 		// Token: 0x0600002A RID: 42 RVA: 0x00002C68 File Offset: 0x00000E68
@@ -258,8 +266,10 @@ namespace ClassLibrary4
                 if (array.GetValue(i) != null)
                 {
                     int id = h.customParam.hair.parts[i].ID;
-                    HairData hair_Female = CustomDataManager.GetHair_Female((HAIR_TYPE)i, id);
-                    this.setHairShaderObj(array.GetValue(i), hair_Female.assetbundleName.Replace("\\", "/"));
+                    HairData hair_data = h.sex == SEX.FEMALE ?
+                        CustomDataManager.GetHair_Female((HAIR_TYPE)i, id) :
+                        CustomDataManager.GetHair_Male(id);
+                    this.setHairShaderObj(array.GetValue(i), hair_data.assetbundleName.Replace("\\", "/"));
                 }
 			}
 			h.hairs.ChangeColor(h.customParam.hair);
@@ -828,6 +838,7 @@ namespace ClassLibrary4
                 MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
                 materialCustoms.parameters = new MaterialCustoms.Parameter[this.mc.parameters.Length];
                 List<string> list = new List<string>();
+
                 int renderer_idx = -1;
                 foreach (Renderer renderer in renderers_in_wearobj)
                 {
@@ -836,7 +847,8 @@ namespace ClassLibrary4
                     {
                         string material_name = material.name.Replace(" (Instance)", "");
                         string inspector_key = wearData.assetbundleName.Replace("\\", "/") + "|" + material_name;
-                        if (((!renderer.name.Contains("_body_") && renderer.tag.Contains("ObjColor")) || forceColorable) &&
+                        if (((//!renderer.name.Contains("_body_") && 
+                             renderer.tag.Contains("ObjColor")) || forceColorable) &&
                             !material.name.Contains("cf_m_body_CustomMaterial") &&
                             !material.name.Contains("cm_m_body_CustomMaterial") &&
                             "".Equals(material.shader.name))
@@ -844,7 +856,7 @@ namespace ClassLibrary4
                             list.Add(material_name);
                         }
                         if ("".Equals(material.shader.name) &&
-                            (!renderer.name.Contains("_body_") &&
+                            (//!renderer.name.Contains("_body_") &&
                             !material.name.Contains("cf_m_body_CustomMaterial") &&
                             !material.name.Contains("cm_m_body_CustomMaterial") &&
                             !renderer.tag.Contains("New tag (8)") || !isTop))
@@ -855,7 +867,7 @@ namespace ClassLibrary4
                             is_a_HS_cloth_parts_that_remmapped_shader = true;
                         }
                     }
-                            
+
                     GameObject parent_obj = renderer.transform.parent.gameObject;
                     if (type == WEAR_TYPE.SHORTS && (parent_obj.name.Contains("bot_b") || parent_obj.name.Contains("top_a") || parent_obj.name.Contains("top_b")))
                     {
@@ -865,8 +877,8 @@ namespace ClassLibrary4
                     {
                         parent_obj.SetActive(false);
                     }
-                            
                 }
+
                 if (is_a_HS_cloth_parts_that_remmapped_shader)
                 {
                     int num2 = 0;
@@ -1011,7 +1023,8 @@ namespace ClassLibrary4
 			Dictionary<int, PrefabData> dictionary16 = null;
 			Dictionary<int, WearData> dictionary17 = null;
 			Dictionary<int, WearData> dictionary18 = null;
-			try
+            Dictionary<int, BackHairData> male_hair_dict = null;
+            try
 			{
 				AssetBundle assetBundle = AssetBundle.LoadFromFile(assetBundleDir + "/" + fileName);
 				foreach (TextAsset textAsset in assetBundle.LoadAllAssets<TextAsset>())
@@ -1076,6 +1089,10 @@ namespace ClassLibrary4
 					{
 						dictionary2 = CustomDataManager.Hair_s;
 					}
+                    else if (textAsset.name.Contains("cm_f_hair"))
+                    {
+                        male_hair_dict = CustomDataManager.Hair_Male;
+                    }
 					else if (textAsset.name.Contains("cf_f_socks"))
 					{
 						dictionary4 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SOCKS);
@@ -1937,7 +1954,52 @@ namespace ClassLibrary4
 							}
 						}
 					}
-					dictionary = null;
+                    if (male_hair_dict != null)
+                    {
+                        string[] list = textAsset.text.Replace("\r\n", "\n").Split(new char[]
+                        {
+                            '\n'
+                        });
+                        for (int i = 0; i < list.Length; i++)
+                        {
+                            string[] celldata = list[i].Split(new char[]
+                            {
+                                '\t'
+                            });
+                            if (celldata.Length > 3)
+                            {
+                                try
+                                {
+                                    int id = int.Parse(celldata[0]) % 1000;
+                                    if (celldata[0].Length > 6)
+                                    {
+                                        id = int.Parse(celldata[0]) % 1000000 + int.Parse(celldata[0].Substring(0, 3)) * 1000;
+                                    }
+                                    else
+                                    {
+                                        id += 839000;
+                                    }
+                                    //Male Hair is ALWAYS set?
+                                    BackHairData backHairData = new BackHairData(id, celldata[2], celldata[4], celldata[5], male_hair_dict.Count, false, "セミロング", true);
+                                    backHairData.id = id;
+                                    if (!male_hair_dict.ContainsKey(backHairData.id))
+                                    {
+                                        male_hair_dict.Add(backHairData.id, backHairData);
+                                        HoneyPot.idFileDict[id] = celldata[4];
+                                    }
+                                    else
+                                    {
+                                        this.addConflict(id, male_hair_dict[id].assetbundleName + "/" + male_hair_dict[id].prefab, backHairData.assetbundleName + "/" + backHairData.prefab, male_hair_dict[id].name, backHairData.name);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    this.logSave(ex.ToString());
+                                }
+                            }
+                        }
+                    }
+                    dictionary = null;
 					dictionary2 = null;
 					dictionary3 = null;
 					dictionary4 = null;
@@ -1955,7 +2017,9 @@ namespace ClassLibrary4
 					dictionary16 = null;
 					dictionary17 = null;
 					dictionary18 = null;
-				}
+                    male_hair_dict = null;
+
+                }
 				assetBundle.Unload(true);
 			}
 			catch (Exception ex19)
@@ -2060,6 +2124,7 @@ namespace ClassLibrary4
 			{
 				HoneyPot.doUpdate = false;
 				this.currentFemaleList = (Resources.FindObjectsOfTypeAll(typeof(Female)) as Female[]);
+                this.currentMaleList = (Resources.FindObjectsOfTypeAll(typeof(Male)) as Male[]);
                 this.wearCustomEdit    = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
                 this.setAccsShaders();
 				this.setHairShaders();
@@ -2486,5 +2551,6 @@ namespace ClassLibrary4
 
 		// Token: 0x04000027 RID: 39
 		private Female[] currentFemaleList = null;
+        private Male[] currentMaleList = null;
 	}
 }
