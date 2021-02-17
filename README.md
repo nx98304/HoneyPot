@@ -16,37 +16,33 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases). (updating)
 - Inspector.exe can now identify shaders at the same capacity as SB3U. If it cannot identify the name, it will record PathID instead. This makes it possible to further expand shader.txt for arbitrary remapping targets. 
 - Making sure hair, wear, acc and studio item all go through the same RQ assignment process. Not only "hair-like" things such as horse mane, thatched roof etc, HoneyPot now respects the CRQ value and SRQ MB value (higher priority) of all imported items. So if there are still render queue issues, we can be almost certain that it's the mod itself has the wrong settings, and should be easily adjustable by editing the HS mod with SB3U directly. 
-- (male hair next)
+- HS Male hair support. 
+- HS Male top cloth which subsitiute the whole body no longer stays purple. 
 
 ### Important Accompanying Files
 - If you downloaded the latest package from the release page, all the following files are already there.
-- For HS hair that has CustomRenderQueue (meaning: When inspecting the hair prefab with SB3Utility, the hair doesn't use SetRenderQueue Monobehavior, but it has seemingly correct CustomRenderQueue values set to each hair mesh's materials, then it will need an specialized version of HoneyPotInspector.exe to help HoneyPot prepare that info in-game. Specialized version here: https://mega.nz/file/oqZgjBaA#5KileCYsM06witMoHlIVZavz63uFH_GC2EJ1EJ3jylk , and regenerate the HoneyPotInspector.txt file )
-- If you want to use the experimental particle effect support, also download the HoneyPotInspector.exe above.
-- shader.txt was updated for experimental particle effect shader remapping: https://mega.nz/file/NiYwBT7A#L3JaVGA59F00o8kssdyxWrxQtx_yuPsobYADiK5ol1s
-- If you see items in Studio that doesn't even show the "Purple Error Shader", and yet the item seems to be in workspace:
-  - you will need this template file: https://mega.nz/file/ItdFVC6b#5Qko4kzkMmL6nVSDvXYx2MzhXYDhdnqKcOLest1kUw0
-  - explanation: https://imgur.com/a/C7miWe7
+- HoneyPotInspector.exe to generate HoneyPotInspector.txt. Without this pre-processed file, HoneyPot won't work properly. Do remember delete the txt and regenerate it whenever you installed new HS mods to PH. (Unless you know what you are doing and wants to add records to the txt manually to avoid spending up to a couple minutes generating the txt.)
+- shader.txt to do the shader remapping. You can try to add new shader targets here. (The Material Editor mod makes it a lot easier to find suitable remap targets). If you don't know what this means, then pay no attention to this particular part. Will elaborate more on this if I have time in the future. 
+- If you see items in Studio or Chara Maker that doesn't even show the "Purple Error Shader", and yet the item seems to be on the itme list, look into the howto_import_type_definition folder. 
 
 ### Known issues that you need some (easy) manual procedures to fix yourself
-- Some studio items only show up in the workspace menu. (see above)
+- Some items only show up in the workspace menu or on the chara maker item list, but doesn't actually show up in 3D scene. (see above)
 - Water surfaces in scene/map-like studio items looks solid. (remove it using SB3U, and put in standalone water items in studio)
-- Always make sure the filepaths and filenames in your HS mod's list file (or studio resolver) *EXACTLY* match the uppercase / lowercase of your actual filepaths on disk. However, always use slashes (/) instead of backslashes (\) in the path strings.
+- Always make sure the filepaths and filenames in your HS mod's list file (or studio resolver) *EXACTLY* match the uppercase / lowercase of your actual filepaths on disk. However, always use slashes (/) instead of backslashes (\\) in the path strings.
+- Some clothing has wrong Render Queue settings. If a clothing doesn't actually feature half-transparency (not just net-like or with holes that can see through), you would never want it to have RQ values higher than 2500 (meaning transparent to Unity). It will affect the cloth's ability to receive shadows from other objects. Use SB3U to fix the asset permanently or just Material Editor to save the temporary changes to your character/clothing cards.  
 
 ### Known issues in the current functionalities that might be fixed down the line
 - Some clothing / accessories interacts with the custom color in a weird way. (Not to be confused with colors you can't change to begin with)
 - Detection for some glass-like materials are still wrong. 
-- Clothing shaders that should've been almost 100% remapped still has small defects, like the bump map loses its effect.
 - Clothing and accessories should have a more unified shader remapping process. 
-- Discrepancies between HS and PH's asset loading process which result in assets seemingly broken (not just shader) in PH, but otherwise fine in HS. Like bone issues.
-- Nipple is always disabled with HS clothing for some reason. 
+- Discrepancies between HS and PH's asset loading process which result in assets seemingly broken (not just shader) in PH, but otherwise fine in HS. Like bone issues. 
+- Nipple is always disabled with *some* HS clothing. 
 - Is fur shader remapping possible? 
 - PH standard shader's glossiness issue. Tune it down across the board?
-- Some male top clothing's purpose is to replace the whole body. Possible to distinguish?
 
 ### Known issues that this mod probably will NEVER fix
 - Custom shader-heavy stuff. Like fancy particle effects, complex water effects, etc. 
-- Some clothing / accessories / items' shaders are not complex, and its material & texture settings might be reuseable after shader remapping, but the shader name cannot be automatically determined or unavailable - usually resulted from custom shader, or external shaders that's not embedded inside the asset bundle. In such case, even if the shader is not complex, there's no way to anticipate which remapping rule to use. 
-- Clothing / accessories or items that rely on other additional HS mods to work properly. 
+- Clothing / accessories or items that rely on other additional HS mods to work properly. Such as BonesFramework. 
 
 ## Possible Roadmap
 
