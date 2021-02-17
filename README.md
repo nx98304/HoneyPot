@@ -49,7 +49,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 Now that we have made the decompiled source compile again and maintains all the previous fixes without creating new issues, we can gradually aim for future updates: 
 
 - Find a way to just disable every surface water / ground water HoneyPot detects. There cannot be any sensible way to remap water shaders.
-- AttachBoneWeight.SetupRenderer() has a very questionable behavior that needs to be patched.
+- AttachBoneWeight.SetupRenderer() has a very questionable behavior that needs to be patched: https://discord.com/channels/446784086539763712/446787319228268554/783279364783341591
 - Try to figure out a better way to anticipating HS clothing's custom color material properties. Right now it will yell at you for mismatching the material properties, and some colors will act weirdly if you try to change them, and a lot of items & clothing sets will have custom color UI, but nothing changes when you try to change the color. (usually mean it wasn't supposed to be changed to begin with, even though HoneyPot forces color-changability to all HS clothing.) 
 - Further code clean up to make variables in the code humanly readable, and start to annotate the code with comments
 - What's up with the Studio Item category changes? I cannot determine the original reason of doing it. 
