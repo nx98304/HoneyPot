@@ -179,11 +179,11 @@ namespace ClassLibrary4
 			list.Add(str5);
 			if (!string.IsNullOrEmpty(str6))
 			{
-				this.SHADER_NORMAL_MAX = 5;
+				//this.SHADER_NORMAL_MAX = 5;
 				list.Add(str6);
 				if (!string.IsNullOrEmpty(str7))
 				{
-					this.SHADER_NORMAL_MAX = 6;
+				//	this.SHADER_NORMAL_MAX = 6;
 					list.Add(str7);
 				}
 			}
@@ -276,56 +276,56 @@ namespace ClassLibrary4
 		}
 
 		// Token: 0x0600002C RID: 44 RVA: 0x00002D54 File Offset: 0x00000F54
-		public Shader getShader(int id, string materialName)
-		{
-			string fileName = this.getFileName(id);
-			return this.getShader(fileName, materialName.Replace(" (Instance)", ""), false, false);
-		}
+		//public Shader getShader(int id, string materialName)
+		//{
+		//	string fileName = this.getFileName(id);
+		//	return this.getShader(fileName, materialName.Replace(" (Instance)", ""), false, false);
+		//}
 
 		// Token: 0x0600002D RID: 45 RVA: 0x00002D84 File Offset: 0x00000F84
-		public Shader getShader(string fileName, string materialName, bool isItem = false, bool isTrans = false)
-		{
-			this.logSave(string.Concat(new object[]
-			{
-				"getShader : ",
-				fileName,
-				" ",
-				materialName,
-				" ",
-				this.inspector.Count
-			}));
-			string text = "PBRsp_3mask";
-			if (isItem)
-			{
-				text = "deffuse";
-			}
-			if (this.inspector.ContainsKey(fileName + "|" + materialName))
-			{
-				text = this.inspector[fileName + "|" + materialName];
-				this.logSave("contains:" + text);
-				if (text.Equals(""))
-				{
-					text = "deffuse";
-				}
-			}
-			if (!this.presets.ContainsKey(text))
-			{
-				this.logSave("deffuse");
-				if (!isTrans && isItem)
-				{
-					text = "deffuse";
-				}
-				else
-				{
-					text = "_";
-				}
-			}
-			if (this.presets.ContainsKey(text))
-			{
-				return this.presets[text].shader;
-			}
-			return Shader.Find("Diffuse");
-		}
+		//public Shader getShader(string fileName, string materialName, bool isItem = false, bool isTrans = false)
+		//{
+		//	this.logSave(string.Concat(new object[]
+		//	{
+		//		"getShader : ",
+		//		fileName,
+		//		" ",
+		//		materialName,
+		//		" ",
+		//		this.inspector.Count
+		//	}));
+		//	string text = "Standard";
+		//	if (isItem)
+		//	{
+		//		text = "deffuse";
+		//	}
+		//	if (this.inspector.ContainsKey(fileName + "|" + materialName))
+		//	{
+		//		text = this.inspector[fileName + "|" + materialName];
+		//		this.logSave("contains:" + text);
+		//		if (text.Equals(""))
+		//		{
+		//			text = "deffuse";
+		//		}
+		//	}
+		//	if (!this.presets.ContainsKey(text))
+		//	{
+		//		this.logSave("deffuse");
+		//		if (!isTrans && isItem)
+		//		{
+		//			text = "deffuse";
+		//		}
+		//		else
+		//		{
+		//			text = "PBRsp_alpha_culloff";
+		//		}
+		//	}
+		//	if (this.presets.ContainsKey(text))
+		//	{
+		//		return this.presets[text].shader;
+		//	}
+		//	return Shader.Find("Diffuse");
+		//}
 
 		// Token: 0x0600002E RID: 46 RVA: 0x000021CA File Offset: 0x000003CA
 		public string getFileName(int id)
@@ -356,22 +356,32 @@ namespace ClassLibrary4
 						if (this.orgShader == null && !"".Equals(material.shader.name))
 						{
 							this.orgShader = material.shader;
-						}
-						if (this.orgShader != null && "".Equals(material.shader.name))
-						{
-							if (material.renderQueue <= 2500)
-							{
-								PresetShader presetShader = this.presets[this.presetKeys[this.SHADER_NORMAL_1]];
-								material.shader = presetShader.shader;
-							}
-							else
-							{
-								material.shader = this.orgShader;
-							}
-							material.shader = this.orgShader;
-                            //material.renderQueue += 100;
-                            string key = (assetBundleName + "|" + material.name).Replace(" (Instance)", "");
-                            material.renderQueue = getRenderQueue(key, i, setRQ_MBs);
+						}                         
+                        if (this.orgShader != null && "".Equals(material.shader.name))
+                        { 
+                            string inspector_key = (assetBundleName + "|" + material.name).Replace(" (Instance)", "");
+                            this.logSave("Hair material: " + inspector_key);
+                            if (this.inspector.ContainsKey(inspector_key))
+                            {
+                                if (material.renderQueue <= 2500)
+                                {
+                                    this.logSave("Hair shader seems to be non-transparent: " + this.inspector[inspector_key] + ", default to " + this.presets[this.presetKeys[this.SHADER_NORMAL_1]].shader.name);
+                                    material.shader = this.presets[this.presetKeys[this.SHADER_NORMAL_1]].shader;
+                                }
+                                else
+                                {
+                                    // we know PH hair shader is better. but we also want to distinguish culloff vs not culloff hair
+                                    this.logSave("We know the hair shader is " + this.inspector[inspector_key] + ", but PH's hair shader is almost always better: " + this.orgShader.name);
+                                    material.shader = this.orgShader;
+                                }
+                            }
+                            else
+                            {
+                                // catch all using the standard PH hair shader.
+                                this.logSave("If we got here, it means this hair should be PH hair, but we failed to read its shader. Apply default PH hair shader: " + this.orgShader.name);
+                                material.shader = this.orgShader;
+                            }
+                            material.renderQueue = getRenderQueue(inspector_key, i, setRQ_MBs);
                         }
 					}
 				}
@@ -521,7 +531,7 @@ namespace ClassLibrary4
                             }
                             else if (is_probably_opaque || shader_name.Contains("Cutout") || shader_name.Contains("Diffuse"))
                             {
-                                particle_mat.shader = this.presets["standard"].shader;
+                                particle_mat.shader = this.presets["Standard"].shader;
                             }
                             else
                             {
@@ -539,7 +549,6 @@ namespace ClassLibrary4
                 }
                 else
                 {
-                    int i = 0;
                     foreach (Material material in r.materials)
                     {
                         string shader_name = "";
@@ -611,7 +620,7 @@ namespace ClassLibrary4
                                     else if (text2.Contains("ALPHATEST") || text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH"))
                                     {
                                         this.logSave("Possible plant / tree / leaf / branch -like materials.");
-                                        shader_name = "_"; // I actually have no idea what is this. Fix later
+                                        shader_name = "PBRsp_alpha_culloff"; 
                                         // in this case, you can probably rely on getRenderQueue() results.
                                     }
                                 }
@@ -632,7 +641,7 @@ namespace ClassLibrary4
                                 else
                                 {
                                     this.logSave("The preset shaders weren't prepared for this specific HS shader. Likely it was a custom shader, or (less likely) we didn't explore PH shaders enough to find the substitute. Resort to default.");
-                                    material.shader = this.presets["standard"].shader;
+                                    material.shader = this.presets["Standard"].shader;
                                     if( material.HasProperty("_Glossiness") )
                                     {
                                         float glossiness = material.GetFloat("_Glossiness");
@@ -679,28 +688,28 @@ namespace ClassLibrary4
         }
 
         // Token: 0x06000035 RID: 53 RVA: 0x000037CC File Offset: 0x000019CC
-        public int getShaderIdx(int wearID, bool doChange)
-		{
-			int num = this.SHADER_NORMAL_1;
-			string @string = ModPrefs.GetString("HoneyPot", wearID.ToString(), this.SHADER_NORMAL_1.ToString(), false);
-			try
-			{
-				num = int.Parse(@string);
-			}
-			catch (Exception)
-			{
-			}
-			if (doChange)
-			{
-				num++;
-				if (num > this.SHADER_NORMAL_MAX)
-				{
-					num = this.SHADER_NORMAL_1;
-				}
-				ModPrefs.SetString("HoneyPot", wearID.ToString(), num.ToString());
-			}
-			return num;
-		}
+  //      public int getShaderIdx(int wearID, bool doChange)
+		//{
+		//	int num = this.SHADER_NORMAL_1;
+		//	string @string = ModPrefs.GetString("HoneyPot", wearID.ToString(), this.SHADER_NORMAL_1.ToString(), false);
+		//	try
+		//	{
+		//		num = int.Parse(@string);
+		//	}
+		//	catch (Exception)
+		//	{
+		//	}
+		//	if (doChange)
+		//	{
+		//		num++;
+		//		if (num > this.SHADER_NORMAL_MAX)
+		//		{
+		//			num = this.SHADER_NORMAL_1;
+		//		}
+		//		ModPrefs.SetString("HoneyPot", wearID.ToString(), num.ToString());
+		//	}
+		//	return num;
+		//}
 
 		// Token: 0x06000036 RID: 54
 		public void setAccsShader(bool doStep, Human h)
@@ -753,25 +762,27 @@ namespace ClassLibrary4
 								if ("".Equals(material.shader.name) || doStep)
 								{
                                     this.logSave("Acce material: " + inspector_key);
-                                    Shader shader;
-                                    if (this.inspector.ContainsKey(inspector_key) && this.presets.ContainsKey(this.inspector[inspector_key]))
+                                    if (this.inspector.ContainsKey(inspector_key))
                                     {
-                                        this.logSave("shader_name: " + this.inspector[inspector_key]);
-                                        shader = this.presets[this.inspector[inspector_key]].shader;
-                                        //if (material.renderQueue >= 2500) material.renderQueue += 100;
-                                    }
-                                    else
-                                    {
-                                        if (material.renderQueue <= 2500)
-                                        {
-                                            shader = this.presets[this.presetKeys[this.SHADER_NORMAL_1]].shader;
+                                        if ( this.presets.ContainsKey(this.inspector[inspector_key]) )
+                                        { 
+                                            this.logSave("shader_name: " + this.inspector[inspector_key]);
+                                            material.shader = this.presets[this.inspector[inspector_key]].shader;
                                         }
                                         else
                                         {
-                                            shader = this.presets[this.presetKeys[this.SHADER_ACCS_TRANSPARENT]].shader;
+                                            if (material.renderQueue <= 2500)
+                                            {
+                                                this.logSave("Unable to map shader " + this.inspector[inspector_key] + " to PH presets we have. Default to " + this.presets[this.presetKeys[this.SHADER_NORMAL_1]].shader.name);
+                                                material.shader = this.presets[this.presetKeys[this.SHADER_NORMAL_1]].shader;
+                                            }
+                                            else
+                                            {
+                                                this.logSave("Unable to map shader " + this.inspector[inspector_key] + " to PH presets we have. Default to " + this.presets[this.presetKeys[this.SHADER_ACCS_TRANSPARENT]].shader.name);
+                                                material.shader = this.presets[this.presetKeys[this.SHADER_ACCS_TRANSPARENT]].shader;
+                                            }
                                         }
                                     }
-									material.shader = shader;
                                     material.renderQueue = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
                                     //important: RQ assignment has to go after shader assignment. 
                                     //           fucking implicit setter changes stuff... 
@@ -861,8 +872,21 @@ namespace ClassLibrary4
                             !material.name.Contains("cm_m_body_CustomMaterial") &&
                             !renderer.tag.Contains("New tag (8)") || !isTop))
                         {
-                            Shader shader = this.getShader(wearID, material.name);
-                            material.shader = shader;
+                            this.logSave("Wear material: " + inspector_key);
+                            if ( this.inspector.ContainsKey(inspector_key) )
+                            {
+                                if ( this.presets.ContainsKey(this.inspector[inspector_key]) )
+                                {
+                                    this.logSave("shader_name: " + this.inspector[inspector_key]);
+                                    material.shader = this.presets[this.inspector[inspector_key]].shader;
+                                }
+                                else
+                                {
+                                    this.logSave("Unable to map shader " + this.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_alpha_culloff.");
+                                    material.shader = this.presets["PBRsp_alpha_culloff"].shader;
+                                    //it does seem that PBRsp_alpha_culloff is the better fallback when HS clothing's clothing is not mapped.
+                                }
+                            }
                             material.renderQueue = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
                             is_a_HS_cloth_parts_that_remmapped_shader = true;
                         }
@@ -2508,7 +2532,7 @@ namespace ClassLibrary4
 		private string inspectorText = Application.dataPath + "/../HoneyPot/HoneyPotInspector.txt";
 
 		// Token: 0x04000019 RID: 25
-		private string shaderText = Application.dataPath + "/../HoneyPot/Shader.txt";
+		private string shaderText = Application.dataPath + "/../HoneyPot/shader.txt";
 
 		// Token: 0x0400001A RID: 26
 		private Dictionary<string, string> inspector = new Dictionary<string, string>();
@@ -2523,7 +2547,7 @@ namespace ClassLibrary4
 		private List<string> presetKeys = new List<string>();
 
 		// Token: 0x0400001E RID: 30
-		private Dictionary<int, Setting> settings = new Dictionary<int, Setting>();
+		// private Dictionary<int, Setting> settings = new Dictionary<int, Setting>();
 
 		// Token: 0x0400001F RID: 31
 		private static Dictionary<int, string> idFileDict = new Dictionary<int, string>();
@@ -2535,16 +2559,16 @@ namespace ClassLibrary4
 		private int searchShaderIdx;
 
 		// Token: 0x04000022 RID: 34
-		private int SHADER_ACCS_TRANSPARENT;
+		private int SHADER_ACCS_TRANSPARENT = 0;
 
 		// Token: 0x04000023 RID: 35
 		private int SHADER_NORMAL_1 = 2;
 
 		// Token: 0x04000024 RID: 36
-		private int SHADER_NORMAL_MAX = 4;
+//		private int SHADER_NORMAL_MAX = 4;
 
 		// Token: 0x04000025 RID: 37
-		private int SHADER_WEAR_TRANSPARENT = 2;
+//		private int SHADER_WEAR_TRANSPARENT = 2;
 
 		// Token: 0x04000026 RID: 38
 		private static Dictionary<string, int> material_rq = new Dictionary<string, int>();
