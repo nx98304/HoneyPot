@@ -25,6 +25,6 @@ namespace ClassLibrary4
 		public Shader shader;
 
 		// Token: 0x04000032 RID: 50
-		public Material material;
+//		public Material material;
 	}
 }

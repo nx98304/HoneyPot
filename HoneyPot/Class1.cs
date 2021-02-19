@@ -12,14 +12,7 @@ namespace ClassLibrary4
 		// Token: 0x06000004 RID: 4 RVA: 0x0000233C File Offset: 0x0000053C
 		public void OnApplicationStart()
 		{
-			if (GameObject.Find("HoneyPot") != null)
-			{
-				return;
-			}
-			GameObject gameObject = new GameObject("HoneyPot");
-			this.hp = gameObject.AddComponent<HoneyPot>();
-			this.hp.gameObject.SetActive(true);
-			try
+            try
 			{
                 Harmony harmony = new Harmony(this.Name);
                 harmony.PatchAll(Assembly.GetExecutingAssembly());
@@ -27,13 +20,14 @@ namespace ClassLibrary4
 			catch (Exception ex)
 			{
 				this.logSave(ex.ToString());
-			}
-		}
+			} 
+        }
 
 		// Token: 0x06000005 RID: 5 RVA: 0x0000205B File Offset: 0x0000025B
 		public void logSave(string txt)
 		{
-		}
+            Console.WriteLine(txt);
+        }
 
 		// Token: 0x17000001 RID: 1
 		// (get) Token: 0x06000006 RID: 6 RVA: 0x0000205D File Offset: 0x0000025D
@@ -92,14 +86,35 @@ namespace ClassLibrary4
 		// Token: 0x0600000C RID: 12 RVA: 0x000020AB File Offset: 0x000002AB
 		public void OnLevelWasInitialized(int level)
 		{
-			this.hp = new GameObject("HoneyPot").AddComponent<HoneyPot>();
-			this.hp.gameObject.SetActive(true);
+            this.logSave("HoneyPot - OnLevelWasInitialized: Level " + level);
+            //if (GameObject.Find("HoneyPot") != null) return;
+            //if ( level == 1 )
+            //{
+            //    this.logSave("HoneyPot confirmed level == 1, and hasn't inited yet. Initializing.");
+            //    this.hp = new GameObject("HoneyPot").AddComponent<HoneyPot>();
+            //    this.hp.gameObject.SetActive(true);
+            //}
 		}
 
 		// Token: 0x0600000D RID: 13 RVA: 0x0000205B File Offset: 0x0000025B
 		public void OnLevelWasLoaded(int level)
 		{
-		}
+            this.logSave("HoneyPot - OnLevelWasLoaded: Level " + level);
+            if (GameObject.Find("HoneyPot") != null) return;
+
+            // Note: The lobby scene, chara maker and H scene all have different level value that is > 0
+            //       however, studio startup already is level 0 and without the safe guard HoneyPot gets duplicated.
+            //       and the Studio fully loaded scene is level 1
+            //       If it is studio, we actually don't want to load HoneyPot too early
+            //       to avoid multiple initializations and some erroneous order of init causing NREs
+            if (level > 0)
+            {
+                this.logSave("HoneyPot (re-)initializing after level was loaded.");
+                GameObject gameObject = new GameObject("HoneyPot");
+                this.hp = gameObject.AddComponent<HoneyPot>();
+                this.hp.gameObject.SetActive(true);
+            }
+        }
 
 		// Token: 0x0600000E RID: 14 RVA: 0x0000205B File Offset: 0x0000025B
 		public void OnUpdate()
