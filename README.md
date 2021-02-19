@@ -12,18 +12,23 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 
 ## Current Status
 
-### 1.4.3
-- Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases). (updating)
-- Inspector.exe can now identify shaders at the same capacity as SB3U. If it cannot identify the name, it will record PathID instead. This makes it possible to further expand shader.txt for arbitrary remapping targets. 
-- Making sure hair, wear, acc and studio item all go through the same RQ assignment process. Not only "hair-like" things such as horse mane, thatched roof etc, HoneyPot now respects the CRQ value and SRQ MB value (higher priority) of all imported items. So if there are still render queue issues, we can be almost certain that it's the mod itself has the wrong settings, and should be easily adjustable by editing the HS mod with SB3U directly. 
-- HS Male hair support. 
-- HS Male top cloth which subsitiute the whole body no longer stays purple. 
+### 1.4.4
+- Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases). 
 
 ### Important Accompanying Files
 - If you downloaded the latest package from the release page, all the following files are already there.
 - HoneyPotInspector.exe to generate HoneyPotInspector.txt. Without this pre-processed file, HoneyPot won't work properly. Do remember delete the txt and regenerate it whenever you installed new HS mods to PH. (Unless you know what you are doing and wants to add records to the txt manually to avoid spending up to a couple minutes generating the txt.)
-- shader.txt to do the shader remapping. You can try to add new shader targets here. (The Material Editor mod makes it a lot easier to find suitable remap targets). If you don't know what this means, then pay no attention to this particular part. Will elaborate more on this if I have time in the future. 
+- shader.txt to do the shader remapping. You can try to add new shader remapping targets here. (The Material Editor mod makes it a lot easier to find suitable remap targets). 
 - If you see items in Studio or Chara Maker that doesn't even show the "Purple Error Shader", and yet the item seems to be on the itme list, look into the howto_import_type_definition folder. 
+
+### How to use shader.txt effectively
+shader.txt 's remapping records is fairly limited before. But with the now enhanced HoneyPotInspector.txt information, a lot of unknown HS shaders now are represented as its PathID (for example, -7902135702503874624), and you can now remap that PathID to suitable PH shaders. It's fairly easy to find suitable remapping shaders using Material Editor: 
+- Check undesirable materials with Material Editor, try out different PH shaders (yes, there's still limitation here, you can only choose from that list, unless you know how to add new shaders to Material Editor and HoneyPot). 
+- After finding suitable shader, remember the PH shader name and the material name. 
+- Go to HoneyPotInspector.txt, use search function of any text reader to find the material name, and take note of its HS shader name. 
+- Go to shader.txt, add a line in the form of `HS_shader_name|PH_shader_name` 
+- Multiple HS shaders can map to a single PH shader. Unfortunately if a single HS shader is used on multiple materials, and yet you want to map to different PH shaders, this is currently impossible. 
+- After changing shader.txt you need to restart the game. 
 
 ### Known issues that you need some (easy) manual procedures to fix yourself
 - Some items only show up in the workspace menu or on the chara maker item list, but doesn't actually show up in 3D scene. (see above)
@@ -34,7 +39,6 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 ### Known issues in the current functionalities that might be fixed down the line
 - Some clothing / accessories interacts with the custom color in a weird way. (Not to be confused with colors you can't change to begin with)
 - Detection for some glass-like materials are still wrong. 
-- Clothing and accessories should have a more unified shader remapping process. 
 - Discrepancies between HS and PH's asset loading process which result in assets seemingly broken (not just shader) in PH, but otherwise fine in HS. Like bone issues. 
 - Nipple is always disabled with *some* HS clothing. 
 - Is fur shader remapping possible? 
@@ -53,11 +57,16 @@ Now that we have made the decompiled source compile again and maintains all the 
 - Try to figure out a better way to anticipating HS clothing's custom color material properties. Right now it will yell at you for mismatching the material properties, and some colors will act weirdly if you try to change them, and a lot of items & clothing sets will have custom color UI, but nothing changes when you try to change the color. (usually mean it wasn't supposed to be changed to begin with, even though HoneyPot forces color-changability to all HS clothing.) 
 - Further code clean up to make variables in the code humanly readable, and start to annotate the code with comments
 - What's up with the Studio Item category changes? I cannot determine the original reason of doing it. 
-- Moving the plugin from IPA to fully BepinEx. 
-- Performance optimizations? Not sure what exactly can be done about it, since most time it spends on is reading the lists and loading the assets, which would be expected to be slow. 
+- Moving the plugin from IPA to fully BepinEx.  
 - Welcome further comments about the project. 
 
 ## Past updates
+
+### 1.4.3
+- Inspector.exe can now identify shaders at the same capacity as SB3U. If it cannot identify the name, it will record PathID instead. This makes it possible to further expand shader.txt for arbitrary remapping targets. 
+- Making sure hair, wear, acc and studio item all go through the same RQ assignment process. Not only "hair-like" things such as horse mane, thatched roof etc, HoneyPot now respects the CRQ value and SRQ MB value (higher priority) of all imported items. So if there are still render queue issues, we can be almost certain that it's the mod itself has the wrong settings, and should be easily adjustable by editing the HS mod with SB3U directly. 
+- HS Male hair support. 
+- HS Male top cloth which subsitiute the whole body no longer stays purple. 
 
 ### 1.4.2
 - Fixed an issue where when in chara maker, you won't see the color options right after choosing a piece of HS clothing. 
