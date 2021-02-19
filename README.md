@@ -13,7 +13,11 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 ## Current Status
 
 ### 1.4.4
+- **BREAKING CHANGE** : You cannot use shader.txt from 1.4.3 or earlier. It is now much easier to expand shader.txt records, but 1.4.4+ and 1.4.3- are incompatible. See [How to use shader.txt effectively](#how-to-use-shadertxt-effectively).
 - Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases). 
+- A ph_shaders.unity3d is now embedded in the HoneyPot.dll. This file is based on the one from Material Editor's repository: https://github.com/DeathWeasel1337/KK_Plugins/blob/master/src/MaterialEditor.PH/Resources/ph_shaders.unity3d ; many thanks to the help I received from DeathWeasel1337!
+- Improved HoneyPot loading speed when game start up, scene change in studio and level change in the main game. And possibly lowered the memory footprint (before this HoneyPot was loaded multiple times.)
+- Fixed an issue in 1.4.3 where some of the glass materials are broken again. Some might still be broken -- but it's possible to easily add records to shader.txt now. See [How to use shader.txt effectively](#how-to-use-shadertxt-effectively).
 
 ### Important Accompanying Files
 - If you downloaded the latest package from the release page, all the following files are already there.
