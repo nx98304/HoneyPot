@@ -43,6 +43,9 @@
       <Private>True</Private>
       <HintPath>..\..\..\[OPTIONAL] BRExtras\Patchers\Illusion Plugin Architecture v3.4.1\IPA\Data\Managed\IllusionPlugin.dll</HintPath>
     </Reference>
+    <Reference Include="System">
+      <HintPath>..\..\..\PlayHome64bit_Data\Managed\System.dll</HintPath>
+    </Reference>
     <Reference Include="System.Core">
       <HintPath>..\..\..\PlayHome64bit_Data\Managed\System.Core.dll</HintPath>
     </Reference>
@@ -66,6 +69,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Setting.cs" />
     <Compile Include="WearObj_SetupMaterials_Patch.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="ph_shaders.unity3d" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
