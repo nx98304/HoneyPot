@@ -1091,14 +1091,14 @@ namespace ClassLibrary4
 			Dictionary<int, WearData> dictionary4 = null;
 			Dictionary<int, WearData> dictionary5 = null;
 			Dictionary<int, WearData> dictionary6 = null;
-			Dictionary<int, WearData> dictionary7 = null;
+			Dictionary<int, WearData> female_swim_dict = null;
 			Dictionary<int, WearData> dictionary8 = null;
-			Dictionary<int, WearData> dictionary9 = null;
+			Dictionary<int, WearData> female_bra_dict = null;
 			Dictionary<int, WearData> dictionary10 = null;
 			Dictionary<int, WearData> dictionary11 = null;
-			Dictionary<int, WearData> dictionary12 = null;
+			Dictionary<int, WearData> female_bot_dict = null;
 			Dictionary<int, WearData> dictionary13 = null;
-			Dictionary<int, WearData> dictionary14 = null;
+			Dictionary<int, WearData> female_top_dict = null;
 			Dictionary<int, PrefabData> dictionary15 = null;
 			Dictionary<int, PrefabData> dictionary16 = null;
 			Dictionary<int, WearData> dictionary17 = null;
@@ -1191,11 +1191,11 @@ namespace ClassLibrary4
 					}
 					else if (textAsset.name.Contains("cf_f_swim"))
 					{
-						dictionary7 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM);
+						female_swim_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM);
 					}
 					else if (textAsset.name.Contains("cf_f_bra"))
 					{
-						dictionary9 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BRA);
+						female_bra_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BRA);
 					}
 					else if (textAsset.name.Contains("cf_f_shorts"))
 					{
@@ -1211,11 +1211,11 @@ namespace ClassLibrary4
 					}
 					else if (textAsset.name.Contains("cf_f_bot"))
 					{
-						dictionary12 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BOTTOM);
+						female_bot_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BOTTOM);
 					}
 					else if (textAsset.name.Contains("cf_f_top"))
 					{
-						dictionary14 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.TOP);
+                        female_top_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.TOP);
 					}
 					else if (textAsset.name.Contains("cf_m_eyebrow"))
 					{
@@ -1409,7 +1409,7 @@ namespace ClassLibrary4
 							}
 						}
 					}
-					if (dictionary12 != null)
+					if (female_bot_dict != null)
 					{
 						string[] array10 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
 						{
@@ -1417,33 +1417,37 @@ namespace ClassLibrary4
 						});
 						for (int n = 0; n < array10.Length; n++)
 						{
-							string[] array11 = array10[n].Split(new char[]
+							string[] celldata = array10[n].Split(new char[]
 							{
 								'\t'
 							});
-							if (array11.Length > 3)
+							if (celldata.Length > 3)
 							{
 								try
 								{
-									int num5 = int.Parse(array11[0]) % 1000;
-									if (array11[0].Length > 6)
+									int num5 = int.Parse(celldata[0]) % 1000;
+									if (celldata[0].Length > 6)
 									{
-										num5 = int.Parse(array11[0]) % 1000000 + int.Parse(array11[0].Substring(0, 3)) * 1000;
+										num5 = int.Parse(celldata[0]) % 1000000 + int.Parse(celldata[0].Substring(0, 3)) * 1000;
 									}
 									else
 									{
 										num5 += 821000;
 									}
-									WearData wearData3 = new WearData(num5, array11[2], array11[4], array11[6], dictionary12.Count, false);
-									wearData3.id = num5;
-									if (!dictionary12.ContainsKey(wearData3.id))
+									WearData wearData = new WearData(num5, celldata[2], celldata[4], celldata[6], female_bot_dict.Count, false);
+                                    wearData.id = num5;
+									if (!female_bot_dict.ContainsKey(wearData.id))
 									{
-										dictionary12.Add(wearData3.id, wearData3);
-										HoneyPot.idFileDict[num5] = array11[4];
+                                        wearData.liquid = celldata[11];
+                                        wearData.coordinates = int.Parse(celldata[13]);
+                                        wearData.shortsDisable = (!celldata[16].Equals("0"));
+
+                                        female_bot_dict.Add(wearData.id, wearData);
+										HoneyPot.idFileDict[num5] = celldata[4];
 									}
 									else
 									{
-										this.addConflict(num5, dictionary12[num5].assetbundleName + "/" + dictionary12[num5].prefab, wearData3.assetbundleName + "/" + wearData3.prefab, dictionary12[num5].name, wearData3.name);
+										this.addConflict(num5, female_bot_dict[num5].assetbundleName + "/" + female_bot_dict[num5].prefab, wearData.assetbundleName + "/" + wearData.prefab, female_bot_dict[num5].name, wearData.name);
 									}
 								}
 								catch (Exception ex5)
@@ -1453,7 +1457,7 @@ namespace ClassLibrary4
 							}
 						}
 					}
-					if (dictionary14 != null)
+					if (female_top_dict != null)
 					{
 						string[] array12 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
 						{
@@ -1461,33 +1465,39 @@ namespace ClassLibrary4
 						});
 						for (int num6 = 0; num6 < array12.Length; num6++)
 						{
-							string[] array13 = array12[num6].Split(new char[]
+							string[] celldata = array12[num6].Split(new char[]
 							{
 								'\t'
 							});
-							if (array13.Length > 3)
+							if (celldata.Length > 3)
 							{
 								try
 								{
-									int num7 = int.Parse(array13[0]) % 1000;
-									if (array13[0].Length > 6)
+									int num7 = int.Parse(celldata[0]) % 1000;
+									if (celldata[0].Length > 6)
 									{
-										num7 = int.Parse(array13[0]) % 1000000 + int.Parse(array13[0].Substring(0, 3)) * 1000;
+										num7 = int.Parse(celldata[0]) % 1000000 + int.Parse(celldata[0].Substring(0, 3)) * 1000;
 									}
 									else
 									{
 										num7 += 820000;
 									}
-									WearData wearData4 = new WearData(num7, array13[2], array13[4], array13[6], dictionary14.Count, false);
-									wearData4.id = num7;
-									if (!dictionary14.ContainsKey(wearData4.id))
+									WearData wearData = new WearData(num7, celldata[2], celldata[4], celldata[6], female_top_dict.Count, false);
+                                    wearData.id = num7;
+									if (!female_top_dict.ContainsKey(wearData.id))
 									{
-										dictionary14.Add(wearData4.id, wearData4);
-										HoneyPot.idFileDict[num7] = array13[4];
+                                        wearData.liquid = celldata[11];
+                                        wearData.coordinates = int.Parse(celldata[13]);
+                                        wearData.shortsDisable = (celldata[14].Equals("2"));
+                                        wearData.braDisable = (!celldata[15].Equals("0"));
+                                        wearData.nip = (!celldata[17].Equals("0"));
+
+                                        female_top_dict.Add(wearData.id, wearData);
+										HoneyPot.idFileDict[num7] = celldata[4];
 									}
 									else
 									{
-										this.addConflict(num7, dictionary14[num7].assetbundleName + "/" + dictionary14[num7].prefab, wearData4.assetbundleName + "/" + wearData4.prefab, dictionary14[num7].name, wearData4.name);
+										this.addConflict(num7, female_top_dict[num7].assetbundleName + "/" + female_top_dict[num7].prefab, wearData.assetbundleName + "/" + wearData.prefab, female_top_dict[num7].name, wearData.name);
 									}
 								}
 								catch (Exception ex6)
@@ -1614,15 +1624,10 @@ namespace ClassLibrary4
 									wearData7.id = num13;
 									if (!dictionary10.ContainsKey(wearData7.id))
 									{
-										dictionary10.Add(wearData7.id, wearData7);
+                                        wearData7.liquid = array19[11];
+
+                                        dictionary10.Add(wearData7.id, wearData7);
 										HoneyPot.idFileDict[num13] = array19[4];
-										this.logSave(string.Concat(new object[]
-										{
-											"idFile",
-											num13,
-											" ",
-											array19[4]
-										}));
 									}
 									else
 									{
@@ -1636,7 +1641,7 @@ namespace ClassLibrary4
 							}
 						}
 					}
-					if (dictionary9 != null)
+					if (female_bra_dict != null)
 					{
 						string[] array20 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
 						{
@@ -1644,35 +1649,38 @@ namespace ClassLibrary4
 						});
 						for (int num14 = 0; num14 < array20.Length; num14++)
 						{
-							string[] array21 = array20[num14].Split(new char[]
+							string[] celldata = array20[num14].Split(new char[]
 							{
 								'\t'
 							});
-							if (array21.Length > 3)
+							if (celldata.Length > 3)
 							{
 								try
 								{
-									int num15 = int.Parse(array21[0]) % 1000;
-									if (array21[0].Length > 6)
+									int num15 = int.Parse(celldata[0]) % 1000;
+									if (celldata[0].Length > 6)
 									{
-										num15 = int.Parse(array21[0]) % 1000000 + int.Parse(array21[0].Substring(0, 3)) * 1000;
+										num15 = int.Parse(celldata[0]) % 1000000 + int.Parse(celldata[0].Substring(0, 3)) * 1000;
 									}
 									else
 									{
 										num15 += 822000;
 									}
-									WearData wearData8 = new WearData(num15, array21[2], array21[4], array21[6], dictionary9.Count, false);
-									wearData8.id = num15;
-									wearData8.nip = false;
-									WearData wearData9 = dictionary9[1];
-									if (!dictionary9.ContainsKey(wearData8.id))
+									WearData wearData = new WearData(num15, celldata[2], celldata[4], celldata[6], female_bra_dict.Count, false);
+                                    wearData.id  = num15;
+                                    wearData.nip = false; // NOTE: Curious. PH now activates nipple when Bra is shown regardless of this setting?
+                                                          //       No nipple actually shows through though. So all fine?
+                                    WearData wearData9 = female_bra_dict[1];
+									if (!female_bra_dict.ContainsKey(wearData.id))
 									{
-										dictionary9.Add(wearData8.id, wearData8);
-										HoneyPot.idFileDict[num15] = array21[4];
+                                        wearData.liquid = celldata[11];
+
+                                        female_bra_dict.Add(wearData.id, wearData);
+										HoneyPot.idFileDict[num15] = celldata[4];
 									}
 									else
 									{
-										this.addConflict(num15, dictionary9[num15].assetbundleName + "/" + dictionary9[num15].prefab, wearData8.assetbundleName + "/" + wearData8.prefab, dictionary9[num15].name, wearData8.name);
+										this.addConflict(num15, female_bra_dict[num15].assetbundleName + "/" + female_bra_dict[num15].prefab, wearData.assetbundleName + "/" + wearData.prefab, female_bra_dict[num15].name, wearData.name);
 									}
 								}
 								catch (Exception ex10)
@@ -1711,7 +1719,9 @@ namespace ClassLibrary4
 									wearData10.id = num17;
 									if (!dictionary8.ContainsKey(wearData10.id))
 									{
-										dictionary8.Add(wearData10.id, wearData10);
+                                        wearData10.liquid = array23[11];
+
+                                        dictionary8.Add(wearData10.id, wearData10);
 										HoneyPot.idFileDict[num17] = array23[4];
 									}
 									else
@@ -1726,7 +1736,7 @@ namespace ClassLibrary4
 							}
 						}
 					}
-					if (dictionary7 != null)
+					if (female_swim_dict != null)
 					{
 						string[] array24 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
 						{
@@ -1734,33 +1744,36 @@ namespace ClassLibrary4
 						});
 						for (int num18 = 0; num18 < array24.Length; num18++)
 						{
-							string[] array25 = array24[num18].Split(new char[]
+							string[] celldata = array24[num18].Split(new char[]
 							{
 								'\t'
 							});
-							if (array25.Length > 3)
+							if (celldata.Length > 3)
 							{
 								try
 								{
-									int num19 = int.Parse(array25[0]) % 1000;
-									if (array25[0].Length > 6)
+									int num19 = int.Parse(celldata[0]) % 1000;
+									if (celldata[0].Length > 6)
 									{
-										num19 = int.Parse(array25[0]) % 1000000 + int.Parse(array25[0].Substring(0, 3)) * 1000;
+										num19 = int.Parse(celldata[0]) % 1000000 + int.Parse(celldata[0].Substring(0, 3)) * 1000;
 									}
 									else
 									{
 										num19 += 824000;
 									}
-									WearData wearData11 = new WearData(num19, array25[2], array25[4], array25[6], dictionary7.Count, false);
-									wearData11.id = num19;
-									if (!dictionary7.ContainsKey(wearData11.id))
+									WearData wearData = new WearData(num19, celldata[2], celldata[4], celldata[6], female_swim_dict.Count, false);
+                                    wearData.id = num19;
+									if (!female_swim_dict.ContainsKey(wearData.id))
 									{
-										dictionary7.Add(wearData11.id, wearData11);
-										HoneyPot.idFileDict[num19] = array25[4];
+                                        // TODO: How do we specify that this swimsuit is top-bottom separated or not?
+                                        wearData.liquid = celldata[11];
+
+                                        female_swim_dict.Add(wearData.id, wearData);
+										HoneyPot.idFileDict[num19] = celldata[4];
 									}
 									else
 									{
-										this.addConflict(num19, dictionary7[num19].assetbundleName + "/" + dictionary7[num19].prefab, wearData11.assetbundleName + "/" + wearData11.prefab, dictionary7[num19].name, wearData11.name);
+										this.addConflict(num19, female_swim_dict[num19].assetbundleName + "/" + female_swim_dict[num19].prefab, wearData.assetbundleName + "/" + wearData.prefab, female_swim_dict[num19].name, wearData.name);
 									}
 								}
 								catch (Exception ex12)
@@ -1799,6 +1812,8 @@ namespace ClassLibrary4
 									wearData12.id = num21;
 									if (!dictionary6.ContainsKey(wearData12.id))
 									{
+                                        wearData12.liquid = array27[11];
+
 										dictionary6.Add(wearData12.id, wearData12);
 										HoneyPot.idFileDict[num21] = array27[4];
 									}
@@ -2085,14 +2100,14 @@ namespace ClassLibrary4
 					dictionary4 = null;
 					dictionary5 = null;
 					dictionary6 = null;
-					dictionary7 = null;
+                    female_swim_dict = null;
 					dictionary8 = null;
-					dictionary9 = null;
+                    female_bra_dict = null;
 					dictionary10 = null;
 					dictionary11 = null;
-					dictionary12 = null;
+                    female_bot_dict = null;
 					dictionary13 = null;
-					dictionary14 = null;
+                    female_top_dict = null;
 					dictionary15 = null;
 					dictionary16 = null;
 					dictionary17 = null;
