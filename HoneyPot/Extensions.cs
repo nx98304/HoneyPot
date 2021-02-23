@@ -6,6 +6,14 @@ using UnityEngine;
 namespace ClassLibrary4
 {
 	// Token: 0x02000005 RID: 5
+    public static class StringExtensions
+    {
+        public static bool Contains_NoCase(this string self, string str)
+        {
+            return self.IndexOf(str, StringComparison.CurrentCultureIgnoreCase) != -1;
+        }
+    }
+
 	public static class Extensions
 	{
 		// Token: 0x06000012 RID: 18 RVA: 0x000020E3 File Offset: 0x000002E3
