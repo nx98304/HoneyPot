@@ -361,16 +361,19 @@ namespace ClassLibrary4
                         { 
                             string inspector_key = (assetBundleName + "|" + material.name).Replace(" (Instance)", "");
                             this.logSave("Hair material: " + inspector_key);
+                            int rq = material.renderQueue;
                             if (HoneyPot.inspector.ContainsKey(inspector_key))
                             {
-                                if (material.renderQueue <= 2500)
+                                rq = getRenderQueue(inspector_key, i, setRQ_MBs);
+                                if ( rq <= 2500 )
                                 {
-                                    this.logSave("Hair shader seems to be non-transparent: " + HoneyPot.inspector[inspector_key] + ", default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
+                                    this.logSave("This part of the hair mod seems to be non-transparent: " + HoneyPot.inspector[inspector_key] + ", default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
                                     material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
                                 }
                                 else
                                 {
-                                    // we know PH hair shader is better. but we also want to distinguish culloff vs not culloff hair
+                                    // TODO: We know PH hair shader is better. but we also want to distinguish culloff vs not culloff hair
+                                    //       but how do we do that here?
                                     this.logSave("We know the hair shader is " + HoneyPot.inspector[inspector_key] + ", but PH's hair shader is almost always better: " + HoneyPot.orgShader.name);
                                     material.shader = HoneyPot.orgShader;
                                 }
@@ -381,7 +384,7 @@ namespace ClassLibrary4
                                 this.logSave("If we got here, it means this hair should be PH hair, but we failed to read its shader. Apply default PH hair shader: " + HoneyPot.orgShader.name);
                                 material.shader = HoneyPot.orgShader;
                             }
-                            material.renderQueue = getRenderQueue(inspector_key, i, setRQ_MBs);
+                            material.renderQueue = rq; 
                         }
 					}
 				}
@@ -588,8 +591,8 @@ namespace ClassLibrary4
                                     foreach (string text2 in material.shaderKeywords)
                                     {
                                         this.logSave("shader keywords found:" + text2);
-                                        if ((text2.Contains("ALPHAPRE") || material.name.Contains("glass") || material.name.Contains("Glass") || material.name.Contains("GLASS")) && 
-                                           !(text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH"))) //super last-ditch tests for glass-like material
+                                        if ((text2.Contains_NoCase("alphapre") || material.name.Contains_NoCase("glass")) && 
+                                           !(text2.Contains_NoCase("leaf") || text2.Contains_NoCase("frond") || text2.Contains_NoCase("branch"))) //super last-ditch tests for glass-like material
                                         {
                                             this.logSave("Possible transparent glasses-like material.");
                                             shader_name = "Standard";
@@ -621,14 +624,14 @@ namespace ClassLibrary4
                                             // in this case anything you can get from getRenderQueue() is probably wrong and not suitable.
                                             if (guessing_renderqueue == -1) guessing_renderqueue = 4001; 
                                         }
-                                        else if (text2.Contains("TRANS") || text2.Contains("BLEND") || text2.Contains("Blend"))
+                                        else if (text2.Contains_NoCase("trans") || text2.Contains_NoCase("blend"))
                                         {
                                             this.logSave("Possible unspecified transparent material.");
-                                            shader_name = "PBRsp_alpha";
+                                            shader_name = "PBRsp_3mask_alpha";
                                             // another guess, but make the number different so it's easier to tell.
                                             if (guessing_renderqueue == -1) guessing_renderqueue = 3123;
                                         }
-                                        else if (text2.Contains("ALPHATEST") || text2.Contains("LEAF") || text2.Contains("FROND") || text2.Contains("BRANCH"))
+                                        else if (text2.Contains_NoCase("alphatest") || text2.Contains_NoCase("leaf") || text2.Contains_NoCase("frond") || text2.Contains_NoCase("branch"))
                                         {
                                             this.logSave("Possible plant / tree / leaf / branch -like materials.");
                                             shader_name = "PBRsp_alpha_culloff"; 
@@ -652,6 +655,7 @@ namespace ClassLibrary4
                                     if (glossiness > 0.2f)
                                     {   // It does seem like the standard shader of PH is somewhat too glossy
                                         // when it is used as a fallback shader.
+                                        this.logSave("PH Standard tends to have higher gloss than usual for materials/shaders from HS. Try to lower it here.");
                                         material.SetFloat("_Glossiness", 0.2f);
                                     }
                                 }
@@ -763,8 +767,10 @@ namespace ClassLibrary4
 								if ("".Equals(material.shader.name) /*|| doStep*/)
 								{
                                     this.logSave("Acce material: " + inspector_key);
+                                    int rq = material.renderQueue;
                                     if (HoneyPot.inspector.ContainsKey(inspector_key))
                                     {
+                                        rq = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
                                         if ( HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]) )
                                         { 
                                             this.logSave("shader_name: " + HoneyPot.inspector[inspector_key]);
@@ -772,19 +778,19 @@ namespace ClassLibrary4
                                         }
                                         else
                                         {
-                                            if (material.renderQueue <= 2500)
+                                            if (rq <= 2500)
                                             {
                                                 this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
                                                 material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
                                             }
                                             else
                                             {
-                                                this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name + " with high render queue to get transparency.");
+                                                this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name + " with high RQ to get transparency.");
                                                 material.shader = HoneyPot.presets["Standard"].shader;
                                             }
                                         }
                                     }
-                                    material.renderQueue = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
+                                    material.renderQueue = rq;
                                     //important: RQ assignment has to go after shader assignment. 
                                     //           fucking implicit setter changes stuff... 
                                 }                               
@@ -874,6 +880,7 @@ namespace ClassLibrary4
                             !renderer.tag.Contains("New tag (8)") || !isTop))
                         {
                             this.logSave("Wear material: " + inspector_key);
+                            int rq = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
                             if ( HoneyPot.inspector.ContainsKey(inspector_key) )
                             {
                                 if ( HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]) )
@@ -883,12 +890,19 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_alpha_culloff.");
-                                    material.shader = HoneyPot.presets["PBRsp_alpha_culloff"].shader;
-                                    //it does seem that PBRsp_alpha_culloff is the better fallback when HS clothing's clothing is not mapped.
+                                    if (rq <= 2500)
+                                    {
+                                        this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_3mask as we find RQ value <= 2500.");
+                                        material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
+                                    } 
+                                    else
+                                    {
+                                        this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_3mask_alpha as we find RQ value > 2500.");
+                                        material.shader = HoneyPot.presets["PBRsp_3mask_alpha"].shader;
+                                    }
                                 }
                             }
-                            material.renderQueue = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
+                            material.renderQueue = rq;
                             is_a_HS_cloth_parts_that_remmapped_shader = true;
                         }
                     }
@@ -2638,7 +2652,7 @@ namespace ClassLibrary4
 		private string shaderText = Application.dataPath + "/../HoneyPot/shader.txt";
 
 		// Token: 0x0400001A RID: 26
-		private static Dictionary<string, string> inspector = new Dictionary<string, string>();
+		private static Dictionary<string, string> inspector = new Dictionary<string, string>(StringComparer.CurrentCultureIgnoreCase);
 
 		// Token: 0x0400001B RID: 27
 		private static Dictionary<string, PresetShader> presets = new Dictionary<string, PresetShader>();
