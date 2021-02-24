@@ -14,7 +14,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 
 ### 1.4.5
 - Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases). 
-- Basic nip and liquid state handling for HS clothings. HS clothings still can't have show throw bras (still have to go into half-state to see), but this change opens up further efforts that can be done. 
+- Basic nip and liquid state handling for HS clothings. HS tops still can't show bras at the same time (still have to go into half-state to see), but this change opens up further efforts that can be done. 
 - Fixed issues caused by inspector.txt and the game getting differing upper/lower case filenames. This used to lead to user already generated inspector.txt, but still seeing the Purple Color of Error. (There are still **very** rare cases where mods trying to change the body to use unexpected materials, and it would still show purple error. I currently only know ASH's AF Blade Runner does this.)
 - Fixed issues caused by some clothings and accessories have `null` **Root Bone** setting, making clothing not being worn correctly. HoneyPot patched main game through Harmony that it knows to search for "cf_J_Root" and "cm_J_Root" if needed.
 - Fixed an issue where some female accessories were not loaded because HoneyPot forgot to look at the correct list data cell.
