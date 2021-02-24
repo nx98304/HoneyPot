@@ -19,7 +19,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - Fixed issues caused by some clothings and accessories have `null` **Root Bone** setting, making clothing not being worn correctly. HoneyPot patched main game through Harmony that it knows to search for "cf_J_Root" and "cm_J_Root" if needed.
 - Fixed an issue where some female accessories were not loaded because HoneyPot forgot to look at the correct list data cell.
 - shader.txt updated to deal with some new shader mappings.  
-- Try to have better fallback shaders and guesses when deadling with studio items, clothing and accessories. 
+- Try to have better fallback shaders and guesses when dealing with studio items, clothing and accessories. 
 - Fixed an issue from 1.4.4 caused by changing material properties before assigning material.shader, nullifying the property changes. 
 
 ### Requirements & How To Use 
@@ -28,7 +28,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - HoneyPotInspector.exe to generate HoneyPotInspector.txt. **Without this pre-processed file, HoneyPot won't work properly.** Do remember delete the txt and regenerate it whenever you installed new HS mods to PH, unless you know what you are doing and wants to add records to the txt manually to avoid spending up to a couple minutes generating the txt.
 - If you see any Purple Color of Error, the first thing to do is to delete your old HoneyPotInspector.txt and re-generate it. 
 - shader.txt to do the shader remapping. You can try to add new shader remapping targets here. See [How to use shader.txt effectively](#how-to-use-shadertxt-effectively). (The Material Editor mod makes it a lot easier to find suitable remap targets). 
-- If you see items in Studio or Chara Maker that doesn't even show the Purple Color of Error, and yet the item seems to be on the itme list, look into *howto_import_type_definition* in the releases page. 
+- If items in Studio or Chara Maker don't show up at all, not even the Purple Color of Error, and yet the item seems to be on the item list, look into howto_import_type_definition in the releases page.
 
 ### How to use shader.txt effectively
 shader.txt 's remapping records is fairly limited before. But with the now enhanced HoneyPotInspector.txt information, a lot of unknown HS shaders now are represented by its PathID (for example, -7902135702503874624), and you can now remap that PathID to suitable PH shaders. It's fairly easy to find suitable remapping shaders using Material Editor: 
