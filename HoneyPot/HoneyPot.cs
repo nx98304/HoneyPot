@@ -577,11 +577,26 @@ namespace ClassLibrary4
 
                             this.logSave("shader_name:" + shader_name);
 
-                            if ( shader_name.Contains("Distortion") )
+                            if ( shader_name.Contains_NoCase("distortion") )
                             {
                                 this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
                                 shader_name = "Particle Add";
-                                if( guessing_renderqueue == -1 ) guessing_renderqueue = 4123;
+                                material.shader = HoneyPot.presets[shader_name].shader;
+                                if ( guessing_renderqueue == -1 ) guessing_renderqueue = 4123;
+                            }
+                            else if ( shader_name.Contains_NoCase("alphatest") )
+                            {
+                                if ( guessing_renderqueue <= 2500 )
+                                { 
+                                    this.logSave("An AlphaTest kind of shader that has non-transparent renderqueue, assigning PBRsp_alpha_culloff");
+                                    shader_name = "PBRsp_alpha_culloff";
+                                }
+                                else
+                                {
+                                    this.logSave("An AlphaTest kind of shader that has transparent renderqueue, assigning PBRsp_3mask_alpha");
+                                    shader_name = "PBRsp_3mask_alpha";
+                                }
+                                material.shader = HoneyPot.presets[shader_name].shader;
                             }
                             else
                             { 
@@ -596,6 +611,7 @@ namespace ClassLibrary4
                                         {
                                             this.logSave("Possible transparent glasses-like material.");
                                             shader_name = "Standard";
+                                            material.shader = HoneyPot.presets[shader_name].shader;
                                             // more hacking for HS glass shaders that I know of. 
                                             if (material.HasProperty("_Glossiness"))
                                             {
@@ -606,19 +622,22 @@ namespace ClassLibrary4
                                             if (material.HasProperty("_DstBlend"))
                                             {
                                                 float dstblend = material.GetFloat("_DstBlend");
-                                                if( dstblend < 1.0f ) material.SetFloat("_DstBlend", 1.0f);
+                                                if (dstblend < 1.0f) material.SetFloat("_DstBlend", 1.0f);
                                             }
                                             if (material.HasProperty("_ZWrite"))
                                             {
                                                 float zwrite = material.GetFloat("_ZWrite");
                                                 if (zwrite > 0.0f) material.SetFloat("_ZWrite", 0.0f);
                                             }
-                                            Color c = material.color;
-                                            //c.r *= c.a;
-                                            //c.g *= c.a;
-                                            //c.b *= c.a;
-                                            if (c.a < 0.3f) c.a = 0.3f; 
-                                            material.color = c;
+                                            if (material.HasProperty("_Color"))
+                                            {
+                                                Color c = material.GetColor("_Color");
+                                                //c.r *= c.a;
+                                                //c.g *= c.a;
+                                                //c.b *= c.a;
+                                                if (c.a < 0.3f) c.a = 0.3f;
+                                                material.SetColor("_Color", c);
+                                            }
 
                                             // guessing any glass like item should have a very high render queue;
                                             // in this case anything you can get from getRenderQueue() is probably wrong and not suitable.
@@ -628,13 +647,15 @@ namespace ClassLibrary4
                                         {
                                             this.logSave("Possible unspecified transparent material.");
                                             shader_name = "PBRsp_3mask_alpha";
+                                            material.shader = HoneyPot.presets[shader_name].shader;
                                             // another guess, but make the number different so it's easier to tell.
                                             if (guessing_renderqueue == -1) guessing_renderqueue = 3123;
                                         }
                                         else if (text2.Contains_NoCase("alphatest") || text2.Contains_NoCase("leaf") || text2.Contains_NoCase("frond") || text2.Contains_NoCase("branch"))
                                         {
                                             this.logSave("Possible plant / tree / leaf / branch -like materials.");
-                                            shader_name = "PBRsp_alpha_culloff"; 
+                                            shader_name = "PBRsp_alpha_culloff";
+                                            material.shader = HoneyPot.presets[shader_name].shader;
                                             // in this case, you can probably rely on getRenderQueue() results.
                                         }
                                     }
@@ -642,13 +663,14 @@ namespace ClassLibrary4
                                 else
                                 {
                                     this.logSave("Shader remapping info found, remapping " + shader_name + " to " + HoneyPot.presets[shader_name].shader.name);
+                                    material.shader = HoneyPot.presets[shader_name].shader;
                                 }
                             }
 
                             if ( !HoneyPot.presets.ContainsKey(shader_name) )
                             {
                                 this.logSave("The preset shaders weren't prepared for this specific HS shader, and all guessing for shader keywords have failed, resorting to default.");
-                                shader_name = "Standard";
+                                material.shader = HoneyPot.presets["Standard"].shader;
                                 if (material.HasProperty("_Glossiness"))
                                 {
                                     float glossiness = material.GetFloat("_Glossiness");
@@ -660,8 +682,14 @@ namespace ClassLibrary4
                                     }
                                 }
                             }
-
-                            material.shader = HoneyPot.presets[shader_name].shader;
+                            
+                            if (material.HasProperty("_Glossiness") && material.HasProperty("_Color"))
+                            {
+                                Color c = material.GetColor("_Color");
+                                this.logSave(" - Monitor this material's values, see if it is reset or has anomoly: ");
+                                this.logSave(" --- _Glossiness: " + material.GetFloat("_Glossiness") );
+                                this.logSave(" ---       color: (" + c.r + "," + c.g + "," + c.b + "," + c.a + ")");
+                            }
                             material.renderQueue = guessing_renderqueue;
                             this.logSave("final shader:" + material.shader.name + ", final RQ = " + material.renderQueue);
                             this.logSave("-- end of one material processing --");
@@ -740,7 +768,8 @@ namespace ClassLibrary4
 					{
                         continue;
                     }
-					try
+                    //this.logSave(" Acc: " + accessoryData.assetbundleDir + "/" + accessoryData.assetbundleName + ":" + accessoryData.prefab_F);
+                    try
 					{
 						GameObject gameObject = (GameObject)field.GetValue(obj);
 						Renderer[] renderers_in_acceobj = gameObject.GetComponentsInChildren<Renderer>(true);
@@ -796,13 +825,13 @@ namespace ClassLibrary4
                                 }                               
                             }                            
 						}
-						int num2 = 0;
+                        int num2 = 0;
 						foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
 						{
 							materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
 							materialCustoms.parameters[num2++].materialNames = list.ToArray();
 						}
-						method2.Invoke(materialCustoms, new object[0]);
+                        method2.Invoke(materialCustoms, new object[0]);
 						method.Invoke(obj, new object[]
 						{
 							accessoryData
@@ -1942,7 +1971,7 @@ namespace ClassLibrary4
 									{
 										num27 += 832000;
 									}
-									AccessoryData accessoryData = new AccessoryData(num27, array33[2], array33[4], array33[5], array33[5], array33[8], ItemDataBase.SPECIAL.NONE, dictionary.Count, false);
+									AccessoryData accessoryData = new AccessoryData(num27, array33[2], array33[4], array33[5], array33[6], array33[8], ItemDataBase.SPECIAL.NONE, dictionary.Count, false);
 									accessoryData.id = num27;
 									if (!dictionary.ContainsKey(accessoryData.id))
 									{
