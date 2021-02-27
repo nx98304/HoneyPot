@@ -74,5 +74,8 @@
   <ItemGroup>
     <EmbeddedResource Include="ph_shaders.unity3d" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="hsstandardshaders" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
