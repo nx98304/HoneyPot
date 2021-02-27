@@ -664,6 +664,22 @@ namespace ClassLibrary4
                                 {
                                     this.logSave("Shader remapping info found, remapping " + shader_name + " to " + HoneyPot.presets[shader_name].shader.name);
                                     material.shader = HoneyPot.presets[shader_name].shader;
+                                    if (material.shader.name.Contains("HSStandard"))
+                                    {
+                                        this.logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
+                                        this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+                                        bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+                                        bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+                                        bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+
+                                        this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+
+                                        if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+                                        if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+                                        if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+
+                                        this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                    }
                                 }
                             }
 
@@ -801,9 +817,25 @@ namespace ClassLibrary4
                                     {
                                         rq = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
                                         if ( HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]) )
-                                        { 
-                                            this.logSave("shader_name: " + HoneyPot.inspector[inspector_key]);
+                                        {
                                             material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
+                                            this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
+                                            if (material.shader.name.Contains("HSStandard"))
+                                            {
+                                                this.logSave(" - HSStandard shader family detected for Accessories, trying to assign RenderType...");
+                                                this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+                                                bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+                                                bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+                                                bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+
+                                                this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+
+                                                if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+                                                if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+                                                if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+
+                                                this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                            }
                                         }
                                         else
                                         {
@@ -914,8 +946,24 @@ namespace ClassLibrary4
                             {
                                 if ( HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]) )
                                 {
-                                    this.logSave("shader_name: " + HoneyPot.inspector[inspector_key]);
                                     material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
+                                    this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
+                                    if (material.shader.name.Contains("HSStandard"))
+                                    {
+                                        this.logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
+                                        this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+                                        bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+                                        bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+                                        bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+
+                                        this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+
+                                        if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+                                        if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+                                        if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+
+                                        this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                    }
                                 }
                                 else
                                 {
@@ -2283,11 +2331,11 @@ namespace ClassLibrary4
 			}
 		}
 
-        private void readAllPHShaders()
+        private AssetBundle loadEmbeddedAssetBundle(string embedded_name)
         {
-            Stream shader_rawstream = Assembly.GetExecutingAssembly().GetManifestResourceStream("ClassLibrary4.ph_shaders.unity3d");
+            Stream shader_rawstream = Assembly.GetExecutingAssembly().GetManifestResourceStream(embedded_name);
             byte[] buffer = new byte[16 * 1024];
-            byte[] shader_rawbyte;
+            byte[] rawbyte;
             using (MemoryStream ms = new MemoryStream())
             {
                 int read;
@@ -2295,43 +2343,60 @@ namespace ClassLibrary4
                 {
                     ms.Write(buffer, 0, read);
                 }
-                shader_rawbyte = ms.ToArray();
+                rawbyte = ms.ToArray();
                 ms.Close();
             }
             shader_rawstream.Close();
-            AssetBundle bundle = AssetBundle.LoadFromMemory(shader_rawbyte);
+            return AssetBundle.LoadFromMemory(rawbyte);
+        }
 
+        private void readAllPHShaders()
+        {          
+            AssetBundle bundle = loadEmbeddedAssetBundle("ClassLibrary4.ph_shaders.unity3d");
             Shader[] all_shaders = bundle.LoadAllAssets<Shader>();
             foreach (Shader s in all_shaders)
             {
                 this.logSave("Found " + s.name + " in the bundle.");
-                PH_shaders[s.name] = s;
+                HoneyPot.PH_shaders[s.name] = s;
             }
             Material[] all_materials = bundle.LoadAllAssets<Material>();
             foreach (Material m in all_materials)
             {
-                if (!PH_shaders.ContainsKey(m.shader.name))
+                if (!HoneyPot.PH_shaders.ContainsKey(m.shader.name))
                 {
                     this.logSave("Found " + m.shader.name + " in the bundle additionally.");
-                    PH_shaders[m.shader.name] = m.shader;
+                    HoneyPot.PH_shaders[m.shader.name] = m.shader;
                 }
             }
             GameObject asset_standard = bundle.LoadAsset<GameObject>("asset_standard");
             Renderer r = asset_standard.GetComponentInChildren<Renderer>();
             if( r.materials[0].shader != null )
             {
-                PH_shaders["Standard"] = r.materials[0].shader;
+                HoneyPot.PH_shaders["Standard"] = r.materials[0].shader;
             }
             else
             {
                 this.logSave("Somehow Standard shader cannot be loaded.");
             }
-            this.logSave(PH_shaders.Count + " shaders found.");
+
+            // Thank Doodoo for this!!!!!
+            AssetBundle bundle_HSStandard_PH = loadEmbeddedAssetBundle("ClassLibrary4.hsstandardshaders");
+            Material[] all_hsstandard_materials = bundle_HSStandard_PH.LoadAllAssets<Material>();
+            foreach (Material m in all_hsstandard_materials)
+            {
+                if (!HoneyPot.PH_shaders.ContainsKey(m.shader.name))
+                {
+                    this.logSave("Found " + m.shader.name + " in hsstandardshaders2.");
+                    HoneyPot.PH_shaders[m.shader.name] = m.shader;
+                }
+            }
+            this.logSave(HoneyPot.PH_shaders.Count + " shaders found.");
 
             GameObject proxy_to_get_material_customs = bundle.LoadAsset<GameObject>("p_cf_yayoi_top");
             HoneyPot.mc = proxy_to_get_material_customs.GetComponentInChildren<MaterialCustoms>();
 
             bundle.Unload(false);
+            bundle_HSStandard_PH.Unload(false);
         }
 
 		// Token: 0x06000043 RID: 67 RVA: 0x00006274 File Offset: 0x00004474
@@ -2732,7 +2797,7 @@ namespace ClassLibrary4
 //		private int SHADER_WEAR_TRANSPARENT = 2;
 
 		// Token: 0x04000026 RID: 38
-		private static Dictionary<string, int> material_rq = new Dictionary<string, int>();
+		private static Dictionary<string, int> material_rq = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
 
 		// Token: 0x04000027 RID: 39
 		private Female[] currentFemaleList = null;
