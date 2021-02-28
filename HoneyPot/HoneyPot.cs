@@ -984,15 +984,15 @@ namespace ClassLibrary4
                         }
                     }
 
-                    GameObject parent_obj = renderer.transform.parent.gameObject;
-                    if (type == WEAR_TYPE.SHORTS && (parent_obj.name.Contains("bot_b") || parent_obj.name.Contains("top_a") || parent_obj.name.Contains("top_b")))
-                    {
-                        parent_obj.SetActive(false);
-                    }
-                    else if (type == WEAR_TYPE.BRA && (parent_obj.name.Contains("bot_b") || parent_obj.name.Contains("bot_a") || parent_obj.name.Contains("top_b")))
-                    {
-                        parent_obj.SetActive(false);
-                    }
+                    //GameObject parent_obj = renderer.transform.parent.gameObject;
+                    //if (type == WEAR_TYPE.SHORTS && (parent_obj.name.Contains("bot_b") || parent_obj.name.Contains("top_a") || parent_obj.name.Contains("top_b")))
+                    //{
+                    //    parent_obj.SetActive(false);
+                    //}
+                    //else if (type == WEAR_TYPE.BRA && (parent_obj.name.Contains("bot_b") || parent_obj.name.Contains("bot_a") || parent_obj.name.Contains("top_b")))
+                    //{
+                    //    parent_obj.SetActive(false);
+                    //}
                 }
 
                 if (is_a_HS_cloth_parts_that_remmapped_shader)
@@ -1516,7 +1516,7 @@ namespace ClassLibrary4
 									if (!female_bot_dict.ContainsKey(wearData.id))
 									{
                                         wearData.liquid = celldata[11];
-                                        wearData.coordinates = int.Parse(celldata[13]);
+                                        wearData.coordinates = int.Parse(celldata[14]);
                                         wearData.shortsDisable = (!celldata[16].Equals("0"));
 
                                         female_bot_dict.Add(wearData.id, wearData);
@@ -1564,8 +1564,8 @@ namespace ClassLibrary4
 									if (!female_top_dict.ContainsKey(wearData.id))
 									{
                                         wearData.liquid = celldata[11];
-                                        wearData.coordinates = int.Parse(celldata[13]);
-                                        wearData.shortsDisable = (celldata[14].Equals("2"));
+                                        wearData.coordinates = int.Parse(celldata[14]);
+//                                        wearData.shortsDisable = (celldata[14].Equals("2"));
                                         wearData.braDisable = (!celldata[15].Equals("0"));
                                         wearData.nip = (!celldata[17].Equals("0"));
 
