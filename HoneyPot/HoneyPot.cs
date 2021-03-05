@@ -76,7 +76,7 @@ namespace ClassLibrary4
 		// Token: 0x06000025 RID: 37 RVA: 0x00002714 File Offset: 0x00000914
 		private void readInspector()
 		{
-			StreamReader streamReader = new StreamReader(this.inspectorText);
+			StreamReader streamReader = new StreamReader(this.inspectorText, Encoding.UTF8);
 			string text;
 			while ((text = streamReader.ReadLine()) != null)
 			{
