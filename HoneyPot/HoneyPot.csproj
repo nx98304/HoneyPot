@@ -70,6 +70,7 @@
     <Compile Include="Setting.cs" />
     <Compile Include="AttachBoneWeight_SetupRenderer_Patch.cs" />
     <Compile Include="WearObj_SetupMaterials_Patch.cs" />
+    <Compile Include="Wears_UpdateShow_Patches.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="ph_shaders.unity3d" />
