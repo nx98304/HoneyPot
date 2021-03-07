@@ -20,3 +20,4 @@ PBRsp_texture_alpha_culloff|Shader Forge/PBRsp_texture_alpha_culloff
 -8608838722815497166|HSStandard (Single Sided)
 -3677531257736809634|HSStandard (Two Colors)
 -7902135702503874624|HSStandard (Two Colors) (Single Sided)
+952725256833404699|Standard_555
