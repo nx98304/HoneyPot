@@ -25,15 +25,16 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - Download from the releases page and extract the zip into PH root folder. When in doubt, download the _all package and just overwrite all files. (Backup your `HoneyPot/shader.txt` if needed) ; if you have been keeping updated, download the _trim package that only contain the updated files. 
 
 ### How to Use
-- `HoneyPot/HoneyPotInspector.exe` to generate `HoneyPot/HoneyPotInspector.txt`. **Without this pre-processed txt file, HoneyPot won't work properly.** If you somehow want to make the inspector exe do a complete clean run (maybe your txt was lost or corrupted), delete `HoneyPot/FileDateMap.txt` before running in such situation, because if FileDateMap is present, it keeps the inspector from looking into related HS mods and repopulating the txt with correct data.
-- If you see any **Purple Color of Error**, the first thing to do is to run the HoneyPotInspector.exe and try again, because you probably forget to do it.
+- `HoneyPot/HoneyPotInspector.exe` to generate `HoneyPot/HoneyPotInspector.txt`. **Without this pre-processed txt file, HoneyPot won't work properly.** 
+- **If you somehow want to make the inspector exe do a complete clean run** (maybe your txt was lost or corrupted), delete `HoneyPot/FileDateMap.txt` first before running inspector. Because if FileDateMap is present, it keeps the inspector from looking into related HS mods and repopulating the txt with correct data.
+- If you see any **Purple Color of Error**, the first thing to do is to run the `HoneyPotInspector.exe` and try again, because you probably forget to do it.
 - `HoneyPot/shader.txt` to do the shader remapping. You can try to add new shader remapping rules here. See [How to use shader.txt effectively](#how-to-use-shadertxt-effectively). (The Material Editor mod makes it a lot easier to find suitable remap targets). 
 - If you see issues that are not Purple Color of Error, please consult the [Known Issues](#known-issues) section.
 
 ## Known Issues
 
 ### ...that you need some (easy) manual procedures to fix by yourself
-- Look into **howto_import_type_definition.zip** in the releases page, if see any of the following situation: 
+- Look into **howto_import_type_definition.zip** in the releases page, if you see any of the following: 
   - Hairs, Clothings, Accessories, Studio items and any other item mods that seem to show up in the list menu in-game, and also show up in the Studio Workspace, but just don't actually show up in the 3D space. (Usually means their assetbundle lacks type definitions of `SkinnedMeshRenderer`, `MeshRenderer` or other Renderers from Unity 5.3.x.)
   - Aforementioned items show up in 3D space, but somehow all texture failed to load, becoming pure/single color only. (Usually means their assetbundle lacks type definitions of `Texture2D` or `Material` from Unity 5.3.x.) 
   - Aforementioned items (especially Hairs) seem to show up just fine, but the transparency and render queue seem wrong. (Could be the `SetRenderQueue` Monobehavior's type definition from Unity 5.3.x is lacking.)
