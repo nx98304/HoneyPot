@@ -21,7 +21,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - Fixed HS Top and Bottom clothings interaction. Some of the tops that were meant to disable bottoms, but it disabled shorts instead in 1.4.5.
 
 ### Requirements & Installation
-- Make sure your PH installation has **BepInEx** & **IPA**. BepInEx doesn't have to be the latest, as HoneyPot mainly just needs **Harmony v2** in the BepinEx folder.
+- HoneyPot is still an IPA mod for now, but make sure your PH installation has **BepInEx**. BepInEx doesn't have to be the latest, as HoneyPot mainly just needs **Harmony v2** in the BepinEx folder.
 - Download from the releases page and extract the zip into PH root folder. When in doubt, download the _all package and just overwrite all files. (Backup your `HoneyPot/shader.txt` if needed) ; if you have been keeping updated, download the _trim package that only contain the updated files. 
 
 ### How to Use
