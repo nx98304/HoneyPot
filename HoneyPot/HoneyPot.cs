@@ -365,17 +365,41 @@ namespace ClassLibrary4
                             if (HoneyPot.inspector.ContainsKey(inspector_key))
                             {
                                 rq = getRenderQueue(inspector_key, i, setRQ_MBs);
-                                if ( rq <= 2500 )
+                                string shader_name = HoneyPot.inspector[inspector_key];
+                                //Note: So, for HS hairs, ideally we want to convert all of them to PH hair shader
+                                //      because that's usually just better, but hairs that use "HSStandard" is an exception.
+                                if ( HoneyPot.presets.ContainsKey(shader_name) && HoneyPot.presets[shader_name].shader.name.Contains("HSStandard") )
                                 {
-                                    this.logSave("This part of the hair mod seems to be non-transparent: " + HoneyPot.inspector[inspector_key] + ", default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
-                                    material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
+                                    material.shader = HoneyPot.presets[shader_name].shader;
+                                    this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
+
+                                    this.logSave(" - HSStandard shader family detected for Hairs, trying to assign RenderType...");
+                                    this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+                                    bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+                                    bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+                                    bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+
+                                    this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+
+                                    if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+                                    if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+                                    if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+
+                                    this.logSave("  RenderType: " + material.GetTag("RenderType", false));
                                 }
-                                else
-                                {
-                                    // TODO: We know PH hair shader is better. but we also want to distinguish culloff vs not culloff hair
-                                    //       but how do we do that here?
-                                    this.logSave("We know the hair shader is " + HoneyPot.inspector[inspector_key] + ", but PH's hair shader is almost always better: " + HoneyPot.orgShader.name);
-                                    material.shader = HoneyPot.orgShader;
+                                else {
+                                    if (rq <= 2500)
+                                    {
+                                        this.logSave("This part of the hair mod seems to be non-transparent: " + HoneyPot.inspector[inspector_key] + ", default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
+                                        material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
+                                    }
+                                    else
+                                    {
+                                        // TODO: We know PH hair shader is better. but we also want to distinguish culloff vs not culloff hair
+                                        //       but how do we do that here?
+                                        this.logSave("We know the hair shader is " + HoneyPot.inspector[inspector_key] + ", but PH's hair shader is almost always better: " + HoneyPot.orgShader.name);
+                                        material.shader = HoneyPot.orgShader;
+                                    }
                                 }
                             }
                             else
