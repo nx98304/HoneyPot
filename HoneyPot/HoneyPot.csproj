@@ -60,11 +60,13 @@
     <Compile Include="AddObjectItem_Load_Patches.cs" />
     <Compile Include="Class1.cs" />
     <Compile Include="Destroyer.cs" />
+    <Compile Include="EventTrigger.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HoneyPot.cs" />
     <Compile Include="HoneyPotStudio.cs" />
     <Compile Include="ItemFKCtrl_InitBone_Patches.cs" />
     <Compile Include="ItemFKCtrl_LateUpdate_Patches.cs" />
+    <Compile Include="MonoBehaviourExtensions.cs" />
     <Compile Include="PresetShader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Setting.cs" />
