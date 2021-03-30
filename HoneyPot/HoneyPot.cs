@@ -110,119 +110,6 @@ namespace ClassLibrary4
 			streamReader.Close();
 		}
 
-		// Token: 0x06000026 RID: 38 RVA: 0x000027B0 File Offset: 0x000009B0
-		//public void loadDefaultHairShader()
-		//{
-		//	try
-		//	{
-		//		GameObject gameObject = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, this.getHairAssetBundleName(), this.getHairPrefabName());
-		//		Renderer[] componentsInChildren = gameObject.GetComponentsInChildren<Renderer>(true);
-		//		this.orgShader = componentsInChildren[0].materials[0].shader;
-  //              gameObject.SetActive(false); 
-		//		GameObject gameObject2 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, "wear/cf_top_hsad", "p_cf_yayoi_top");
-  //              Renderer[] componentsInChildren2 = gameObject2.GetComponentsInChildren<Renderer>(true);
-  //              this.mats = componentsInChildren2[0].materials;
-  //              gameObject2.SetActive(false);
-  //              HoneyPot.mc = gameObject2.GetComponentInChildren<MaterialCustoms>();
-  //              foreach (KeyValuePair<string, PresetShader> keyValuePair in HoneyPot.presets)
-		//		{
-		//			PresetShader value = keyValuePair.Value;
-		//			if (value.assetBundleName.Contains("cf_m_"))
-		//			{
-		//				Material material = AssetBundleLoader.LoadAndInstantiate<Material>(this.assetBundlePath, value.assetBundleName, value.assetName);
-		//				value.material = material;
-		//				value.shader = value.material.shader;
-		//			}
-		//			else
-		//			{
-		//				GameObject gameObject3 = AssetBundleLoader.LoadAndInstantiate<GameObject>(this.assetBundlePath, value.assetBundleName, value.assetName);
-		//				Renderer[] componentsInChildren3 = gameObject3.GetComponentsInChildren<Renderer>(true);
-		//				value.material = componentsInChildren3[value.rendererIdx].materials[value.materialIdx];
-		//				value.shader = value.material.shader;
-		//				gameObject3.SetActive(false);
-  //                  }
-  //              }
-
-  //              // Adding two specific PresetShader only for simple particle effects: 
-  //              if (!HoneyPot.presets.ContainsKey("Particle Add"))
-  //              {
-  //                  HoneyPot.presets.Add("Particle Add", new PresetShader());
-  //                  HoneyPot.presets["Particle Add"].shader = Shader.Find("Particles/Additive");
-  //              }
-  //              if (!HoneyPot.presets.ContainsKey("Particle Alpha Blend"))
-  //              {
-  //                  HoneyPot.presets.Add("Particle Alpha Blend", new PresetShader());
-  //                  HoneyPot.presets["Particle Alpha Blend"].shader = Shader.Find("Particles/Alpha Blended");
-  //              }
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		this.logSave(ex.ToString());
-		//	}
-		//}
-
-		// Token: 0x06000027 RID: 39 RVA: 0x00002A14 File Offset: 0x00000C14
-		//public List<string> readOldPresetShaderString()
-		//{
-		//	List<string> list = new List<string>();
-		//	string str1 = ModPrefs.GetString("HoneyPot", "PresetShader_000", "accessory/ca_megane_hs00|p_asc_glasses_11_00|0|0|0", false);
-		//	string str2 = ModPrefs.GetString("HoneyPot", "PresetShader_001", "wear/cf_bra_hsad|p_cf_bra_09_00|0|0|0", false);
-		//	string str3 = ModPrefs.GetString("HoneyPot", "PresetShader_002", "wear/cf_top_hsad|p_cf_yayoi_top|1|0|0", false);
-		//	string str4 = ModPrefs.GetString("HoneyPot", "PresetShader_003", "wear/cf_top_hsad|p_cf_top_idol1_00|1|0|0", false);
-		//	string str5 = ModPrefs.GetString("HoneyPot", "PresetShader_004", "wear/cf_top_hsad|p_cf_top_miko1|0|0|0", false);
-		//	string str6 = ModPrefs.GetString("HoneyPot", "PresetShader_005", "", false);
-		//	string str7 = ModPrefs.GetString("HoneyPot", "PresetShader_006", "", false);
-		//	list.Add(str1);
-		//	list.Add(str2);
-		//	list.Add(str3);
-		//	list.Add(str4);
-		//	list.Add(str5);
-		//	if (!string.IsNullOrEmpty(str6))
-		//	{
-		//		//this.SHADER_NORMAL_MAX = 5;
-		//		list.Add(str6);
-		//		if (!string.IsNullOrEmpty(str7))
-		//		{
-		//		//	this.SHADER_NORMAL_MAX = 6;
-		//			list.Add(str7);
-		//		}
-		//	}
-		//	return list;
-		//}
-
-		// Token: 0x06000028 RID: 40 RVA: 0x00002B1C File Offset: 0x00000D1C
-		//public void loadOldPreset()
-		//{
-		//	try
-		//	{
-		//		foreach (string text in this.readOldPresetShaderString())
-		//		{
-		//			if (text.Length >= 2)
-		//			{
-		//				string[] array = text.Split(new char[]
-		//				{
-		//					'|'
-		//				});
-		//				if (array.Length >= 5)
-		//				{
-		//					PresetShader presetShader = new PresetShader();
-		//					presetShader.assetBundleName = array[0];
-		//					presetShader.assetName = array[1];
-		//					presetShader.rendererIdx = int.Parse(array[2]);
-		//					presetShader.materialIdx = int.Parse(array[3]);
-		//					presetShader.doCopyMaterial = array[4];
-		//					HoneyPot.presets.Add(array[0] + "|" + array[1], presetShader);
-		//					this.presetKeys.Add(array[0] + "|" + array[1]);
-		//				}
-		//			}
-		//		}
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		this.logSave(ex.ToString());
-		//	}
-		//}
-
 		// Token: 0x06000029 RID: 41 RVA: 0x00002C28 File Offset: 0x00000E28
 		public void setHairShaders()
 		{
@@ -274,58 +161,6 @@ namespace ClassLibrary4
 			}
 			h.hairs.ChangeColor(h.customParam.hair);
 		}
-
-		// Token: 0x0600002C RID: 44 RVA: 0x00002D54 File Offset: 0x00000F54
-		//public Shader getShader(int id, string materialName)
-		//{
-		//	string fileName = this.getFileName(id);
-		//	return this.getShader(fileName, materialName.Replace(" (Instance)", ""), false, false);
-		//}
-
-		// Token: 0x0600002D RID: 45 RVA: 0x00002D84 File Offset: 0x00000F84
-		//public Shader getShader(string fileName, string materialName, bool isItem = false, bool isTrans = false)
-		//{
-		//	this.logSave(string.Concat(new object[]
-		//	{
-		//		"getShader : ",
-		//		fileName,
-		//		" ",
-		//		materialName,
-		//		" ",
-		//		HoneyPot.inspector.Count
-		//	}));
-		//	string text = "Standard";
-		//	if (isItem)
-		//	{
-		//		text = "deffuse";
-		//	}
-		//	if (HoneyPot.inspector.ContainsKey(fileName + "|" + materialName))
-		//	{
-		//		text = HoneyPot.inspector[fileName + "|" + materialName];
-		//		this.logSave("contains:" + text);
-		//		if (text.Equals(""))
-		//		{
-		//			text = "deffuse";
-		//		}
-		//	}
-		//	if (!HoneyPot.presets.ContainsKey(text))
-		//	{
-		//		this.logSave("deffuse");
-		//		if (!isTrans && isItem)
-		//		{
-		//			text = "deffuse";
-		//		}
-		//		else
-		//		{
-		//			text = "PBRsp_alpha_culloff";
-		//		}
-		//	}
-		//	if (HoneyPot.presets.ContainsKey(text))
-		//	{
-		//		return HoneyPot.presets[text].shader;
-		//	}
-		//	return Shader.Find("Diffuse");
-		//}
 
 		// Token: 0x0600002E RID: 46 RVA: 0x000021CA File Offset: 0x000003CA
 		public string getFileName(int id)
@@ -760,30 +595,6 @@ namespace ClassLibrary4
             return result;
         }
 
-        // Token: 0x06000035 RID: 53 RVA: 0x000037CC File Offset: 0x000019CC
-  //      public int getShaderIdx(int wearID, bool doChange)
-		//{
-		//	int num = this.SHADER_NORMAL_1;
-		//	string @string = ModPrefs.GetString("HoneyPot", wearID.ToString(), this.SHADER_NORMAL_1.ToString(), false);
-		//	try
-		//	{
-		//		num = int.Parse(@string);
-		//	}
-		//	catch (Exception)
-		//	{
-		//	}
-		//	if (doChange)
-		//	{
-		//		num++;
-		//		if (num > this.SHADER_NORMAL_MAX)
-		//		{
-		//			num = this.SHADER_NORMAL_1;
-		//		}
-		//		ModPrefs.SetString("HoneyPot", wearID.ToString(), num.ToString());
-		//	}
-		//	return num;
-		//}
-
 		// Token: 0x06000036 RID: 54
 		public void setAccsShader(/*bool doStep, */Human h)
 		{
@@ -898,14 +709,6 @@ namespace ClassLibrary4
 						this.logSave(ex.ToString());
 					}
 				}
-				//if (doStep)
-				//{
-				//	this.searchShaderIdx++;
-				//	if (this.searchShaderIdx >= this.presetKeys.Count)
-				//	{
-				//		this.searchShaderIdx = 0;
-				//	}
-				//}
 			}
 			catch (Exception ex2)
 			{
@@ -1007,16 +810,6 @@ namespace ClassLibrary4
                             is_a_HS_cloth_parts_that_remmapped_shader = true;
                         }
                     }
-
-                    //GameObject parent_obj = renderer.transform.parent.gameObject;
-                    //if (type == WEAR_TYPE.SHORTS && (parent_obj.name.Contains("bot_b") || parent_obj.name.Contains("top_a") || parent_obj.name.Contains("top_b")))
-                    //{
-                    //    parent_obj.SetActive(false);
-                    //}
-                    //else if (type == WEAR_TYPE.BRA && (parent_obj.name.Contains("bot_b") || parent_obj.name.Contains("bot_a") || parent_obj.name.Contains("top_b")))
-                    //{
-                    //    parent_obj.SetActive(false);
-                    //}
                 }
 
                 if (is_a_HS_cloth_parts_that_remmapped_shader)
@@ -2283,9 +2076,6 @@ namespace ClassLibrary4
                 t.Start();
                 this.readAllPHShaders();
                 this.loadShaderMapping();
-                //this.loadPreset();
-				//this.loadOldPreset();
-				//this.loadDefaultHairShader();
                 this.logSave("Shader loaded timestamp: " + t.ElapsedMilliseconds.ToString());
 				try
 				{
@@ -2790,35 +2580,11 @@ namespace ClassLibrary4
 		// Token: 0x0400001B RID: 27
 		private static Dictionary<string, PresetShader> presets = new Dictionary<string, PresetShader>();
 
-		// Token: 0x0400001C RID: 28
-		//private Dictionary<string, PresetShader> oldPresets = new Dictionary<string, PresetShader>();
-
-		// Token: 0x0400001D RID: 29
-		// private List<string> presetKeys = new List<string>();
-
-		// Token: 0x0400001E RID: 30
-		// private Dictionary<int, Setting> settings = new Dictionary<int, Setting>();
-
 		// Token: 0x0400001F RID: 31
 		private static Dictionary<int, string> idFileDict = new Dictionary<int, string>();
 
 		// Token: 0x04000020 RID: 32
 		private static List<string> conflictList = new List<string>();
-
-		// Token: 0x04000021 RID: 33
-//		private int searchShaderIdx;
-
-		// Token: 0x04000022 RID: 34
-//		private int SHADER_ACCS_TRANSPARENT = 0;
-
-		// Token: 0x04000023 RID: 35
-//		private int SHADER_NORMAL_1 = 2;
-
-		// Token: 0x04000024 RID: 36
-//		private int SHADER_NORMAL_MAX = 4;
-
-		// Token: 0x04000025 RID: 37
-//		private int SHADER_WEAR_TRANSPARENT = 2;
 
 		// Token: 0x04000026 RID: 38
 		private static Dictionary<string, int> material_rq = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
