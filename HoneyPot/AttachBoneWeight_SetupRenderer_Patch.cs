@@ -48,7 +48,7 @@ namespace ClassLibrary4
             Transform basebone_of_currentloading;
             if (bones.ContainsKey("cf_J_Root") || bones.ContainsKey("cm_J_Root"))
             {
-                bool female = bones.ContainsKey("cf_J_Root") ? true : false;
+                //bool female = bones.ContainsKey("cf_J_Root") ? true : false;
                 //basebone_of_currentloading = Transform_Utility.FindTransform(attachObj.transform.parent, female ? "cf_J_Hips" : "cm_J_Hips");
                 // WTF: Apparently Bonesframework's additional bones can appear under the J_Root tree AND ALSO N_O_Root tree.
                 // This means we just can't assume. 
