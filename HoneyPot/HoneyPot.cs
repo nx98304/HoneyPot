@@ -767,8 +767,8 @@ namespace ClassLibrary4
                             !material.name.Contains("cm_m_body_CustomMaterial") &&
                             !renderer.tag.Contains("New tag (8)") || !isTop))
                         {
-                            this.logSave("Wear material: " + inspector_key);
                             int rq = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
+                            this.logSave("Wear material: " + inspector_key + " RQ: " + rq);
                             if ( HoneyPot.inspector.ContainsKey(inspector_key) )
                             {
                                 if ( HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]) )
