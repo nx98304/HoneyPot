@@ -182,11 +182,10 @@ namespace ClassLibrary4
 				{
 					gameObject.AddComponent<Destroyer>();
 				}
-				Renderer[] componentsInChildren = gameObject.GetComponentsInChildren<Renderer>(true);
-				SetRenderQueue[] setRQ_MBs = gameObject.GetComponentsInChildren<SetRenderQueue>(true);
-				for (int i = 0; i < componentsInChildren.Length; i++)
+				Renderer[] renderers = gameObject.GetComponentsInChildren<Renderer>(true);
+				foreach (Renderer r in renderers)
 				{
-					foreach (Material material in componentsInChildren[i].materials)
+					foreach (Material material in r.materials)
 					{
 						if (HoneyPot.orgShader == null && !"".Equals(material.shader.name))
 						{
@@ -199,7 +198,7 @@ namespace ClassLibrary4
                             int rq = material.renderQueue;
                             if (HoneyPot.inspector.ContainsKey(inspector_key))
                             {
-                                rq = getRenderQueue(inspector_key, i, setRQ_MBs);
+                                rq = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
                                 string shader_name = HoneyPot.inspector[inspector_key];
                                 //Note: So, for HS hairs, ideally we want to convert all of them to PH hair shader
                                 //      because that's usually just better, but hairs that use "HSStandard" is an exception.
@@ -312,7 +311,6 @@ namespace ClassLibrary4
             new List<string>();
             Renderer[] renderers_in_children = obj.GetComponentsInChildren<Renderer>(true);
             Projector[] projectors_in_childern = obj.GetComponentsInChildren<Projector>(true);
-            SetRenderQueue[] setRQ_MBs = obj.GetComponentsInChildren<SetRenderQueue>(true);
             foreach (Projector p in projectors_in_childern)
             {
                 // test
@@ -415,7 +413,7 @@ namespace ClassLibrary4
                     {
                         string shader_name = "";
                         string inspector_key = fileName + "|" + material.name.Replace(" (Instance)", "");
-                        int guessing_renderqueue = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
+                        int guessing_renderqueue = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
                         if ("".Equals(material.shader.name))
                         {
                             this.logSave("item!");
@@ -576,16 +574,17 @@ namespace ClassLibrary4
 
         //Generalized Render Queue retrival: SRQ MB will have the last say if it is present, 
         //                                   otherwise use the CustomRenderQueue value. 
-        private int getRenderQueue(string inspector_key, int renderer_idx, SetRenderQueue[] setRQ_MBs)
+        private int getRenderQueue(string inspector_key, SetRenderQueue setRQ_MB)
         {
             int result = -1; //is this default value good?
             if (HoneyPot.material_rq.ContainsKey(inspector_key))
             {
                 result = HoneyPot.material_rq[inspector_key];
             }
-            if (renderer_idx < setRQ_MBs.Length)
+
+            if (setRQ_MB != null)
             {
-                int[] array = setRQ_MBs[renderer_idx].Get();
+                int[] array = setRQ_MB.Get();
                 if (array.Length != 0)
                 {
                     result = array[0];
@@ -624,7 +623,6 @@ namespace ClassLibrary4
 					{
 						GameObject gameObject = (GameObject)field.GetValue(obj);
 						Renderer[] renderers_in_acceobj = gameObject.GetComponentsInChildren<Renderer>(true);
-                        SetRenderQueue[] setRQ_MBs = gameObject.GetComponentsInChildren<SetRenderQueue>(true);
                         if (gameObject.GetComponent<Destroyer>() == null)
 						{
 							gameObject.AddComponent<Destroyer>();
@@ -632,11 +630,9 @@ namespace ClassLibrary4
 						MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
 						materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
 						List<string> list = new List<string>();
-                        int renderer_idx = -1;
-                        foreach (Renderer renderer in renderers_in_acceobj)
+                        foreach (Renderer r in renderers_in_acceobj)
 						{
-                            renderer_idx++;
-							foreach (Material material in renderer.materials)
+							foreach (Material material in r.materials)
 							{
                                 string material_name = material.name.Replace(" (Instance)", "");
                                 string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
@@ -650,7 +646,7 @@ namespace ClassLibrary4
                                     int rq = material.renderQueue;
                                     if (HoneyPot.inspector.ContainsKey(inspector_key))
                                     {
-                                        rq = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
+                                        rq = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
                                         if ( HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]) )
                                         {
                                             material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
@@ -736,7 +732,6 @@ namespace ClassLibrary4
                 bool is_a_HS_cloth_parts_that_remmapped_shader = false;
                 GameObject gameObject = wearobj.obj;
                 Renderer[] renderers_in_wearobj = gameObject.GetComponentsInChildren<Renderer>(true);
-                SetRenderQueue[] setRQ_MBs = gameObject.GetComponentsInChildren<SetRenderQueue>(true);
                 if (gameObject.GetComponent<Destroyer>() == null)
                 {
                     gameObject.AddComponent<Destroyer>();
@@ -745,10 +740,8 @@ namespace ClassLibrary4
                 materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
                 List<string> list = new List<string>();
 
-                int renderer_idx = -1;
                 foreach (Renderer renderer in renderers_in_wearobj)
                 {
-                    renderer_idx++;
                     foreach (Material material in renderer.materials)
                     {
                         string material_name = material.name.Replace(" (Instance)", "");
@@ -767,7 +760,7 @@ namespace ClassLibrary4
                             !material.name.Contains("cm_m_body_CustomMaterial") &&
                             !renderer.tag.Contains("New tag (8)") || !isTop))
                         {
-                            int rq = getRenderQueue(inspector_key, renderer_idx, setRQ_MBs);
+                            int rq = getRenderQueue(inspector_key, renderer.gameObject.GetComponent<SetRenderQueue>());
                             this.logSave("Wear material: " + inspector_key + " RQ: " + rq);
                             if ( HoneyPot.inspector.ContainsKey(inspector_key) )
                             {
