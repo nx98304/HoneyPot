@@ -12,13 +12,11 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 
 ## Current Status
 
-### 1.4.6
+### 1.4.7
 - Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases).
-- **HoneyPot/HoneyPotInspector.exe updated!** When run, it will generate another file called `HoneyPot/FileDateMap.txt` to keep track of all your `.unity3d` files in `abdata/` folder. If the file is found and the creation time of the file is the same, it will skip processing. This vastly speed up the subsequent runs of the inspector exe. Now, please **DO NOT DELETE** `HoneyPot/HoneyPotInspector.txt` from the previous run, before executing the inspector again.   
-- **HSStandard** shader ported to Unity **5.5.5**, and making HoneyPot utilize them. (Thanks to Doodoo!) The `HoneyPot/shader.txt` file updated to reflect the addition.
-- The **Standard** shader from Unity **5.3.x** also ported to Unity **5.5.5**, as various HS mods are using them, and somehow the 5.5.5 native Standard shaders won't work properly as a substituion. (Also Thanks to Doodoo!) The `HoneyPot/shader.txt` file updated to reflect the addition (Standard_555).
-- Patched `Wears.UpdateShow(WEAR_SHOW_TYPE)` to reflect the fact that HS **tops can show bra when in full-state**. Now both HS top mods and PH top mods, with their correct list settings respectively, can utilize this feature in PH.   
-- Fixed HS Top and Bottom clothings interaction. Some of the tops that were meant to disable bottoms, but it disabled shorts instead in 1.4.5.
+- **Both PH clothings and HS clothing mods with the concept of additional bones** is now supported by HoneyPot. This means HS mods based on **BonesFramework** will work as intended, at the same time, PH clothings that have similar function, while don't have `additional_bones` data in their assetbundles, will also work. Which means the `Activate Bonemod` option in the Better Repack **is superceded by this, and the substitution of** `resources.assets` **is no longer needed.**
+- SetRenderQueue behaviour fix. There was a situation where a mismatch of SRQ MBs and their corresponding renderers might happen. 
+- Further fixed situations where `null` **Root Bone** is present in clothings. The initial fix was introduced in v1.4.5, but was incorrectly implemented and will impact *male* clothings that are missing the root bone setting. 
 
 ### Requirements & Installation
 - HoneyPot is still an IPA mod for now, but make sure your PH installation has **BepInEx**. BepInEx doesn't have to be the latest, as HoneyPot mainly just needs **Harmony v2** in the BepinEx folder.
@@ -40,16 +38,17 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
   - Aforementioned items (especially Hairs) seem to show up just fine, but the **transparency and render queue seem wrong**. (Could be the `SetRenderQueue` Monobehavior's type definition from Unity 5.3.x is lacking.)
   - All above situations will cause error messages like: `The file 'archive:/CAB-...' is corrupted! Remove it and launch unity again!` to be seen in the game's log. Remember checking them. **I don't know how to automatically adding type definitions to assetbundles.**   
 - Water surfaces in scene/map-like studio items looks solid: remove it using SB3U, and put in standalone water items in studio.
-- Some clothing has wrong Render Queue settings. If a clothing doesn't actually feature half-transparency (not just net-like or with holes that can see through), you would never want it to have RQ values higher than 2500 (meaning transparent to Unity). It will affect the clothing's ability to receive shadows from other objects. Use SB3U to fix the asset permanently or use Material Editor to save the temporary changes to your character/clothing cards.  
+- Some clothing has wrong Render Queue settings. If a clothing doesn't actually feature half-transparency (not just net-like or with holes that can see through), you would never want it to have RQ values higher than 2500 (meaning transparent to Unity). It will affect the clothing's ability to receive shadows from other objects. Use SB3U to fix the asset permanently or use Material Editor to save the temporary changes to your character/clothing cards. 
+- If you encounter HS top clothings that made body skin purple despite having run HoneyPotInspector, currently you will have to use SB3U and remove whatever material that is set on the `o_body_*` meshes manually. The material setting of the body meshes should be `(none)`. 
 
 ### ...in the current functionalities that might be fixed down the line
 - Some clothing / accessories interacts with the custom color in a weird way. (Not to be confused with colors you can't change to begin with)
 - Detection for some glass-like materials are still wrong. 
+- Some HS top clothing has a temporary or almost-empty `Material` assigned to `o_body_*` Which is a big issue for PH's loading process, since those materials are missing a lot of textures and settings from normal, working body materials, and PH's loading process will fail with a lot of NREs. 
 - Is fur shader remapping possible? 
 
 ### ...that this mod probably will NEVER fix
 - Custom shader-heavy stuff. Like fancy particle effects, complex water effects, etc. 
-- Clothing / accessories or items that rely on other additional HS mods to work properly. Such as BonesFramework. 
 
 ## Possible Roadmap
 
@@ -71,6 +70,13 @@ shader.txt 's remapping records is fairly limited before. But with the now enhan
 - After changing `shader.txt` you need to restart the game. 
 
 ## Past updates
+
+### 1.4.6
+- **HoneyPot/HoneyPotInspector.exe updated!** When run, it will generate another file called `HoneyPot/FileDateMap.txt` to keep track of all your `.unity3d` files in `abdata/` folder. If the file is found and the creation time of the file is the same, it will skip processing. This vastly speed up the subsequent runs of the inspector exe. Now, please **DO NOT DELETE** `HoneyPot/HoneyPotInspector.txt` from the previous run, before executing the inspector again.   
+- **HSStandard** shader ported to Unity **5.5.5**, and making HoneyPot utilize them. (Thanks to Doodoo!) The `HoneyPot/shader.txt` file updated to reflect the addition.
+- The **Standard** shader from Unity **5.3.x** also ported to Unity **5.5.5**, as various HS mods are using them, and somehow the 5.5.5 native Standard shaders won't work properly as a substituion. (Also Thanks to Doodoo!) The `HoneyPot/shader.txt` file updated to reflect the addition (Standard_555).
+- Patched `Wears.UpdateShow(WEAR_SHOW_TYPE)` to reflect the fact that HS **tops can show bra when in full-state**. Now both HS top mods and PH top mods, with their correct list settings respectively, can utilize this feature in PH.   
+- Fixed HS Top and Bottom clothings interaction. Some of the tops that were meant to disable bottoms, but it disabled shorts instead in 1.4.5.
 
 ### 1.4.5
 - Basic nip and liquid state handling for HS clothings. HS tops still can't show bras at the same time (still have to go into half-state to see), but this change opens up further efforts that can be done. 
