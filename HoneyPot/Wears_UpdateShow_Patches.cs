@@ -7,49 +7,6 @@ using Character;
 
 namespace ClassLibrary4
 {
-    [HarmonyPatch(typeof(Wears), "WearInstantiate",
-        new Type[] { typeof(WEAR_TYPE), typeof(Material), typeof(Material) }
-    )]
-    public class Wears_WearInstantiate_Patches
-    {
-        private static FieldInfo wearParamField = typeof(Wears).GetField("wearParam", BindingFlags.Instance | BindingFlags.NonPublic);
-
-        public static HashSet<string> Current_additional_rootbones_ = new HashSet<string>();
-        
-        public static bool Prefix(Wears __instance, WEAR_TYPE type, Material skinMaterial, Material customHighlightMat_Skin)
-        {
-            int num = (int)type;
-            if ( (wearParamField.GetValue(__instance) as WearParameter).wears[num] == null ) return true;
-
-            WearData wd = __instance.GetWearData(type);
-            if ( wd == null ) return true;
-
-            AssetBundle ab = AssetBundle.LoadFromFile(wd.assetbundleDir + "/" + wd.assetbundleName);
-            TextAsset ta = ab.LoadAsset<TextAsset>("additional_bones");
-            ab.Unload(false);
-            Current_additional_rootbones_.Clear();
-
-            if ( ta != null )
-            {   
-                Console.WriteLine("Loaded additional_bones data from " + wd.assetbundleDir + "/" + wd.assetbundleName);
-
-                string[] lines = ta.text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-                foreach( string line in lines)
-                {
-                    string[] cells = line.Split('\t');
-                    if (!cells[0].Equals(wd.prefab))
-                        continue;
-                    Console.WriteLine(" -- Found matching line for asset " + wd.prefab + "\n ---- " + line);
-
-                    for (int i = 1; i < cells.Length; i++)
-                        Current_additional_rootbones_.Add(cells[i]);
-                    break;
-                }
-            }
-            return true;
-        }
-    }
-
     [HarmonyPatch(typeof(Wears), "ReAttachDynamicBone", 
         new Type[] { typeof(GameObject) }
     )]
