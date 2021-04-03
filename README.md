@@ -27,7 +27,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - **If you somehow want to make the inspector exe do a complete clean run** (maybe your txt was lost or corrupted), delete `HoneyPot/FileDateMap.txt` first before running inspector. Because if FileDateMap is present, it keeps the inspector from looking into related HS mods and repopulating the txt with correct data.
 - If you see any **Purple Color of Error**, the first thing to do is to run the `HoneyPotInspector.exe` and try again, because you probably forget to do it.
 - `HoneyPot/shader.txt` to do the shader remapping. You can try to add new shader remapping rules here. See [How to use shader.txt effectively](#how-to-use-shadertxt-effectively). (The Material Editor mod makes it a lot easier to find suitable remap targets). 
-- If you see issues that are not Purple Color of Error, please consult the [Known Issues](#known-issues) section.
+- If you see issues that are not Purple Color of Error, or *still* seeing Purple Color of Error despite having run HoneyPotInspector, please consult the [Known Issues](#known-issues) section.
 
 ## Known Issues
 
