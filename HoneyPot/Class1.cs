@@ -64,7 +64,7 @@ namespace ClassLibrary4
 		{
 			get
 			{
-				return "1.4.7";
+				return "1.4.8";
 			}
 		}
 
