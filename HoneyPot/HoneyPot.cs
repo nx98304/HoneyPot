@@ -274,7 +274,7 @@ namespace ClassLibrary4
                     this.setWearShader(female, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
                 }
             }
-			foreach (Male male in Resources.FindObjectsOfTypeAll(typeof(Male)))
+			foreach (Male male in this.currentMaleList)
 			{
 				if (male.isActiveAndEnabled)
 				{
