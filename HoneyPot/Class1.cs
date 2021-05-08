@@ -14,7 +14,7 @@ namespace ClassLibrary4
 		{
             try
 			{
-                Harmony harmony = new Harmony(this.Name);
+                harmony = new Harmony(this.Name);
                 harmony.PatchAll(Assembly.GetExecutingAssembly());
             }
 			catch (Exception ex)
@@ -112,6 +112,7 @@ namespace ClassLibrary4
                 this.logSave("HoneyPot (re-)initializing after level was loaded.");
                 GameObject gameObject = new GameObject("HoneyPot");
                 this.hp = gameObject.AddComponent<HoneyPot>();
+                this.hp.SetHarmony(harmony);
                 this.hp.gameObject.SetActive(true);
             }
         }
@@ -121,7 +122,8 @@ namespace ClassLibrary4
 		{
 		}
 
-		// Token: 0x04000001 RID: 1
+        // Token: 0x04000001 RID: 1
+        private Harmony harmony;
 		private HoneyPot hp;
 	}
 }

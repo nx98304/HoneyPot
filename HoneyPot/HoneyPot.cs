@@ -2,18 +2,27 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Linq;
 using Character;
 using IllusionPlugin;
+using HarmonyLib;
 using Studio;
 using UnityEngine;
 
 namespace ClassLibrary4
 {
-	// Token: 0x02000007 RID: 7
+	[HarmonyPatch]
 	public class HoneyPot : MonoBehaviour
 	{
+        private Harmony harmony;
+
+        public void SetHarmony(Harmony input)
+        {
+            harmony = input;
+        }
+
 		private void Start()
 		{
 			this.hairObjField = this.typeHairs.GetField("parts", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -21,6 +30,8 @@ namespace ClassLibrary4
 			this.typeHairObj = this.libAssembly.GetType("HairObj");
 			this.gameObjField = this.typeHairObj.GetField("obj", BindingFlags.Instance | BindingFlags.Public);
 			this.nowTabField = this.typeWearCustomEdit.GetField("nowTab", BindingFlags.Instance | BindingFlags.NonPublic);
+            self = GameObject.Find("HoneyPot").GetComponent<HoneyPot>();
+            this.logSave("HoneyPot.Start called.");
         }
 
         // Token: 0x06000023 RID: 35 RVA: 0x00002560 File Offset: 0x00000760
@@ -260,27 +271,27 @@ namespace ClassLibrary4
 			{
 				if (female.isActiveAndEnabled)
 				{
-					this.setAccsShader(/*false, */female);
-                    this.setWearShader(female, 9, WEAR_TYPE.SOCKS, 3000, 3000, 1, false, false);
-                    this.setWearShader(female, 10, WEAR_TYPE.SHOES, 3000, 3000, 1, false, false);
-                    this.setWearShader(female, 6, WEAR_TYPE.SWIM_BOTTOM, 3000, 3000, 1, false, false);
-                    this.setWearShader(female, 4, WEAR_TYPE.SWIM, 3000, 3000, 1, false, false);
-                    this.setWearShader(female, 5, WEAR_TYPE.SWIM_TOP, 3000, 3000, 1, false, false);
-                    this.setWearShader(female, 2, WEAR_TYPE.BRA, 3100, 2900, 1, true, false);
-                    this.setWearShader(female, 3, WEAR_TYPE.SHORTS, 3100, 2900, 1, true, false);
-                    this.setWearShader(female, 7, WEAR_TYPE.GLOVE, 3000, 3000, 1, false, false);
-                    this.setWearShader(female, 8, WEAR_TYPE.PANST, 3000, 3000, 1, false, false);
-                    this.setWearShader(female, 1, WEAR_TYPE.BOTTOM, 3000, 3000, 1, false, false);
-                    this.setWearShader(female, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
+					//this.setAccsShader(/*false, */female);
+                    //this.setWearShader(female, 9, WEAR_TYPE.SOCKS, 3000, 3000, 1, false, false);
+                    //this.setWearShader(female, 10, WEAR_TYPE.SHOES, 3000, 3000, 1, false, false);
+                    //this.setWearShader(female, 6, WEAR_TYPE.SWIM_BOTTOM, 3000, 3000, 1, false, false);
+                    //this.setWearShader(female, 4, WEAR_TYPE.SWIM, 3000, 3000, 1, false, false);
+                    //this.setWearShader(female, 5, WEAR_TYPE.SWIM_TOP, 3000, 3000, 1, false, false);
+                    //this.setWearShader(female, 2, WEAR_TYPE.BRA, 3100, 2900, 1, true, false);
+                    //this.setWearShader(female, 3, WEAR_TYPE.SHORTS, 3100, 2900, 1, true, false);
+                    //this.setWearShader(female, 7, WEAR_TYPE.GLOVE, 3000, 3000, 1, false, false);
+                    //this.setWearShader(female, 8, WEAR_TYPE.PANST, 3000, 3000, 1, false, false);
+                    //this.setWearShader(female, 1, WEAR_TYPE.BOTTOM, 3000, 3000, 1, false, false);
+                    //this.setWearShader(female, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
                 }
             }
 			foreach (Male male in this.currentMaleList)
 			{
 				if (male.isActiveAndEnabled)
 				{
-					this.setAccsShader(/*false, */male);
-                    this.setWearShader(male, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
-                    this.setWearShader(male, 10, WEAR_TYPE.SHOES, 3000, 3000, 1, false, false);
+					//this.setAccsShader(/*false, */male);
+                    //this.setWearShader(male, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
+                    //this.setWearShader(male, 10, WEAR_TYPE.SHOES, 3000, 3000, 1, false, false);
                 }
             }
 		}
@@ -594,127 +605,324 @@ namespace ClassLibrary4
             return result;
         }
 
-		// Token: 0x06000036 RID: 54
-		public void setAccsShader(/*bool doStep, */Human h)
-		{
-			try
-			{
-				Accessories accessories = h.accessories;
-				Type type = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj");
-				object value = typeof(Accessories).GetField("acceObjs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(accessories);
-				FieldInfo field = type.GetField("obj", BindingFlags.Instance | BindingFlags.Public);
-				MethodInfo method = type.GetMethod("SetupMaterials", new Type[]
-				{
-					typeof(AccessoryData)
-				});
-				Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms+Data_Base").GetField("materials", BindingFlags.Instance | BindingFlags.NonPublic);
-				MethodInfo method2 = Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms").GetMethod("Setup", new Type[0]);
-				int num = -1;
-				foreach (object obj in ((Array)value))
-				{
-					num++;
-					AccessoryData accessoryData = accessories.GetAccessoryData(h.customParam.acce, num);
-					if (accessoryData == null)
-					{
-                        continue;
-                    }
-                    //this.logSave(" Acc: " + accessoryData.assetbundleDir + "/" + accessoryData.assetbundleName + ":" + accessoryData.prefab_F);
-                    try
-					{
-						GameObject gameObject = (GameObject)field.GetValue(obj);
-						Renderer[] renderers_in_acceobj = gameObject.GetComponentsInChildren<Renderer>(true);
-                        if (gameObject.GetComponent<Destroyer>() == null)
-						{
-							gameObject.AddComponent<Destroyer>();
-						}
-						MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
-						materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
-						List<string> list = new List<string>();
-                        foreach (Renderer r in renderers_in_acceobj)
-						{
-							foreach (Material material in r.materials)
-							{
-                                string material_name = material.name.Replace(" (Instance)", "");
-                                string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
-                                if (material.renderQueue <= 2500)
-								{
-									list.Add(material_name);
-								}
-								if ("".Equals(material.shader.name) /*|| doStep*/)
-								{
-                                    this.logSave("Acce material: " + inspector_key);
-                                    int rq = material.renderQueue;
-                                    if (HoneyPot.inspector.ContainsKey(inspector_key))
-                                    {
-                                        rq = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
-                                        if ( HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]) )
-                                        {
-                                            material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
-                                            this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
-                                            if (material.shader.name.Contains("HSStandard"))
-                                            {
-                                                this.logSave(" - HSStandard shader family detected for Accessories, trying to assign RenderType...");
-                                                this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
-                                                bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
-                                                bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
-                                                bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
-
-                                                this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
-
-                                                if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
-                                                if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
-                                                if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
-
-                                                this.logSave("  RenderType: " + material.GetTag("RenderType", false));
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (rq <= 2500)
-                                            {
-                                                this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
-                                                material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
-                                            }
-                                            else
-                                            {
-                                                this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name + " with high RQ to get transparency.");
-                                                material.shader = HoneyPot.presets["Standard"].shader;
-                                            }
-                                        }
-                                    }
-                                    material.renderQueue = rq;
-                                    //important: RQ assignment has to go after shader assignment. 
-                                    //           fucking implicit setter changes stuff... 
-                                }                               
-                            }                            
-						}
-                        int num2 = 0;
-						foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
-						{
-							materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
-							materialCustoms.parameters[num2++].materialNames = list.ToArray();
-						}
-                        method2.Invoke(materialCustoms, new object[0]);
-						method.Invoke(obj, new object[]
-						{
-							accessoryData
-						});
-                    }
-					catch (Exception ex)
-					{
-						this.logSave(ex.ToString());
-					}
-				}
-			}
-			catch (Exception ex2)
-			{
-				this.logSave(ex2.ToString());
-			}
-		}
-
-        public void setWearShader(Human h, int idx, WEAR_TYPE type, int maxColorRendererQueue, int maxTransparentRenderQueue, int transparentShaderIdx, bool forceColorable = false, bool isTop = false)
+        [HarmonyPatch(typeof(Accessories), "AccessoryInstantiate")]
+        static void Postfix(Accessories __instance, AccessoryParameter acceParam, int slot, bool fixAttachParent, AccessoryData prevData)
         {
-            WearObj wearobj = h.wears.GetWearObj(type);
+            //Human h = humanField.GetValue(__instance) as Human;
+            //self.logSave(h.name + ", " + type.ToString());
+            __instance.UpdateColorCustom(slot);
+            self.setAccsShader(__instance, acceParam, slot);
+        }
+
+        static IEnumerable<CodeInstruction> AcceObj_SetupMaterials_Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            int startIndex = -1;
+            int endIndex = codes.Count - 1;
+            for (int i = endIndex; i >= 0; i--)
+            {
+                if (codes[i].opcode == OpCodes.Call)
+                {
+                    startIndex = i;
+                    break;
+                }
+            }
+            if (startIndex > -1)
+            {
+                codes[startIndex-1].opcode = OpCodes.Nop;
+                codes[startIndex].opcode = OpCodes.Nop; 
+                // Remove the UpdateColorCustom call at the end of AcceObj.SetupMaterials
+            }
+            return codes.AsEnumerable();
+        }
+
+        static MethodInfo AcceObj_SetupMaterials = 
+            Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj").GetMethod("SetupMaterials", new Type[]{ typeof(AccessoryData) });
+
+//        static AccessoryData accessorydata_dummy = 
+
+        static void AcceObj_UpdateColorCustom_Prefix(object __instance)
+        {
+            AcceObj_SetupMaterials.Invoke(__instance, new object[]{ null });
+        }
+
+        public void setAccsShader(Accessories acce, AccessoryParameter acceParam, int slot)
+        {
+            //Type acceObjType = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj");
+            //FieldInfo objField = acceObjType.GetField("obj", BindingFlags.Instance | BindingFlags.Public);
+            //MethodInfo method = acceObjType.GetMethod("SetupMaterials", new Type[]
+            //{
+            //    typeof(AccessoryData)
+            //});
+            //Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms+Data_Base").GetField("materials", BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo method2 = Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms").GetMethod("Setup", new Type[0]);
+            //            int num = -1;
+            //            foreach (object obj in ((Array)value))
+            //            {
+            //                num++;
+            //if( slot >= 10 )
+            //{
+            //    this.logSave(" Accessories more than 10 blocked by HoneyPot for now.");
+            //    return;
+            //}
+
+            /* TODO: Wait, so, since gameObject can actually be acquired from Accessories.objAcs,
+             *       That means, I only need to take care of the access of acceObj, which is only needed for
+             *       calling AcceObj.SetupMaterials(AccessoryData) at the end of this function. 
+             *       But -- I don't actually need to do that because Accessories.UpdateColorCustom(int) (public) 
+             *       is KINDA already doing that -- it's just that AcceObj.UpdateColorCustom() doesn't call
+             *       AcceObj.SetupMaterials again. What if we just add a prefix to AcceObj.UpdateColorCustom(), 
+             *       so that it calls SetupMaterials(AccessoryData) again?
+             *       In such a patch function, we would have AcceObj as __instance, 
+             *       and AccessoryData is not even used at all, so passing in a null value will do the job.
+             *       
+             *       [HarmonyPatch(typeof(AcceObj), "UpdateColorCustom")]
+             *       static void Prefix(AcceObj __instance) {
+             *           __instance.CallPrivate("SetupMaterials", null);
+             *       }
+             */
+
+            this.logSave("acceParam.slot.length = " + acceParam.slot.Length + ", slotno = " + slot);
+            AccessoryCustom acceCustom = acceParam.slot[slot];
+            AccessoryData accessoryData = CustomDataManager.GetAcceData(acceCustom.type, acceCustom.id);
+            if (accessoryData == null)
+            {
+                return;
+            }
+            //this.logSave(" Acc: " + accessoryData.assetbundleDir + "/" + accessoryData.assetbundleName + ":" + accessoryData.prefab_F);
+            try
+            {
+                //Array acceObjs = typeof(Accessories).GetField("acceObjs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(acce) as Array;
+                //object acceObj = acceObjs.GetValue(slot);
+                GameObject gameObject = acce.objAcs[slot]; //objField.GetValue(acceObj) as GameObject;
+                Renderer[] renderers_in_acceobj = gameObject.GetComponentsInChildren<Renderer>(true);
+                //if (gameObject.GetComponent<Destroyer>() == null)
+                //{
+                //    gameObject.AddComponent<Destroyer>();
+                //}
+                MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
+                materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
+                List<string> list = new List<string>();
+                foreach (Renderer r in renderers_in_acceobj)
+                {
+                    foreach (Material material in r.materials)
+                    {
+                        string material_name = material.name.Replace(" (Instance)", "");
+                        string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
+                        if (material.renderQueue <= 2500)
+                        {
+                            list.Add(material_name);
+                        }
+                        if ("".Equals(material.shader.name) )
+                        {
+                            this.logSave("Acce material: " + inspector_key);
+                            int rq = material.renderQueue;
+                            if (HoneyPot.inspector.ContainsKey(inspector_key))
+                            {
+                                rq = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
+                                if (HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]))
+                                {
+                                    material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
+                                    this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
+                                    if (material.shader.name.Contains("HSStandard"))
+                                    {
+                                        this.logSave(" - HSStandard shader family detected for Accessories, trying to assign RenderType...");
+                                        this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+                                        bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+                                        bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+                                        bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+
+                                        this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+
+                                        if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+                                        if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+                                        if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+
+                                        this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                    }
+                                }
+                                else
+                                {
+                                    if (rq <= 2500)
+                                    {
+                                        this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
+                                        material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
+                                    }
+                                    else
+                                    {
+                                        this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name + " with high RQ to get transparency.");
+                                        material.shader = HoneyPot.presets["Standard"].shader;
+                                    }
+                                }
+                            }
+                            material.renderQueue = rq;
+                            //important: RQ assignment has to go after shader assignment. 
+                            //           fucking implicit setter changes stuff... 
+                        }
+                    }
+                }
+                int num2 = 0;
+                foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
+                {
+                    materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
+                    materialCustoms.parameters[num2++].materialNames = list.ToArray();
+                }
+                method2.Invoke(materialCustoms, new object[0]);
+                acce.UpdateColorCustom(slot);
+                //method.Invoke(acceObj, new object[]
+                //{
+                //    accessoryData
+                //});
+            }
+            catch (Exception ex)
+            {
+                this.logSave(ex.ToString());
+            }
+//            }
+
+        }
+
+        // Token: 0x06000036 RID: 54
+        //      public void setAccsShader(/*bool doStep, */Human h)
+        //{
+        //	try
+        //	{
+        //		Accessories accessories = h.accessories;
+        //		Type type = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj");
+        //		object value = typeof(Accessories).GetField("acceObjs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(accessories);
+        //		FieldInfo field = type.GetField("obj", BindingFlags.Instance | BindingFlags.Public);
+        //		MethodInfo method = type.GetMethod("SetupMaterials", new Type[]
+        //		{
+        //			typeof(AccessoryData)
+        //		});
+        //		Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms+Data_Base").GetField("materials", BindingFlags.Instance | BindingFlags.NonPublic);
+        //		MethodInfo method2 = Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms").GetMethod("Setup", new Type[0]);
+        //		int num = -1;
+        //		foreach (object obj in ((Array)value))
+        //		{
+        //			num++;
+        //			AccessoryData accessoryData = accessories.GetAccessoryData(h.customParam.acce, num);
+        //			if (accessoryData == null)
+        //			{
+        //                      continue;
+        //                  }
+        //                  //this.logSave(" Acc: " + accessoryData.assetbundleDir + "/" + accessoryData.assetbundleName + ":" + accessoryData.prefab_F);
+        //                  try
+        //			{
+        //				GameObject gameObject = (GameObject)field.GetValue(obj);
+        //				Renderer[] renderers_in_acceobj = gameObject.GetComponentsInChildren<Renderer>(true);
+        //                      if (gameObject.GetComponent<Destroyer>() == null)
+        //				{
+        //					gameObject.AddComponent<Destroyer>();
+        //				}
+        //				MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
+        //				materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
+        //				List<string> list = new List<string>();
+        //                      foreach (Renderer r in renderers_in_acceobj)
+        //				{
+        //					foreach (Material material in r.materials)
+        //					{
+        //                              string material_name = material.name.Replace(" (Instance)", "");
+        //                              string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
+        //                              if (material.renderQueue <= 2500)
+        //						{
+        //							list.Add(material_name);
+        //						}
+        //						if ("".Equals(material.shader.name) /*|| doStep*/)
+        //						{
+        //                                  this.logSave("Acce material: " + inspector_key);
+        //                                  int rq = material.renderQueue;
+        //                                  if (HoneyPot.inspector.ContainsKey(inspector_key))
+        //                                  {
+        //                                      rq = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
+        //                                      if ( HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]) )
+        //                                      {
+        //                                          material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
+        //                                          this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
+        //                                          if (material.shader.name.Contains("HSStandard"))
+        //                                          {
+        //                                              this.logSave(" - HSStandard shader family detected for Accessories, trying to assign RenderType...");
+        //                                              this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+        //                                              bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+        //                                              bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+        //                                              bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+
+        //                                              this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+
+        //                                              if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+        //                                              if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+        //                                              if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+
+        //                                              this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+        //                                          }
+        //                                      }
+        //                                      else
+        //                                      {
+        //                                          if (rq <= 2500)
+        //                                          {
+        //                                              this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
+        //                                              material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
+        //                                          }
+        //                                          else
+        //                                          {
+        //                                              this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name + " with high RQ to get transparency.");
+        //                                              material.shader = HoneyPot.presets["Standard"].shader;
+        //                                          }
+        //                                      }
+        //                                  }
+        //                                  material.renderQueue = rq;
+        //                                  //important: RQ assignment has to go after shader assignment. 
+        //                                  //           fucking implicit setter changes stuff... 
+        //                              }                               
+        //                          }                            
+        //				}
+        //                      int num2 = 0;
+        //				foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
+        //				{
+        //					materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
+        //					materialCustoms.parameters[num2++].materialNames = list.ToArray();
+        //				}
+        //                      method2.Invoke(materialCustoms, new object[0]);
+        //				method.Invoke(obj, new object[]
+        //				{
+        //					accessoryData
+        //				});
+        //                  }
+        //			catch (Exception ex)
+        //			{
+        //				this.logSave(ex.ToString());
+        //			}
+        //		}
+        //	}
+        //	catch (Exception ex2)
+        //	{
+        //		this.logSave(ex2.ToString());
+        //	}
+        //}
+
+        //private static FieldInfo humanField = typeof(Wears).GetField("human", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        [HarmonyPatch(typeof(Wears), "WearInstantiate")]
+        static void Postfix(Wears __instance, WEAR_TYPE type, Material skinMaterial, Material customHighlightMat_Skin)
+        {
+            //Human h = humanField.GetValue(__instance) as Human;
+            //self.logSave(h.name + ", " + type.ToString());
+            if (type == WEAR_TYPE.SOCKS) self.setWearShader(__instance, 9, type, 3000, 3000, 1, false, false);
+            else if (type == WEAR_TYPE.SHOES) self.setWearShader(__instance, 10, type, 3000, 3000, 1, false, false);
+            else if (type == WEAR_TYPE.SWIM_BOTTOM) self.setWearShader(__instance, 6, type, 3000, 3000, 1, false, false);
+            else if (type == WEAR_TYPE.SWIM) self.setWearShader(__instance, 4, type, 3000, 3000, 1, false, false);
+            else if (type == WEAR_TYPE.SWIM_TOP) self.setWearShader(__instance, 5, type, 3000, 3000, 1, false, false);
+            else if (type == WEAR_TYPE.BRA) self.setWearShader(__instance, 2, type, 3100, 2900, 1, true, false);
+            else if (type == WEAR_TYPE.SHORTS) self.setWearShader(__instance, 3, type, 3100, 2900, 1, true, false);
+            else if (type == WEAR_TYPE.GLOVE) self.setWearShader(__instance, 7, type, 3000, 3000, 1, false, false);
+            else if (type == WEAR_TYPE.PANST) self.setWearShader(__instance, 8, type, 3000, 3000, 1, false, false);
+            else if (type == WEAR_TYPE.BOTTOM) self.setWearShader(__instance, 1, type, 3000, 3000, 1, false, false);
+            else if (type == WEAR_TYPE.TOP) self.setWearShader(__instance, 0, type, 3000, 3000, 1, false, true);
+        }
+
+        public void setWearShader(Wears wears, int idx, WEAR_TYPE type, int maxColorRendererQueue, int maxTransparentRenderQueue, int transparentShaderIdx, bool forceColorable = false, bool isTop = false)
+        {
+            WearObj wearobj = wears.GetWearObj(type);
             if (wearobj == null)
             {
                 return;
@@ -722,20 +930,20 @@ namespace ClassLibrary4
             try
             {
                 Type typeWearObj = Assembly.GetAssembly(typeof(WearObj)).GetType("WearObj");
-                WearData wearData = h.wears.GetWearData(type);
+                WearData wearData = wears.GetWearData(type);
                 MethodInfo method = typeWearObj.GetMethod("SetupMaterials", new Type[]
                 {
                     typeof(WearData)
                 });
                 MethodInfo method2 = Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms").GetMethod("Setup", new Type[0]);
-                int wearID = h.customParam.wear.GetWearID(type);
+                //int wearID = h.customParam.wear.GetWearID(type);
                 bool is_a_HS_cloth_parts_that_remmapped_shader = false;
                 GameObject gameObject = wearobj.obj;
                 Renderer[] renderers_in_wearobj = gameObject.GetComponentsInChildren<Renderer>(true);
-                if (gameObject.GetComponent<Destroyer>() == null)
-                {
-                    gameObject.AddComponent<Destroyer>();
-                }
+                //if (gameObject.GetComponent<Destroyer>() == null)
+                //{
+                //    gameObject.AddComponent<Destroyer>();
+                //}
                 MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
                 materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
                 List<string> list = new List<string>();
@@ -2116,6 +2324,9 @@ namespace ClassLibrary4
 				this.transportDicts();
                 this.createCatecory();
                 this.logSave("Move categories timestamp: " + t.ElapsedMilliseconds.ToString());
+                HarmonyMethod transpiler = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_SetupMaterials_Transpiler), new[] { typeof(IEnumerable<CodeInstruction>) });
+                harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("SetupMaterials", new Type[] { typeof(AccessoryData) }), transpiler: transpiler);
+                harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("UpdateColorCustom"), new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_UpdateColorCustom_Prefix)));
                 t.Stop();
                 this.logSave("All shader prepared - HoneyPot first run used time: " + t.ElapsedMilliseconds.ToString());
             }
@@ -2125,7 +2336,7 @@ namespace ClassLibrary4
 				this.currentFemaleList = (Resources.FindObjectsOfTypeAll(typeof(Female)) as Female[]);
                 this.currentMaleList = (Resources.FindObjectsOfTypeAll(typeof(Male)) as Male[]);
                 this.wearCustomEdit    = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
-                this.setAccsShaders();
+                //this.setAccsShaders();
 				this.setHairShaders();
 				this.setItemShaders();
 			}
@@ -2518,6 +2729,47 @@ namespace ClassLibrary4
 			}
 		}
 
+        #region NotReallyRelated_To_HoneyPot
+        //Note: To_be_moved: This should be moved out of HoneyPot when I have time. 
+        //      Should really be combined with the body mesh NML fixes that I hardcoded in Assembly-CSharp.dll
+        static private Human reference_to_human = null;
+        static private FieldInfo bodySkinMeshField = typeof(Wears).GetField("bodySkinMesh", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        [HarmonyPatch(typeof(CoordinateCapture), "SetHuman")]
+        static void Prefix(Human human)
+        {
+            reference_to_human = human;
+        }
+
+        [HarmonyPatch(typeof(SyncBoneWeight), "Awake")]
+        static void Prefix(SyncBoneWeight __instance)
+        {
+            if (reference_to_human == null) return;
+
+            Transform what_object_is_this = __instance.attachMeshRoot.transform;
+            while (what_object_is_this.parent != null)
+                what_object_is_this = what_object_is_this.parent;
+
+            if (what_object_is_this.name != "EditMode") return;
+
+            SkinnedMeshRenderer[] renderers = __instance.attachMeshRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            Transform[] reference_bones = (bodySkinMeshField.GetValue(reference_to_human.wears) as SkinnedMeshRenderer).bones;
+            Transform[] reordered_bones = new Transform[reference_bones.Length];
+
+            foreach (SkinnedMeshRenderer r in renderers)
+            {
+                if (r.bones.Length < 1 || r.name != "cf_O_body_00") continue;
+                for (int i = 0; i < r.bones.Length; i++)
+                {
+                    int j = 0;
+                    while (reference_bones[i].name != r.bones[j].name) j++;
+                    reordered_bones[i] = r.bones[j];
+                }
+                r.bones = reordered_bones;
+            }
+        }
+        #endregion
+
         // Token: 0x04000007 RID: 7
         public static bool doUpdate = false;
 
@@ -2596,5 +2848,6 @@ namespace ClassLibrary4
 		private Female[] currentFemaleList = null;
         private Male[] currentMaleList = null;
         private static Dictionary<string, Shader> PH_shaders = new Dictionary<string, Shader>();
+        private static HoneyPot self;
     }
 }
