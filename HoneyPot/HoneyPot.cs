@@ -10,6 +10,7 @@ using IllusionPlugin;
 using HarmonyLib;
 using Studio;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ClassLibrary4
 {
@@ -288,12 +289,12 @@ namespace ClassLibrary4
 		}
 
 		// Token: 0x06000030 RID: 48 RVA: 0x00003070 File Offset: 0x00001270
-		public void setAccsShaders()
-		{
-			foreach (Female female in this.currentFemaleList)
-			{
-				if (female.isActiveAndEnabled)
-				{
+		//public void setAccsShaders()
+		//{
+		//	foreach (Female female in this.currentFemaleList)
+		//	{
+		//		if (female.isActiveAndEnabled)
+		//		{
 					//this.setAccsShader(/*false, */female);
                     //this.setWearShader(female, 9, WEAR_TYPE.SOCKS, 3000, 3000, 1, false, false);
                     //this.setWearShader(female, 10, WEAR_TYPE.SHOES, 3000, 3000, 1, false, false);
@@ -306,18 +307,18 @@ namespace ClassLibrary4
                     //this.setWearShader(female, 8, WEAR_TYPE.PANST, 3000, 3000, 1, false, false);
                     //this.setWearShader(female, 1, WEAR_TYPE.BOTTOM, 3000, 3000, 1, false, false);
                     //this.setWearShader(female, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
-                }
-            }
-			foreach (Male male in this.currentMaleList)
-			{
-				if (male.isActiveAndEnabled)
-				{
+   //             }
+   //         }
+			//foreach (Male male in this.currentMaleList)
+			//{
+			//	if (male.isActiveAndEnabled)
+			//	{
 					//this.setAccsShader(/*false, */male);
                     //this.setWearShader(male, 0, WEAR_TYPE.TOP, 3000, 3000, 1, false, true);
                     //this.setWearShader(male, 10, WEAR_TYPE.SHOES, 3000, 3000, 1, false, false);
-                }
-            }
-		}
+  //              }
+  //          }
+		//}
 
         static void AddObjectItem_Load_Postfix(OCIItem __result)
         {
@@ -2297,21 +2298,21 @@ namespace ClassLibrary4
 		}
 
 		// Token: 0x0600003D RID: 61 RVA: 0x00005F9C File Offset: 0x0000419C
-		private bool doAutoUpdate()
-		{
-			this.step += 1L;
-			int interval = this.getInterval();
-			if (interval <= 0 || this.isShaderChanged)
-			{
-				return false;
-			}
-			bool flag = this.step % (long)interval == 0L;
-			if (flag)
-			{
-				this.isShaderChanged = true;
-			}
-			return flag;
-		}
+		//private bool doAutoUpdate()
+		//{
+		//	this.step += 1L;
+		//	int interval = this.getInterval();
+		//	if (interval <= 0 || this.isShaderChanged)
+		//	{
+		//		return false;
+		//	}
+		//	bool flag = this.step % (long)interval == 0L;
+		//	if (flag)
+		//	{
+		//		this.isShaderChanged = true;
+		//	}
+		//	return flag;
+		//}
 
 		// Token: 0x0600003E RID: 62 RVA: 0x000021EA File Offset: 0x000003EA
 		public string getHairPrefabName()
@@ -2391,46 +2392,73 @@ namespace ClassLibrary4
                 this.exportConflict();
 				this.transportDicts();
                 this.logSave("Move categories timestamp: " + t.ElapsedMilliseconds.ToString());
-                HarmonyMethod transpiler = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_SetupMaterials_Transpiler), new[] { typeof(IEnumerable<CodeInstruction>) });
-                harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("SetupMaterials", new Type[] { typeof(AccessoryData) }), transpiler: transpiler);
-                harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("UpdateColorCustom"), new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_UpdateColorCustom_Prefix)));
-                if( Singleton<Studio.Studio>.Instance != null )
+                HarmonyMethod acceobj_setupmaterials_transpiler = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_SetupMaterials_Transpiler), new[] { typeof(IEnumerable<CodeInstruction>) });
+                HarmonyMethod acceobj_updatecolorcustom_prefix  = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_UpdateColorCustom_Prefix));
+                HarmonyMethod head_changeeyebrow_postfix = new HarmonyMethod(typeof(HoneyPot), nameof(Head_ChangeEyebrow_Postfix));
+                HarmonyMethod head_changeeyelash_postfix = new HarmonyMethod(typeof(HoneyPot), nameof(Head_ChangeEyelash_Postfix));
+                harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("SetupMaterials", new Type[] { typeof(AccessoryData) }), transpiler: acceobj_setupmaterials_transpiler);
+                harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("UpdateColorCustom"), prefix: acceobj_updatecolorcustom_prefix);
+                harmony.Patch(typeof(Head).GetMethod("ChangeEyebrow"), postfix: head_changeeyebrow_postfix);
+                harmony.Patch(typeof(Head).GetMethod("ChangeEyelash"), postfix: head_changeeyelash_postfix);
+                if ( Singleton<Studio.Studio>.Instance != null )
                 {
-                    this.logSave("HoneyPot in Studio, patching AddObjectItem.Add and creating categories (???)...");
+                    this.logSave("HoneyPot in Studio, patching AddObjectItem.Load and creating categories (???)...");
                     harmony.Patch(typeof(AddObjectItem).GetMethod("Load", new Type[] { typeof(OIItemInfo), typeof(ObjectCtrlInfo), typeof(TreeNodeObject) }), null, new HarmonyMethod(typeof(HoneyPot), nameof(AddObjectItem_Load_Postfix)));
                     this.createCatecory();
                 }
                 t.Stop();
                 this.logSave("All shader prepared - HoneyPot first run used time: " + t.ElapsedMilliseconds.ToString());
             }
-			if (Input.GetKeyDown(KeyCode.F12) || this.doAutoUpdate() || HoneyPot.doUpdate)
-			{
-				HoneyPot.doUpdate = false;
-				this.currentFemaleList = (Resources.FindObjectsOfTypeAll(typeof(Female)) as Female[]);
-                this.currentMaleList = (Resources.FindObjectsOfTypeAll(typeof(Male)) as Male[]);
+            //if (Input.GetKeyDown(KeyCode.F12) || this.doAutoUpdate() || HoneyPot.doUpdate)
+            if( this.wearCustomEdit == null && SceneManager.GetActiveScene().name == "EditScene" ) 
+            {
+            
+				//HoneyPot.doUpdate = false;
+				//this.currentFemaleList = (Resources.FindObjectsOfTypeAll(typeof(Female)) as Female[]);
+                //this.currentMaleList = (Resources.FindObjectsOfTypeAll(typeof(Male)) as Male[]);
                 this.wearCustomEdit    = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
                 //this.setAccsShaders();
 				//this.setHairShaders();
 				//this.setItemShaders();
 			}
-			if (this.currentFemaleList != null)
-			{
-				foreach (Female female in this.currentFemaleList)
-				{
-					if (female.isActiveAndEnabled)
-					{
-						if (HoneyPot.idFileDict.ContainsKey(female.customParam.head.eyeBrowID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha"))
-						{
-							female.head.Rend_eyebrow.material.shader = HoneyPot.presets["PBRsp_texture_alpha"].shader;
-						}
-						if (HoneyPot.idFileDict.ContainsKey(female.customParam.head.eyeLashID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha_culloff"))
-						{
-							female.head.Rend_eyelash.material.shader = HoneyPot.presets["PBRsp_texture_alpha_culloff"].shader;
-						}
-					}
-				}
-			}
+			//if (this.currentFemaleList != null)
+			//{
+			//	foreach (Female female in this.currentFemaleList)
+			//	{
+			//		if (female.isActiveAndEnabled)
+			//		{
+			//			if (HoneyPot.idFileDict.ContainsKey(female.customParam.head.eyeBrowID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha"))
+			//			{
+			//				female.head.Rend_eyebrow.material.shader = HoneyPot.presets["PBRsp_texture_alpha"].shader;
+			//			}
+			//			if (HoneyPot.idFileDict.ContainsKey(female.customParam.head.eyeLashID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha_culloff"))
+			//			{
+			//				female.head.Rend_eyelash.material.shader = HoneyPot.presets["PBRsp_texture_alpha_culloff"].shader;
+			//			}
+			//		}
+			//	}
+			//}
 		}
+
+        static FieldInfo head_humanField = typeof(Head).GetField("human", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        static void Head_ChangeEyebrow_Postfix(Head __instance)
+        {
+            Human h = head_humanField.GetValue(__instance) as Human;
+            if (HoneyPot.idFileDict.ContainsKey(h.customParam.head.eyeBrowID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha"))
+            {
+                h.head.Rend_eyebrow.material.shader = HoneyPot.presets["PBRsp_texture_alpha"].shader;
+            }
+        }
+
+        static void Head_ChangeEyelash_Postfix(Head __instance)
+        {
+            Human h = head_humanField.GetValue(__instance) as Human;
+            if (HoneyPot.idFileDict.ContainsKey(h.customParam.head.eyeLashID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha_culloff"))
+            {
+                h.head.Rend_eyelash.material.shader = HoneyPot.presets["PBRsp_texture_alpha_culloff"].shader;
+            }
+        }
 
         private AssetBundle loadEmbeddedAssetBundle(string embedded_name)
         {
@@ -2844,10 +2872,10 @@ namespace ClassLibrary4
         #endregion
 
         // Token: 0x04000007 RID: 7
-        public static bool doUpdate = false;
+        //public static bool doUpdate = false;
 
 		// Token: 0x04000008 RID: 8
-		private long step;
+		//private long step;
 
 		// Token: 0x04000009 RID: 9
 		private static bool isFirst = true;
@@ -2918,8 +2946,8 @@ namespace ClassLibrary4
 		private static Dictionary<string, int> material_rq = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
 
 		// Token: 0x04000027 RID: 39
-		private Female[] currentFemaleList = null;
-        private Male[] currentMaleList = null;
+		//private Female[] currentFemaleList = null;
+        //private Male[] currentMaleList = null;
         private static Dictionary<string, Shader> PH_shaders = new Dictionary<string, Shader>();
         private static HoneyPot self;
     }
