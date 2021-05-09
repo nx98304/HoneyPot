@@ -122,56 +122,79 @@ namespace ClassLibrary4
 		}
 
 		// Token: 0x06000029 RID: 41 RVA: 0x00002C28 File Offset: 0x00000E28
-		public void setHairShaders()
-		{
-			foreach (Female female in this.currentFemaleList)
-			{
-				if (female.isActiveAndEnabled)
-				{
-					Hairs hairs = female.hairs;
-					this.setHairShaders(hairs, female);
-				}
-			}
-            foreach (Male male in this.currentMaleList)
-            {
-                if (male.isActiveAndEnabled)
-                {
-                    Hairs hairs = male.hairs;
-                    this.setHairShaders(hairs, male);
-                }
-            }
-		}
+		//public void setHairShaders()
+		//{
+		//	foreach (Female female in this.currentFemaleList)
+		//	{
+		//		if (female.isActiveAndEnabled)
+		//		{
+		//			Hairs hairs = female.hairs;
+		//			this.setHairShaders(hairs, female);
+		//		}
+		//	}
+  //          foreach (Male male in this.currentMaleList)
+  //          {
+  //              if (male.isActiveAndEnabled)
+  //              {
+  //                  Hairs hairs = male.hairs;
+  //                  this.setHairShaders(hairs, male);
+  //              }
+  //          }
+		//}
 
 		// Token: 0x0600002A RID: 42 RVA: 0x00002C68 File Offset: 0x00000E68
-		public void setItemShaders()
-		{
-			foreach (KeyValuePair<int, ObjectCtrlInfo> keyValuePair in Singleton<Studio.Studio>.Instance.dicObjectCtrl)
-			{
-				OCIItem item = keyValuePair.Value as OCIItem;
-                if (item != null)
-                {
-                    this.setItemShader(item);
-                }
-			}
-		}
+		//public void setItemShaders()
+		//{
+		//	foreach (KeyValuePair<int, ObjectCtrlInfo> keyValuePair in Singleton<Studio.Studio>.Instance.dicObjectCtrl)
+		//	{
+		//		OCIItem item = keyValuePair.Value as OCIItem;
+  //              if (item != null)
+  //              {
+  //                  this.setItemShader(item);
+  //              }
+		//	}
+		//}
 
-		// Token: 0x0600002B RID: 43 RVA: 0x00002CD8 File Offset: 0x00000ED8
-		public void setHairShaders(Hairs hairs, Human h)
-		{
-			Array array = (Array)this.hairObjField.GetValue(hairs);
-			for (int i = 0; i < array.Length; i++)
-			{
-                if (array.GetValue(i) != null)
+        private static FieldInfo hairs_humanField = typeof(Hairs).GetField("human", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        [HarmonyPatch(typeof(Hairs), "Load")]
+        static void Postfix(Hairs __instance, HairParameter param)
+        {
+            //Array array = (Array)self.hairObjField.GetValue(__instance);
+            SEX sex = (hairs_humanField.GetValue(__instance) as Human).sex;
+            //for ( int i = 0; i < array.Length; i++ )
+            for ( int i = 0; i < 3; i++ )
+            {
+                //if (array.GetValue(i) != null)
+                if( __instance.objHairs[i] != null )
                 {
-                    int id = h.customParam.hair.parts[i].ID;
-                    HairData hair_data = h.sex == SEX.FEMALE ?
+                    int id = param.parts[i].ID;
+                    HairData hair_data = (sex == SEX.FEMALE) ?
                         CustomDataManager.GetHair_Female((HAIR_TYPE)i, id) :
                         CustomDataManager.GetHair_Male(id);
-                    this.setHairShaderObj(array.GetValue(i), hair_data.assetbundleName.Replace("\\", "/"));
+                    self.setHairShaderObj(__instance.objHairs[i], hair_data.assetbundleName.Replace("\\", "/"));
                 }
-			}
-			h.hairs.ChangeColor(h.customParam.hair);
-		}
+            }
+            __instance.ChangeColor(param);
+        }
+
+		// Token: 0x0600002B RID: 43 RVA: 0x00002CD8 File Offset: 0x00000ED8
+		//public void setHairShaders(Hairs hairs, Human h)
+		//{
+		//	Array array = (Array)this.hairObjField.GetValue(hairs);
+		//	for (int i = 0; i < array.Length; i++)
+		//	{
+  //              if (array.GetValue(i) != null)
+  //              {
+  //                  int id = h.customParam.hair.parts[i].ID;
+  //                  HairData hair_data = h.sex == SEX.FEMALE ?
+  //                      CustomDataManager.GetHair_Female((HAIR_TYPE)i, id) :
+  //                      CustomDataManager.GetHair_Male(id);
+  //                  this.setHairShaderObj(array.GetValue(i), hair_data.assetbundleName.Replace("\\", "/"));
+  //              }
+		//	}
+		//	h.hairs.ChangeColor(h.customParam.hair);
+		//}
 
 		// Token: 0x0600002E RID: 46 RVA: 0x000021CA File Offset: 0x000003CA
 		public string getFileName(int id)
@@ -184,16 +207,16 @@ namespace ClassLibrary4
 		}
 
 		// Token: 0x0600002F RID: 47 RVA: 0x00002E94 File Offset: 0x00001094
-		public void setHairShaderObj(object temp, string assetBundleName)
+		public void setHairShaderObj(GameObject objHair, string assetBundleName)
 		{
 			try
 			{
-				GameObject gameObject = (GameObject)this.gameObjField.GetValue(temp);
-				if (gameObject.GetComponent<Destroyer>() == null)
-				{
-					gameObject.AddComponent<Destroyer>();
-				}
-				Renderer[] renderers = gameObject.GetComponentsInChildren<Renderer>(true);
+				//GameObject gameObject = (GameObject)this.gameObjField.GetValue(temp);
+				//if (gameObject.GetComponent<Destroyer>() == null)
+				//{
+				//	gameObject.AddComponent<Destroyer>();
+				//}
+				Renderer[] renderers = objHair.GetComponentsInChildren<Renderer>(true);
 				foreach (Renderer r in renderers)
 				{
 					foreach (Material material in r.materials)
@@ -296,26 +319,36 @@ namespace ClassLibrary4
             }
 		}
 
+        static void AddObjectItem_Load_Postfix(OCIItem __result)
+        {
+            Info.ItemLoadInfo itemLoadInfo = Singleton<Info>.Instance.dicItemLoadInfo[__result.itemInfo.no];
+            self.setItemShader(__result.objectItem, itemLoadInfo.bundlePath.Replace("\\", "/"));
+            if(__result.isColor2 || __result.isChangeColor )
+            {
+                __result.UpdateColor();
+            }
+        }
+
 		// Token: 0x06000031 RID: 49 RVA: 0x00003210 File Offset: 0x00001410
-		public void setItemShader(OCIItem item)
-		{
-			try
-			{
-                if (Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(item.itemInfo.no))
-				{
-					Info.ItemLoadInfo itemLoadInfo = Singleton<Info>.Instance.dicItemLoadInfo[item.itemInfo.no];
-                    this.setItemShader(item.objectItem, itemLoadInfo.bundlePath.Replace("\\", "/"));
-					if (item.isColor2 || item.isChangeColor)
-					{
-						item.UpdateColor();
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				this.logSave(ex.ToString());
-			}
-		}
+		//public void setItemShader(OCIItem item)
+		//{
+		//	try
+		//	{
+  //              if (Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(item.itemInfo.no))
+		//		{
+		//			Info.ItemLoadInfo itemLoadInfo = Singleton<Info>.Instance.dicItemLoadInfo[item.itemInfo.no];
+  //                  this.setItemShader(item.objectItem, itemLoadInfo.bundlePath.Replace("\\", "/"));
+		//			if (item.isColor2 || item.isChangeColor)
+		//			{
+		//				item.UpdateColor();
+		//			}
+		//		}
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		this.logSave(ex.ToString());
+		//	}
+		//}
 
         public void setItemShader(GameObject obj, string fileName)
         {
@@ -646,6 +679,40 @@ namespace ClassLibrary4
             AcceObj_SetupMaterials.Invoke(__instance, new object[]{ null });
         }
 
+        [HarmonyPatch(typeof(MaterialCustoms), "Setup")]
+        static bool Prefix(MaterialCustoms __instance)
+        {
+            if (__instance == null || __instance.parameters == null)
+                return false;
+
+            Renderer[] componentsInChildren = __instance.GetComponentsInChildren<Renderer>(true);
+            __instance.datas = new MaterialCustoms.Data_Base[__instance.parameters.Length];
+            for (int i = 0; i < __instance.parameters.Length; i++)
+            {
+                MaterialCustoms.Parameter parameter = __instance.parameters[i];
+                if (parameter == null)
+                    return false;
+
+                if (parameter.type == MaterialCustoms.Parameter.TYPE.FLOAT01)
+                {
+                    __instance.datas[i] = new MaterialCustoms.Data_Float(parameter, componentsInChildren, 0f, 1f);
+                }
+                else if (parameter.type == MaterialCustoms.Parameter.TYPE.FLOAT11)
+                {
+                    __instance.datas[i] = new MaterialCustoms.Data_Float(parameter, componentsInChildren, -1f, 1f);
+                }
+                else if (parameter.type == MaterialCustoms.Parameter.TYPE.COLOR)
+                {
+                    __instance.datas[i] = new MaterialCustoms.Data_Color(parameter, componentsInChildren);
+                }
+                else if (parameter.type == MaterialCustoms.Parameter.TYPE.ALPHA)
+                {
+                    __instance.datas[i] = new MaterialCustoms.Data_Alpha(parameter, componentsInChildren);
+                }
+            }
+            return false;
+        }
+
         public void setAccsShader(Accessories acce, AccessoryParameter acceParam, int slot)
         {
             //Type acceObjType = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj");
@@ -907,20 +974,21 @@ namespace ClassLibrary4
         {
             //Human h = humanField.GetValue(__instance) as Human;
             //self.logSave(h.name + ", " + type.ToString());
-            if (type == WEAR_TYPE.SOCKS) self.setWearShader(__instance, 9, type, 3000, 3000, 1, false, false);
-            else if (type == WEAR_TYPE.SHOES) self.setWearShader(__instance, 10, type, 3000, 3000, 1, false, false);
-            else if (type == WEAR_TYPE.SWIM_BOTTOM) self.setWearShader(__instance, 6, type, 3000, 3000, 1, false, false);
-            else if (type == WEAR_TYPE.SWIM) self.setWearShader(__instance, 4, type, 3000, 3000, 1, false, false);
-            else if (type == WEAR_TYPE.SWIM_TOP) self.setWearShader(__instance, 5, type, 3000, 3000, 1, false, false);
-            else if (type == WEAR_TYPE.BRA) self.setWearShader(__instance, 2, type, 3100, 2900, 1, true, false);
-            else if (type == WEAR_TYPE.SHORTS) self.setWearShader(__instance, 3, type, 3100, 2900, 1, true, false);
-            else if (type == WEAR_TYPE.GLOVE) self.setWearShader(__instance, 7, type, 3000, 3000, 1, false, false);
-            else if (type == WEAR_TYPE.PANST) self.setWearShader(__instance, 8, type, 3000, 3000, 1, false, false);
-            else if (type == WEAR_TYPE.BOTTOM) self.setWearShader(__instance, 1, type, 3000, 3000, 1, false, false);
-            else if (type == WEAR_TYPE.TOP) self.setWearShader(__instance, 0, type, 3000, 3000, 1, false, true);
+            //if (type == WEAR_TYPE.SOCKS) self.setWearShader(__instance, 9, type, 3000, 3000, 1, false, false);
+            //else if (type == WEAR_TYPE.SHOES) self.setWearShader(__instance, 10, type, 3000, 3000, 1, false, false);
+            //else if (type == WEAR_TYPE.SWIM_BOTTOM) self.setWearShader(__instance, 6, type, 3000, 3000, 1, false, false);
+            //else if (type == WEAR_TYPE.SWIM) self.setWearShader(__instance, 4, type, 3000, 3000, 1, false, false);
+            //else if (type == WEAR_TYPE.SWIM_TOP) self.setWearShader(__instance, 5, type, 3000, 3000, 1, false, false);
+            //else if (type == WEAR_TYPE.BRA) self.setWearShader(__instance, 2, type, 3100, 2900, 1, true, false);
+            //else if (type == WEAR_TYPE.SHORTS) self.setWearShader(__instance, 3, type, 3100, 2900, 1, true, false);
+            //else if (type == WEAR_TYPE.GLOVE) self.setWearShader(__instance, 7, type, 3000, 3000, 1, false, false);
+            //else if (type == WEAR_TYPE.PANST) self.setWearShader(__instance, 8, type, 3000, 3000, 1, false, false);
+            //else if (type == WEAR_TYPE.BOTTOM) self.setWearShader(__instance, 1, type, 3000, 3000, 1, false, false);
+            //else if (type == WEAR_TYPE.TOP) self.setWearShader(__instance, 0, type, 3000, 3000, 1, false, true);
+            self.setWearShader(__instance, (int)type, type, (type == WEAR_TYPE.BRA || type == WEAR_TYPE.SHORTS) ? true : false);
         }
 
-        public void setWearShader(Wears wears, int idx, WEAR_TYPE type, int maxColorRendererQueue, int maxTransparentRenderQueue, int transparentShaderIdx, bool forceColorable = false, bool isTop = false)
+        public void setWearShader(Wears wears, int idx, WEAR_TYPE type, /*int maxColorRendererQueue, int maxTransparentRenderQueue, int transparentShaderIdx,*/ bool forceColorable = false)
         {
             WearObj wearobj = wears.GetWearObj(type);
             if (wearobj == null)
@@ -976,7 +1044,7 @@ namespace ClassLibrary4
                             (//!renderer.name.Contains("_body_") &&
                             !material.name.Contains("cf_m_body_CustomMaterial") &&
                             !material.name.Contains("cm_m_body_CustomMaterial") &&
-                            !renderer.tag.Contains("New tag (8)") || !isTop))
+                            !renderer.tag.Contains("New tag (8)") || type != WEAR_TYPE.TOP ))
                         {
                             int rq = getRenderQueue(inspector_key, renderer.gameObject.GetComponent<SetRenderQueue>());
                             this.logSave("Wear material: " + inspector_key + " RQ: " + rq);
@@ -2322,11 +2390,16 @@ namespace ClassLibrary4
                 this.logSave("Inspector established timestamp: " + t.ElapsedMilliseconds.ToString());
                 this.exportConflict();
 				this.transportDicts();
-                this.createCatecory();
                 this.logSave("Move categories timestamp: " + t.ElapsedMilliseconds.ToString());
                 HarmonyMethod transpiler = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_SetupMaterials_Transpiler), new[] { typeof(IEnumerable<CodeInstruction>) });
                 harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("SetupMaterials", new Type[] { typeof(AccessoryData) }), transpiler: transpiler);
                 harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("UpdateColorCustom"), new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_UpdateColorCustom_Prefix)));
+                if( Singleton<Studio.Studio>.Instance != null )
+                {
+                    this.logSave("HoneyPot in Studio, patching AddObjectItem.Add and creating categories (???)...");
+                    harmony.Patch(typeof(AddObjectItem).GetMethod("Load", new Type[] { typeof(OIItemInfo), typeof(ObjectCtrlInfo), typeof(TreeNodeObject) }), null, new HarmonyMethod(typeof(HoneyPot), nameof(AddObjectItem_Load_Postfix)));
+                    this.createCatecory();
+                }
                 t.Stop();
                 this.logSave("All shader prepared - HoneyPot first run used time: " + t.ElapsedMilliseconds.ToString());
             }
@@ -2337,8 +2410,8 @@ namespace ClassLibrary4
                 this.currentMaleList = (Resources.FindObjectsOfTypeAll(typeof(Male)) as Male[]);
                 this.wearCustomEdit    = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
                 //this.setAccsShaders();
-				this.setHairShaders();
-				this.setItemShaders();
+				//this.setHairShaders();
+				//this.setItemShaders();
 			}
 			if (this.currentFemaleList != null)
 			{
