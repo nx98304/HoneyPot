@@ -2403,7 +2403,7 @@ namespace ClassLibrary4
                 if ( Singleton<Studio.Studio>.Instance != null )
                 {
                     this.logSave("HoneyPot in Studio, patching AddObjectItem.Load and creating categories (???)...");
-                    harmony.Patch(typeof(AddObjectItem).GetMethod("Load", new Type[] { typeof(OIItemInfo), typeof(ObjectCtrlInfo), typeof(TreeNodeObject) }), null, new HarmonyMethod(typeof(HoneyPot), nameof(AddObjectItem_Load_Postfix)));
+                    harmony.Patch(typeof(AddObjectItem).GetMethod("Load", new Type[] { typeof(OIItemInfo), typeof(ObjectCtrlInfo), typeof(TreeNodeObject) ,typeof(bool), typeof(int) }), null, new HarmonyMethod(typeof(HoneyPot), nameof(AddObjectItem_Load_Postfix)));
                     this.createCatecory();
                 }
                 t.Stop();
@@ -2916,7 +2916,7 @@ namespace ClassLibrary4
 		private FieldInfo nowTabField;
 
 		// Token: 0x04000015 RID: 21
-		private bool isShaderChanged;
+		//private bool isShaderChanged;
 
 		// Token: 0x04000016 RID: 22
 		private string assetBundlePath = Application.dataPath + "/../abdata";
