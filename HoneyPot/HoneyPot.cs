@@ -17,113 +17,63 @@ namespace ClassLibrary4
 	[HarmonyPatch]
 	public class HoneyPot : MonoBehaviour
 	{
-        private Harmony harmony;
-
-        public void SetHarmony(Harmony input)
-        {
-            harmony = input;
-        }
-
 		private void Start()
 		{
-			this.hairObjField = this.typeHairs.GetField("parts", BindingFlags.Instance | BindingFlags.NonPublic);
-			this.libAssembly = Assembly.GetAssembly(typeof(Hairs));
-			this.typeHairObj = this.libAssembly.GetType("HairObj");
-			this.gameObjField = this.typeHairObj.GetField("obj", BindingFlags.Instance | BindingFlags.Public);
-			this.nowTabField = this.typeWearCustomEdit.GetField("nowTab", BindingFlags.Instance | BindingFlags.NonPublic);
-            self = GameObject.Find("HoneyPot").GetComponent<HoneyPot>();
+			self = GameObject.Find("HoneyPot").GetComponent<HoneyPot>();
         }
 
-        private void transportDicts()
-		{
-			string @string = ModPrefs.GetString("HoneyPot", "DoTransport", "", false);
-			if ("FALSE".Equals(@string))
-			{
-				return;
-			}
-			try
-			{
-				Dictionary<int, WearData> wearDictionary_Female = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BRA);
-				Dictionary<int, WearData> wearDictionary_Female2 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SHORTS);
-				Dictionary<int, WearData> wearDictionary_Female3 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM_BOTTOM);
-				Dictionary<int, WearData> wearDictionary_Female4 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM_TOP);
-				Dictionary<int, WearData> wearDictionary_Female5 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.GLOVE);
-				Dictionary<int, WearData> wearDictionary_Female6 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.PANST);
-				Dictionary<int, WearData> wearDictionary_Female7 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BOTTOM);
-				Dictionary<int, WearData> wearDictionary_Female8 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM);
-				this.transportDict(wearDictionary_Female8, wearDictionary_Female, 829100, 95);
-				this.transportDict(wearDictionary_Female8, wearDictionary_Female2, 828100, 94);
-				this.transportDict(wearDictionary_Female4, wearDictionary_Female5, 825100, 91);
-				this.transportDict(wearDictionary_Female3, wearDictionary_Female6, 826100, 92);
-				this.transportDict(wearDictionary_Female7, wearDictionary_Female6, 827100, 93);
-			}
-			catch (Exception ex)
-			{
-                this.logSave(ex.ToString());
-			}
-		}
+        //Generalized Render Queue retrival: SRQ MB will have the last say if it is present, 
+        //                                   otherwise use the CustomRenderQueue value. 
+        private int getRenderQueue(string inspector_key, SetRenderQueue setRQ_MB)
+        {
+            int result = -1; //is this default value good?
+            if (HoneyPot.material_rq.ContainsKey(inspector_key))
+            {
+                result = HoneyPot.material_rq[inspector_key];
+            }
 
-		private void transportDict(Dictionary<int, WearData> fromDict, Dictionary<int, WearData> toDict, int add, int order)
-		{
-			foreach (KeyValuePair<int, WearData> keyValuePair in fromDict)
-			{
-				WearData value = keyValuePair.Value;
-				WearData wearData = new WearData(value.id, value.name, value.assetbundleName, value.prefab, order, false);
-				wearData.id = keyValuePair.Key % 1000 + add;
-				if (!toDict.ContainsKey(wearData.id))
-				{
-					if (add == 828100)
-					{
-						wearData.name = "#" + wearData.name;
-					}
-					toDict.Add(wearData.id, wearData);
-					this.logSave("[wear add]" + wearData.name);
-				}
-			}
-		}
+            if (setRQ_MB != null)
+            {
+                int[] array = setRQ_MB.Get();
+                if (array.Length != 0)
+                {
+                    result = array[0];
+                }
+            }
+            //this.logSave("set RQ: " + inspector_key + " = " + result);
+            return result;
+        }
 
-		private void readInspector()
-		{
-			StreamReader streamReader = new StreamReader(this.inspectorText, Encoding.UTF8);
-			string text;
-			while ((text = streamReader.ReadLine()) != null)
-			{
-				try
-				{
-					string[] array = text.Split(new char[]
-					{
-						','
-					});
-					if (array.Length != 0)
-					{
-						string key = array[0];
-						string value = "";
-						int value2 = -2;
-						if (array.Length > 1)
-						{
-							value = array[1];
-							if (array.Length > 2)
-							{
-								value2 = int.Parse(array[2]);
-							}
-						}
-						HoneyPot.inspector[key] = value;
-						HoneyPot.material_rq[key] = value2;
-					}
-				}
-				catch (Exception)
-				{
-				}
-			}
-			streamReader.Close();
-		}
+        #region Any shader remapping that's material and texture only
+        private static FieldInfo head_humanField = typeof(Head).GetField("human", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static FieldInfo hairs_humanField = typeof(Hairs).GetField("human", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static void Head_ChangeEyebrow_Postfix(Head __instance)
+        {
+            Human h = head_humanField.GetValue(__instance) as Human;
+            if (HoneyPot.idFileDict.ContainsKey(h.customParam.head.eyeBrowID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha"))
+            {
+                h.head.Rend_eyebrow.material.shader = HoneyPot.presets["PBRsp_texture_alpha"].shader;
+            }
+        }
+
+        //Note: You can't use Harmony Annotations with this because "Postfix(Head __instance)" is ambigious.
+        private static void Head_ChangeEyelash_Postfix(Head __instance)
+        {
+            Human h = head_humanField.GetValue(__instance) as Human;
+            if (HoneyPot.idFileDict.ContainsKey(h.customParam.head.eyeLashID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha_culloff"))
+            {
+                h.head.Rend_eyelash.material.shader = HoneyPot.presets["PBRsp_texture_alpha_culloff"].shader;
+            }
+        }
+        #endregion
+
+        #region Hairs shader remapping
+        private static FieldInfo Hairs_humanField = typeof(Hairs).GetField("human", BindingFlags.Instance | BindingFlags.NonPublic);
 
         [HarmonyPatch(typeof(Hairs), "Load")]
         static void Postfix(Hairs __instance, HairParameter param)
         {
-            SEX sex = (hairs_humanField.GetValue(__instance) as Human).sex;
+            SEX sex = (Hairs_humanField.GetValue(__instance) as Human).sex;
             for ( int i = 0; i < 3; i++ )
             {
                 if( __instance.objHairs[i] != null )
@@ -212,8 +162,10 @@ namespace ClassLibrary4
 				this.logSave(ex.ToString());
 			}
 		}
+        #endregion
 
-        static void AddObjectItem_Load_Postfix(OCIItem __result)
+        #region Studio item shader remapping 
+        private static void AddObjectItem_Load_Postfix(OCIItem __result)
         {
             Info.ItemLoadInfo itemLoadInfo = Singleton<Info>.Instance.dicItemLoadInfo[__result.itemInfo.no];
             self.setItemShader(__result.objectItem, itemLoadInfo.bundlePath.Replace("\\", "/"));
@@ -225,18 +177,15 @@ namespace ClassLibrary4
 
         public void setItemShader(GameObject obj, string fileName)
         {
-            new List<string>();
             Renderer[] renderers_in_children = obj.GetComponentsInChildren<Renderer>(true);
-            Projector[] projectors_in_childern = obj.GetComponentsInChildren<Projector>(true);
-            foreach (Projector p in projectors_in_childern)
+            Projector[] projectors_in_children = obj.GetComponentsInChildren<Projector>(true);
+            foreach (Projector p in projectors_in_children)
             {
                 // test
                 p.material.shader = HoneyPot.presets["Particle Add"].shader;
             }
-            int renderer_idx = -1;
             foreach(Renderer r in renderers_in_children)
             {
-                renderer_idx++;
                 Type renderertype = r.GetType();
                 if (renderertype == typeof(ParticleSystemRenderer) ||
                     renderertype == typeof(LineRenderer) ||
@@ -488,37 +437,17 @@ namespace ClassLibrary4
                 }
             }
         }
+        #endregion
 
-        //Generalized Render Queue retrival: SRQ MB will have the last say if it is present, 
-        //                                   otherwise use the CustomRenderQueue value. 
-        private int getRenderQueue(string inspector_key, SetRenderQueue setRQ_MB)
-        {
-            int result = -1; //is this default value good?
-            if (HoneyPot.material_rq.ContainsKey(inspector_key))
-            {
-                result = HoneyPot.material_rq[inspector_key];
-            }
-
-            if (setRQ_MB != null)
-            {
-                int[] array = setRQ_MB.Get();
-                if (array.Length != 0)
-                {
-                    result = array[0];
-                }
-            }
-            //this.logSave("set RQ: " + inspector_key + " = " + result);
-            return result;
-        }
-
+        #region Accessory shader remapping
         [HarmonyPatch(typeof(Accessories), "AccessoryInstantiate")]
-        static void Postfix(Accessories __instance, AccessoryParameter acceParam, int slot, bool fixAttachParent, AccessoryData prevData)
-        {
+        private static void Postfix(Accessories __instance, AccessoryParameter acceParam, int slot, bool fixAttachParent, AccessoryData prevData)
+        {   //Note: this is required because we 
             __instance.UpdateColorCustom(slot);
             self.setAccsShader(__instance, acceParam, slot);
         }
 
-        static IEnumerable<CodeInstruction> AcceObj_SetupMaterials_Transpiler(IEnumerable<CodeInstruction> instructions)
+        private static IEnumerable<CodeInstruction> AcceObj_SetupMaterials_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = new List<CodeInstruction>(instructions);
             int startIndex = -1;
@@ -540,16 +469,18 @@ namespace ClassLibrary4
             return codes.AsEnumerable();
         }
 
-        static MethodInfo AcceObj_SetupMaterials = 
+        private static MethodInfo AcceObj_SetupMaterials = 
             Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj").GetMethod("SetupMaterials", new Type[]{ typeof(AccessoryData) });
 
-        static void AcceObj_UpdateColorCustom_Prefix(object __instance)
+        private static void AcceObj_UpdateColorCustom_Prefix(object __instance)
         {
             AcceObj_SetupMaterials.Invoke(__instance, new object[]{ null });
         }
 
+        private static MethodInfo MaterialCustoms_Setup = typeof(MaterialCustoms).GetMethod("Setup", new Type[0]);
+
         [HarmonyPatch(typeof(MaterialCustoms), "Setup")]
-        static bool Prefix(MaterialCustoms __instance)
+        private static bool Prefix(MaterialCustoms __instance)
         {
             if (__instance == null || __instance.parameters == null)
                 return false;
@@ -584,7 +515,6 @@ namespace ClassLibrary4
 
         public void setAccsShader(Accessories acce, AccessoryParameter acceParam, int slot)
         {
-            MethodInfo method2 = Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms").GetMethod("Setup", new Type[0]);
             AccessoryCustom acceCustom = acceParam.slot[slot];
             AccessoryData accessoryData = CustomDataManager.GetAcceData(acceCustom.type, acceCustom.id);
             if (accessoryData == null)
@@ -662,7 +592,7 @@ namespace ClassLibrary4
                     materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
                     materialCustoms.parameters[num2++].materialNames = list.ToArray();
                 }
-                method2.Invoke(materialCustoms, new object[0]);
+                MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
                 acce.UpdateColorCustom(slot);
             }
             catch (Exception ex)
@@ -670,14 +600,19 @@ namespace ClassLibrary4
                 this.logSave(ex.ToString());
             }
         }
+        #endregion
+
+        #region Wears shader remapping
+        private static FieldInfo wearcustomedit_nowtabField = typeof(WearCustomEdit).GetField("nowTab", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static MethodInfo WearObj_SetupMaterials    = typeof(WearObj).GetMethod("SetupMaterials", new Type[] { typeof(WearData) });
 
         [HarmonyPatch(typeof(Wears), "WearInstantiate")]
-        static void Postfix(Wears __instance, WEAR_TYPE type, Material skinMaterial, Material customHighlightMat_Skin)
+        private static void Postfix(Wears __instance, WEAR_TYPE type, Material skinMaterial, Material customHighlightMat_Skin)
         {
             self.setWearShader(__instance, (int)type, type, (type == WEAR_TYPE.BRA || type == WEAR_TYPE.SHORTS) ? true : false);
         }
 
-        public void setWearShader(Wears wears, int idx, WEAR_TYPE type, /*int maxColorRendererQueue, int maxTransparentRenderQueue, int transparentShaderIdx,*/ bool forceColorable = false)
+        public void setWearShader(Wears wears, int idx, WEAR_TYPE type, bool forceColorable = false)
         {
             WearObj wearobj = wears.GetWearObj(type);
             if (wearobj == null)
@@ -686,13 +621,7 @@ namespace ClassLibrary4
             }
             try
             {
-                Type typeWearObj = Assembly.GetAssembly(typeof(WearObj)).GetType("WearObj");
                 WearData wearData = wears.GetWearData(type);
-                MethodInfo method = typeWearObj.GetMethod("SetupMaterials", new Type[]
-                {
-                    typeof(WearData)
-                });
-                MethodInfo method2 = Assembly.GetAssembly(typeof(MaterialCustoms)).GetType("MaterialCustoms").GetMethod("Setup", new Type[0]);
                 bool is_a_HS_cloth_parts_that_remmapped_shader = false;
                 GameObject gameObject = wearobj.obj;
                 Renderer[] renderers_in_wearobj = gameObject.GetComponentsInChildren<Renderer>(true);
@@ -783,13 +712,10 @@ namespace ClassLibrary4
                         materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
                         materialCustoms.parameters[num2++].materialNames = list.ToArray();
                     }
-                    method2.Invoke(materialCustoms, new object[0]);
-                    method.Invoke(wearobj, new object[]
-                    {
-                        wearData
-                    });
+                    MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
+                    WearObj_SetupMaterials.Invoke(wearobj, new object[]{ null }); //the WearData is never used/checked in this call
                     wearobj.UpdateColorCustom();
-                    if( this.wearCustomEdit != null && (int)this.nowTabField.GetValue(this.wearCustomEdit) == idx )
+                    if( this.wearCustomEdit != null && (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx )
                     {
                         // After a HS clothing is loaded, if wearCustomEdit is present and it is choosing the this wear slot
                         // Try to force the LoadedCoordinate() to enable color UI. Because before this point in time
@@ -803,45 +729,56 @@ namespace ClassLibrary4
                 this.logSave(ex.ToString());
             } 
         }
+        #endregion 
 
-        // Token: 0x06000037 RID: 55 RVA: 0x0000205B File Offset: 0x0000025B
-        public void logSave(string txt)
-		{
-            Console.WriteLine(txt);
-		}
-
-		// Token: 0x06000038 RID: 56 RVA: 0x00003C08 File Offset: 0x00001E08
-		public List<string> readPresetShaderString()
-		{
-			List<string> list = new List<string>();
-			StreamReader streamReader = new StreamReader(this.shaderText);
-			string item;
-			while ((item = streamReader.ReadLine()) != null)
-			{
-				list.Add(item);
-			}
-			streamReader.Close();
-			return list;
-		}
-
-		// Token: 0x06000039 RID: 57 RVA: 0x00003C44 File Offset: 0x00001E44
-		public void exportConflict()
-		{
-			try
-			{
-				StreamWriter streamWriter = new FileInfo(this.conflictText).CreateText();
-				foreach (string value in HoneyPot.conflictList)
-				{
-					streamWriter.WriteLine(value);
-				}
-				streamWriter.Flush();
-				streamWriter.Close();
-				HoneyPot.conflictList.Clear();
-			}
-            catch (Exception ex)
+        #region Shader preparations
+        private void readInspector()
+        {
+            StreamReader streamReader = new StreamReader(this.inspectorText, Encoding.UTF8);
+            string text;
+            while ((text = streamReader.ReadLine()) != null)
             {
-                this.logSave(ex.ToString());
+                try
+                {
+                    string[] array = text.Split(new char[]
+                    {
+                        ','
+                    });
+                    if (array.Length != 0)
+                    {
+                        string key = array[0];
+                        string value = "";
+                        int value2 = -2;
+                        if (array.Length > 1)
+                        {
+                            value = array[1];
+                            if (array.Length > 2)
+                            {
+                                value2 = int.Parse(array[2]);
+                            }
+                        }
+                        HoneyPot.inspector[key] = value;
+                        HoneyPot.material_rq[key] = value2;
+                    }
+                }
+                catch (Exception)
+                {
+                }
             }
+            streamReader.Close();
+        }
+
+        public List<string> readPresetShaderString()
+        {
+            List<string> list = new List<string>();
+            StreamReader streamReader = new StreamReader(this.shaderText);
+            string item;
+            while ((item = streamReader.ReadLine()) != null)
+            {
+                list.Add(item);
+            }
+            streamReader.Close();
+            return list;
         }
 
         private void loadShaderMapping()
@@ -885,18 +822,105 @@ namespace ClassLibrary4
             }
         }
 
-		// Token: 0x0600003B RID: 59 RVA: 0x00003DA8 File Offset: 0x00001FA8
-		private void addConflict(int id, string asset1, string asset2, string name1, string name2)
-		{
-			if (!asset1.Equals(asset2))
-			{
-				HoneyPot.conflictList.Add(string.Concat(
-                    new object[]{ "[conflict] id:", id,	",asset:", name1, "(", asset1, ") - ", name2, "(", asset2, ")"}
-                ));
-			}
-		}
+        private AssetBundle loadEmbeddedAssetBundle(string embedded_name)
+        {
+            Stream shader_rawstream = Assembly.GetExecutingAssembly().GetManifestResourceStream(embedded_name);
+            byte[] buffer = new byte[16 * 1024];
+            byte[] rawbyte;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                int read;
+                while ((read = shader_rawstream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    ms.Write(buffer, 0, read);
+                }
+                rawbyte = ms.ToArray();
+                ms.Close();
+            }
+            shader_rawstream.Close();
+            return AssetBundle.LoadFromMemory(rawbyte);
+        }
 
-		// Token: 0x0600003C RID: 60 RVA: 0x00003E24 File Offset: 0x00002024
+        private void readAllPHShaders()
+        {
+            AssetBundle bundle = loadEmbeddedAssetBundle("ClassLibrary4.ph_shaders.unity3d");
+            Shader[] all_shaders = bundle.LoadAllAssets<Shader>();
+            foreach (Shader s in all_shaders)
+            {
+                this.logSave("Found " + s.name + " in the bundle.");
+                HoneyPot.PH_shaders[s.name] = s;
+            }
+            Material[] all_materials = bundle.LoadAllAssets<Material>();
+            foreach (Material m in all_materials)
+            {
+                if (!HoneyPot.PH_shaders.ContainsKey(m.shader.name))
+                {
+                    this.logSave("Found " + m.shader.name + " in the bundle additionally.");
+                    HoneyPot.PH_shaders[m.shader.name] = m.shader;
+                }
+            }
+            GameObject asset_standard = bundle.LoadAsset<GameObject>("asset_standard");
+            Renderer r = asset_standard.GetComponentInChildren<Renderer>();
+            if (r.materials[0].shader != null)
+            {
+                HoneyPot.PH_shaders["Standard"] = r.materials[0].shader;
+            }
+            else
+            {
+                this.logSave("Somehow Standard shader cannot be loaded.");
+            }
+
+            // Thank Doodoo for this!!!!!
+            AssetBundle bundle_HSStandard_PH = loadEmbeddedAssetBundle("ClassLibrary4.hsstandardshaders");
+            Material[] all_hsstandard_materials = bundle_HSStandard_PH.LoadAllAssets<Material>();
+            foreach (Material m in all_hsstandard_materials)
+            {
+                if (!HoneyPot.PH_shaders.ContainsKey(m.shader.name))
+                {
+                    this.logSave("Found " + m.shader.name + " in hsstandardshaders2.");
+                    HoneyPot.PH_shaders[m.shader.name] = m.shader;
+                }
+            }
+            this.logSave(HoneyPot.PH_shaders.Count + " shaders found.");
+
+            GameObject proxy_to_get_material_customs = bundle.LoadAsset<GameObject>("p_cf_yayoi_top");
+            HoneyPot.mc = proxy_to_get_material_customs.GetComponentInChildren<MaterialCustoms>();
+
+            bundle.Unload(false);
+            bundle_HSStandard_PH.Unload(false);
+        }
+        #endregion
+
+        #region Processing CustomDataManager, lists & moving them, noticing conflicts. 
+        private void addConflict(int id, string asset1, string asset2, string name1, string name2)
+        {
+            if (!asset1.Equals(asset2))
+            {
+                HoneyPot.conflictList.Add(string.Concat(
+                    new object[] { "[conflict] id:", id, ",asset:", name1, "(", asset1, ") - ", name2, "(", asset2, ")" }
+                ));
+            }
+        }
+
+        public void exportConflict()
+		{
+			try
+			{
+				StreamWriter streamWriter = new FileInfo(this.conflictText).CreateText();
+				foreach (string value in HoneyPot.conflictList)
+				{
+					streamWriter.WriteLine(value);
+				}
+				streamWriter.Flush();
+				streamWriter.Close();
+				HoneyPot.conflictList.Clear();
+			}
+            catch (Exception ex)
+            {
+                this.logSave(ex.ToString());
+            }
+        }
+        
 		public void getListContent(string assetBundleDir, string fileName)
 		{
 			Dictionary<int, AccessoryData> dictionary = null;
@@ -1937,7 +1961,340 @@ namespace ClassLibrary4
 			}
 		}
 
-		private void Update()
+        private void transportDict(Dictionary<int, WearData> fromDict, Dictionary<int, WearData> toDict, int add, int order)
+        {
+            foreach (KeyValuePair<int, WearData> keyValuePair in fromDict)
+            {
+                WearData value = keyValuePair.Value;
+                WearData wearData = new WearData(value.id, value.name, value.assetbundleName, value.prefab, order, false);
+                wearData.id = keyValuePair.Key % 1000 + add;
+                if (!toDict.ContainsKey(wearData.id))
+                {
+                    if (add == 828100)
+                    {
+                        wearData.name = "#" + wearData.name;
+                    }
+                    toDict.Add(wearData.id, wearData);
+                    this.logSave("[wear add]" + wearData.name);
+                }
+            }
+        }
+
+        private void transportDicts()
+        {
+            string @string = ModPrefs.GetString("HoneyPot", "DoTransport", "", false);
+            if ("FALSE".Equals(@string))
+            {
+                return;
+            }
+            try
+            {
+                Dictionary<int, WearData> wearDictionary_Female = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BRA);
+                Dictionary<int, WearData> wearDictionary_Female2 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SHORTS);
+                Dictionary<int, WearData> wearDictionary_Female3 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM_BOTTOM);
+                Dictionary<int, WearData> wearDictionary_Female4 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM_TOP);
+                Dictionary<int, WearData> wearDictionary_Female5 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.GLOVE);
+                Dictionary<int, WearData> wearDictionary_Female6 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.PANST);
+                Dictionary<int, WearData> wearDictionary_Female7 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BOTTOM);
+                Dictionary<int, WearData> wearDictionary_Female8 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM);
+                this.transportDict(wearDictionary_Female8, wearDictionary_Female, 829100, 95);
+                this.transportDict(wearDictionary_Female8, wearDictionary_Female2, 828100, 94);
+                this.transportDict(wearDictionary_Female4, wearDictionary_Female5, 825100, 91);
+                this.transportDict(wearDictionary_Female3, wearDictionary_Female6, 826100, 92);
+                this.transportDict(wearDictionary_Female7, wearDictionary_Female6, 827100, 93);
+            }
+            catch (Exception ex)
+            {
+                this.logSave(ex.ToString());
+            }
+        }
+        #endregion
+
+        #region Studio specific lists processing, manipulating category
+        public void createCategory()
+        {
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(30))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(30, "[MOD]家具");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(31))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(31, "[MOD]壁・板");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(32))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(32, "[MOD]日用品");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(33))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(33, "[MOD]小物");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(34))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(34, "[MOD]食材");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(35))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(35, "[MOD]武器");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(36))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(36, "[MOD]その他");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(37))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(37, "[MOD]Hアイテム");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(38))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(38, "[MOD]液体");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(39))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(39, "[MOD]画面効果");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(40))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(40, "[MOD]医療");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(41))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(41, "[MOD]エフェクト");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(50))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(50, "[MOD]基本形");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(53))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(53, "[MOD]オブジェ");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(57))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(57, "[MOD]キャラ");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(62))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(62, "[MOD]ギミック");
+            }
+            if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(63))
+            {
+                Singleton<Info>.Instance.dicItemGroup.Add(63, "[MOD]3DSE");
+            }
+        }
+
+        private void readItemResolverText()
+        {
+            try
+            {
+                foreach (FileInfo fileInfo in new DirectoryInfo(assetBundlePath + "/studioneo/HoneyselectItemResolver").GetFiles())
+                {
+                    this.readItemResolverText(assetBundlePath, "studioneo/HoneyselectItemResolver/" + fileInfo.Name);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.logSave(ex.ToString());
+            }
+        }
+
+        private void readItemResolverTextOld()
+        {
+            try
+            {
+                foreach (FileInfo fileInfo in new DirectoryInfo(assetBundlePath + "/studio/itemobj/honey/HoneyselectItemResolver").GetFiles())
+                {
+                    this.readItemResolverTextOld(assetBundlePath, "studio/itemobj/honey/HoneyselectItemResolver/" + fileInfo.Name);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.logSave(ex.ToString());
+            }
+        }
+
+        public int toNewCategory(int cat)
+        {
+            switch (cat)
+            {
+                case 0:
+                    return 50;
+                case 1:
+                    return 31;
+                case 2:
+                    return 30;
+                case 3:
+                    return 53;
+                case 4:
+                    return 34;
+                case 5:
+                    return 35;
+                case 6:
+                    return 33;
+                case 7:
+                    return 57;
+                case 8:
+                    return 37;
+                case 9:
+                    return 38;
+                case 10:
+                    return 39;
+                case 11:
+                    return 41;
+                case 12:
+                    return 62;
+                case 13:
+                    return 63;
+                default:
+                    switch (cat)
+                    {
+                        case 71:
+                            return 71;
+                        case 72:
+                            return 72;
+                        case 73:
+                            return 73;
+                        default:
+                            if (cat != 99)
+                            {
+                                return cat;
+                            }
+                            return 99;
+                    }
+            }
+        }
+
+        public int oldCategoryToNewCategoryAdvance(int old)
+        {
+            switch (old)
+            {
+                case 0:
+                    return 30;
+                case 1:
+                    return 31;
+                case 2:
+                    return 32;
+                case 3:
+                    return 33;
+                case 4:
+                    return 34;
+                case 5:
+                    return 35;
+                case 6:
+                    return 36;
+                case 7:
+                    return 37;
+                case 8:
+                    return 38;
+                case 9:
+                    return 39;
+                case 10:
+                    return 40;
+                case 11:
+                    return 41;
+                default:
+                    return 99;
+            }
+        }
+
+        public void readItemResolverText(string assetBundleDir, string fileName)
+        {
+            StreamReader streamReader = new StreamReader(assetBundleDir + "/" + fileName, Encoding.UTF8);
+            string text;
+            while ((text = streamReader.ReadLine()) != null)
+            {
+                try
+                {
+                    if (text.IndexOf("#") != 0)
+                    {
+                        if (text.Length >= 2)
+                        {
+                            string[] array = text.Substring(1).Replace(">", "").Split(new char[]
+                            {
+                                '<'
+                            });
+                            if (array.Length >= 7)
+                            {
+                                Info.ItemLoadInfo itemLoadInfo = new Info.ItemLoadInfo();
+                                itemLoadInfo.no = int.Parse(array[0]);
+                                itemLoadInfo.group = this.toNewCategory(int.Parse(array[1]));
+                                itemLoadInfo.name = array[2];
+                                itemLoadInfo.manifest = ""; //array[3]; manifest doesn't seem to be really utilized, and we dump everything into abdata anyway. 
+                                itemLoadInfo.bundlePath = array[4];
+                                itemLoadInfo.fileName = array[5];
+                                itemLoadInfo.childRoot = array[6];
+                                itemLoadInfo.isAnime = array[7].ToLower().Equals("true");
+                                itemLoadInfo.isColor = array[8].ToLower().Equals("true");
+                                itemLoadInfo.colorTarget = array[9].Split(new char[]
+                                {
+                                    '/'
+                                });
+                                itemLoadInfo.isColor2 = array[10].ToLower().Equals("true");
+                                itemLoadInfo.color2Target = array[11].Split(new char[]
+                                {
+                                    '/'
+                                });
+                                itemLoadInfo.isScale = array[12].ToLower().Equals("true");
+                                if (!Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(itemLoadInfo.no))
+                                {
+                                    Singleton<Info>.Instance.dicItemLoadInfo.Add(itemLoadInfo.no, itemLoadInfo);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        public void readItemResolverTextOld(string assetBundleDir, string fileName)
+        {
+            StreamReader streamReader = new StreamReader(assetBundleDir + "/" + fileName, Encoding.UTF8);
+            string text;
+            while ((text = streamReader.ReadLine()) != null)
+            {
+                try
+                {
+                    if (text.IndexOf("#") != 0)
+                    {
+                        if (text.Length >= 2)
+                        {
+                            string[] array = text.Substring(1).Replace(">", "").Split(new char[]
+                            {
+                                '<'
+                            });
+                            if (array.Length >= 7)
+                            {
+                                Info.ItemLoadInfo itemLoadInfo = new Info.ItemLoadInfo();
+                                itemLoadInfo.no = int.Parse(array[2]);
+                                itemLoadInfo.group = this.oldCategoryToNewCategoryAdvance(int.Parse(array[3]));
+                                itemLoadInfo.name = array[4];
+                                itemLoadInfo.manifest = "";
+                                itemLoadInfo.bundlePath = array[5];
+                                itemLoadInfo.fileName = array[6];
+                                itemLoadInfo.childRoot = "";
+                                itemLoadInfo.isAnime = false;
+                                itemLoadInfo.isColor = false;
+                                itemLoadInfo.isColor2 = false;
+                                itemLoadInfo.isScale = true;
+                                if (!Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(itemLoadInfo.no))
+                                {
+                                    Singleton<Info>.Instance.dicItemLoadInfo.Add(itemLoadInfo.no, itemLoadInfo);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+        #endregion
+
+        private void Update()
 		{
 			if (HoneyPot.isFirst)
 			{
@@ -1948,34 +2305,16 @@ namespace ClassLibrary4
                 this.logSave("Shader loaded timestamp: " + t.ElapsedMilliseconds.ToString());
 				try
 				{
-					Dictionary<int, AccessoryData> accessoryDictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.HEAD);
-					if (accessoryDictionary.Count == 0)
+					foreach (FileInfo fileInfo in new DirectoryInfo(assetBundlePath + "/list/characustom").GetFiles())
 					{
-						return;
-					}
-					foreach (FileInfo fileInfo in new DirectoryInfo(accessoryDictionary[1].assetbundleDir + "/list/characustom").GetFiles())
-					{
-						this.getListContent(accessoryDictionary[1].assetbundleDir, "list/characustom/" + fileInfo.Name);
+						this.getListContent(assetBundlePath, "list/characustom/" + fileInfo.Name);
 					}
 				}
 				catch (Exception ex)
 				{
 					this.logSave(ex.ToString());
 				}
-                try
-				{
-					if (Singleton<Studio.Studio>.Instance != null)
-					{
-						this.readItemResolverText();
-						this.readItemResolverTextOld();
-					}
-				}
-				catch (Exception ex2)
-				{
-					this.logSave(ex2.ToString());
-				}
                 this.logSave("List crawled timestamp: " + t.ElapsedMilliseconds.ToString());
-                HoneyPot.isFirst = false;
 				this.readInspector();
                 this.logSave("Inspector established timestamp: " + t.ElapsedMilliseconds.ToString());
                 this.exportConflict();
@@ -1989,12 +2328,17 @@ namespace ClassLibrary4
                 harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("UpdateColorCustom"), prefix: acceobj_updatecolorcustom_prefix);
                 harmony.Patch(typeof(Head).GetMethod("ChangeEyebrow"), postfix: head_changeeyebrow_postfix);
                 harmony.Patch(typeof(Head).GetMethod("ChangeEyelash"), postfix: head_changeeyelash_postfix);
+                this.logSave("Dynamic Harmony patches timestamp: " + t.ElapsedMilliseconds.ToString());
                 if ( Singleton<Studio.Studio>.Instance != null )
                 {
-                    this.logSave("HoneyPot in Studio, patching AddObjectItem.Load and creating categories (???)...");
-                    harmony.Patch(typeof(AddObjectItem).GetMethod("Load", new Type[] { typeof(OIItemInfo), typeof(ObjectCtrlInfo), typeof(TreeNodeObject) ,typeof(bool), typeof(int) }), null, new HarmonyMethod(typeof(HoneyPot), nameof(AddObjectItem_Load_Postfix)));
+                    HarmonyMethod addobjectitem_load_postfix = new HarmonyMethod(typeof(HoneyPot), nameof(AddObjectItem_Load_Postfix));
+                    harmony.Patch(typeof(AddObjectItem).GetMethod("Load", new Type[] { typeof(OIItemInfo), typeof(ObjectCtrlInfo), typeof(TreeNodeObject) ,typeof(bool), typeof(int) }), postfix: addobjectitem_load_postfix );
+                    this.readItemResolverText();
+                    this.readItemResolverTextOld();
                     this.createCategory();
+                    this.logSave("Studio patching and preparation timestamp: " + t.ElapsedMilliseconds.ToString());
                 }
+                HoneyPot.isFirst = false;
                 t.Stop();
                 this.logSave("All shader prepared - HoneyPot first run used time: " + t.ElapsedMilliseconds.ToString());
             }
@@ -2004,410 +2348,20 @@ namespace ClassLibrary4
 			}
 		}
 
-        static FieldInfo head_humanField = typeof(Head).GetField("human", BindingFlags.Instance | BindingFlags.NonPublic);
-
-        static void Head_ChangeEyebrow_Postfix(Head __instance)
-        {
-            Human h = head_humanField.GetValue(__instance) as Human;
-            if (HoneyPot.idFileDict.ContainsKey(h.customParam.head.eyeBrowID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha"))
-            {
-                h.head.Rend_eyebrow.material.shader = HoneyPot.presets["PBRsp_texture_alpha"].shader;
-            }
-        }
-
-        static void Head_ChangeEyelash_Postfix(Head __instance)
-        {
-            Human h = head_humanField.GetValue(__instance) as Human;
-            if (HoneyPot.idFileDict.ContainsKey(h.customParam.head.eyeLashID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha_culloff"))
-            {
-                h.head.Rend_eyelash.material.shader = HoneyPot.presets["PBRsp_texture_alpha_culloff"].shader;
-            }
-        }
-
-        private AssetBundle loadEmbeddedAssetBundle(string embedded_name)
-        {
-            Stream shader_rawstream = Assembly.GetExecutingAssembly().GetManifestResourceStream(embedded_name);
-            byte[] buffer = new byte[16 * 1024];
-            byte[] rawbyte;
-            using (MemoryStream ms = new MemoryStream())
-            {
-                int read;
-                while ((read = shader_rawstream.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    ms.Write(buffer, 0, read);
-                }
-                rawbyte = ms.ToArray();
-                ms.Close();
-            }
-            shader_rawstream.Close();
-            return AssetBundle.LoadFromMemory(rawbyte);
-        }
-
-        private void readAllPHShaders()
-        {          
-            AssetBundle bundle = loadEmbeddedAssetBundle("ClassLibrary4.ph_shaders.unity3d");
-            Shader[] all_shaders = bundle.LoadAllAssets<Shader>();
-            foreach (Shader s in all_shaders)
-            {
-                this.logSave("Found " + s.name + " in the bundle.");
-                HoneyPot.PH_shaders[s.name] = s;
-            }
-            Material[] all_materials = bundle.LoadAllAssets<Material>();
-            foreach (Material m in all_materials)
-            {
-                if (!HoneyPot.PH_shaders.ContainsKey(m.shader.name))
-                {
-                    this.logSave("Found " + m.shader.name + " in the bundle additionally.");
-                    HoneyPot.PH_shaders[m.shader.name] = m.shader;
-                }
-            }
-            GameObject asset_standard = bundle.LoadAsset<GameObject>("asset_standard");
-            Renderer r = asset_standard.GetComponentInChildren<Renderer>();
-            if( r.materials[0].shader != null )
-            {
-                HoneyPot.PH_shaders["Standard"] = r.materials[0].shader;
-            }
-            else
-            {
-                this.logSave("Somehow Standard shader cannot be loaded.");
-            }
-
-            // Thank Doodoo for this!!!!!
-            AssetBundle bundle_HSStandard_PH = loadEmbeddedAssetBundle("ClassLibrary4.hsstandardshaders");
-            Material[] all_hsstandard_materials = bundle_HSStandard_PH.LoadAllAssets<Material>();
-            foreach (Material m in all_hsstandard_materials)
-            {
-                if (!HoneyPot.PH_shaders.ContainsKey(m.shader.name))
-                {
-                    this.logSave("Found " + m.shader.name + " in hsstandardshaders2.");
-                    HoneyPot.PH_shaders[m.shader.name] = m.shader;
-                }
-            }
-            this.logSave(HoneyPot.PH_shaders.Count + " shaders found.");
-
-            GameObject proxy_to_get_material_customs = bundle.LoadAsset<GameObject>("p_cf_yayoi_top");
-            HoneyPot.mc = proxy_to_get_material_customs.GetComponentInChildren<MaterialCustoms>();
-
-            bundle.Unload(false);
-            bundle_HSStandard_PH.Unload(false);
-        }
-
-		// Token: 0x06000043 RID: 67 RVA: 0x00006274 File Offset: 0x00004474
-		private void readItemResolverText()
-		{
-			try
-			{
-				Dictionary<int, AccessoryData> accessoryDictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.HEAD);
-				if (accessoryDictionary.Count != 0)
-				{
-					foreach (FileInfo fileInfo in new DirectoryInfo(accessoryDictionary[1].assetbundleDir + "/studioneo/HoneyselectItemResolver").GetFiles())
-					{
-						this.readItemResolverText(accessoryDictionary[1].assetbundleDir, "studioneo/HoneyselectItemResolver/" + fileInfo.Name);
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				this.logSave(ex.ToString());
-			}
-		}
-
-		// Token: 0x06000044 RID: 68 RVA: 0x0000630C File Offset: 0x0000450C
-		private void readItemResolverTextOld()
-		{
-			try
-			{
-				Dictionary<int, AccessoryData> accessoryDictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.HEAD);
-				if (accessoryDictionary.Count != 0)
-				{
-					foreach (FileInfo fileInfo in new DirectoryInfo(accessoryDictionary[1].assetbundleDir + "/studio/itemobj/honey/HoneyselectItemResolver").GetFiles())
-					{
-						this.readItemResolverTextOld(accessoryDictionary[1].assetbundleDir, "studio/itemobj/honey/HoneyselectItemResolver/" + fileInfo.Name);
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				this.logSave(ex.ToString());
-			}
-		}
-
-		// Token: 0x06000045 RID: 69 RVA: 0x000063A4 File Offset: 0x000045A4
-		public void createCategory()
-		{
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(30))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(30, "[MOD]家具");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(31))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(31, "[MOD]壁・板");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(32))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(32, "[MOD]日用品");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(33))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(33, "[MOD]小物");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(34))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(34, "[MOD]食材");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(35))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(35, "[MOD]武器");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(36))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(36, "[MOD]その他");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(37))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(37, "[MOD]Hアイテム");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(38))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(38, "[MOD]液体");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(39))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(39, "[MOD]画面効果");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(40))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(40, "[MOD]医療");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(41))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(41, "[MOD]エフェクト");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(50))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(50, "[MOD]基本形");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(53))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(53, "[MOD]オブジェ");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(57))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(57, "[MOD]キャラ");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(62))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(62, "[MOD]ギミック");
-			}
-			if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(63))
-			{
-				Singleton<Info>.Instance.dicItemGroup.Add(63, "[MOD]3DSE");
-			}
-		}
-
-		// Token: 0x06000046 RID: 70 RVA: 0x0000666C File Offset: 0x0000486C
-		public void readItemResolverText(string assetBundleDir, string fileName)
-		{
-			StreamReader streamReader = new StreamReader(assetBundleDir + "/" + fileName, Encoding.UTF8);
-			string text;
-			while ((text = streamReader.ReadLine()) != null)
-			{
-				try
-				{
-					if (text.IndexOf("#") != 0)
-					{
-						if (text.Length >= 2)
-						{
-							string[] array = text.Substring(1).Replace(">", "").Split(new char[]
-							{
-								'<'
-							});
-							if (array.Length >= 7)
-							{
-								Info.ItemLoadInfo itemLoadInfo = new Info.ItemLoadInfo();
-								itemLoadInfo.no = int.Parse(array[0]);
-								itemLoadInfo.group = this.toNewCategory(int.Parse(array[1]));
-								itemLoadInfo.name = array[2];
-                                itemLoadInfo.manifest = ""; //array[3]; manifest doesn't seem to be really utilized, and we dump everything into abdata anyway. 
-								itemLoadInfo.bundlePath = array[4];
-								itemLoadInfo.fileName = array[5];
-								itemLoadInfo.childRoot = array[6];
-								itemLoadInfo.isAnime = array[7].ToLower().Equals("true");
-								itemLoadInfo.isColor = array[8].ToLower().Equals("true");
-								itemLoadInfo.colorTarget = array[9].Split(new char[]
-								{
-									'/'
-								});
-								itemLoadInfo.isColor2 = array[10].ToLower().Equals("true");
-								itemLoadInfo.color2Target = array[11].Split(new char[]
-								{
-									'/'
-								});
-								itemLoadInfo.isScale = array[12].ToLower().Equals("true");
-								if (!Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(itemLoadInfo.no))
-								{
-									Singleton<Info>.Instance.dicItemLoadInfo.Add(itemLoadInfo.no, itemLoadInfo);
-								}
-							}
-						}
-					}
-				}
-				catch (Exception)
-				{
-				}
-			}
-		}
-
-		// Token: 0x06000047 RID: 71 RVA: 0x00006830 File Offset: 0x00004A30
-		public void readItemResolverTextOld(string assetBundleDir, string fileName)
-		{
-			StreamReader streamReader = new StreamReader(assetBundleDir + "/" + fileName, Encoding.UTF8);
-			string text;
-			while ((text = streamReader.ReadLine()) != null)
-			{
-				try
-				{
-					if (text.IndexOf("#") != 0)
-					{
-						if (text.Length >= 2)
-						{
-							string[] array = text.Substring(1).Replace(">", "").Split(new char[]
-							{
-								'<'
-							});
-							if (array.Length >= 7)
-							{
-								Info.ItemLoadInfo itemLoadInfo = new Info.ItemLoadInfo();
-								itemLoadInfo.no = int.Parse(array[2]);
-								itemLoadInfo.group = this.oldCategoryToNewCategoryAdvance(int.Parse(array[3]));
-								itemLoadInfo.name = array[4];
-								itemLoadInfo.manifest = "";
-								itemLoadInfo.bundlePath = array[5];
-								itemLoadInfo.fileName = array[6];
-								itemLoadInfo.childRoot = "";
-								itemLoadInfo.isAnime = false;
-								itemLoadInfo.isColor = false;
-								itemLoadInfo.isColor2 = false;
-								itemLoadInfo.isScale = true;
-								if (!Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(itemLoadInfo.no))
-								{
-									Singleton<Info>.Instance.dicItemLoadInfo.Add(itemLoadInfo.no, itemLoadInfo);
-								}
-							}
-						}
-					}
-				}
-				catch (Exception)
-				{
-				}
-			}
-		}
-
-		// Token: 0x06000048 RID: 72 RVA: 0x0000205B File Offset: 0x0000025B
-		public void LateUpdate()
-		{
-		}
-
-		// Token: 0x06000049 RID: 73 RVA: 0x00006970 File Offset: 0x00004B70
-		public int toNewCategory(int cat)
-		{
-			switch (cat)
-			{
-			case 0:
-				return 50;
-			case 1:
-				return 31;
-			case 2:
-				return 30;
-			case 3:
-				return 53;
-			case 4:
-				return 34;
-			case 5:
-				return 35;
-			case 6:
-				return 33;
-			case 7:
-				return 57;
-			case 8:
-				return 37;
-			case 9:
-				return 38;
-			case 10:
-				return 39;
-			case 11:
-				return 41;
-			case 12:
-				return 62;
-			case 13:
-				return 63;
-			default:
-				switch (cat)
-				{
-				case 71:
-					return 71;
-				case 72:
-					return 72;
-				case 73:
-					return 73;
-				default:
-					if (cat != 99)
-					{
-						return cat;
-					}
-					return 99;
-				}
-			}
-		}
-
-		// Token: 0x0600004A RID: 74 RVA: 0x00006A10 File Offset: 0x00004C10
-		public int oldCategoryToNewCategoryAdvance(int old)
-		{
-			switch (old)
-			{
-			case 0:
-				return 30;
-			case 1:
-				return 31;
-			case 2:
-				return 32;
-			case 3:
-				return 33;
-			case 4:
-				return 34;
-			case 5:
-				return 35;
-			case 6:
-				return 36;
-			case 7:
-				return 37;
-			case 8:
-				return 38;
-			case 9:
-				return 39;
-			case 10:
-				return 40;
-			case 11:
-				return 41;
-			default:
-				return 99;
-			}
-		}
-
-        #region NotReallyRelated_To_HoneyPot
+        #region NotReallyRelated_To_HoneyPot: Mannequin BoneWeight fix if you changed the resources.assets FemaleBody
         //TODO: To_be_moved: This should be moved out of HoneyPot when I have time. 
         //      Should really be combined with the body mesh NML fixes that I hardcoded in Assembly-CSharp.dll
-        static private Human reference_to_human = null;
-        static private FieldInfo bodySkinMeshField = typeof(Wears).GetField("bodySkinMesh", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static Human reference_to_human = null;
+        private static FieldInfo Wears_bodySkinMeshField = typeof(Wears).GetField("bodySkinMesh", BindingFlags.Instance | BindingFlags.NonPublic);
 
         [HarmonyPatch(typeof(CoordinateCapture), "SetHuman")]
-        static void Prefix(Human human)
+        private static void Prefix(Human human)
         {
             reference_to_human = human;
         }
 
         [HarmonyPatch(typeof(SyncBoneWeight), "Awake")]
-        static void Prefix(SyncBoneWeight __instance)
+        private static void Prefix(SyncBoneWeight __instance)
         {
             if (reference_to_human == null) return;
 
@@ -2418,7 +2372,7 @@ namespace ClassLibrary4
             if (what_object_is_this.name != "EditMode") return;
 
             SkinnedMeshRenderer[] renderers = __instance.attachMeshRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-            Transform[] reference_bones = (bodySkinMeshField.GetValue(reference_to_human.wears) as SkinnedMeshRenderer).bones;
+            Transform[] reference_bones = (Wears_bodySkinMeshField.GetValue(reference_to_human.wears) as SkinnedMeshRenderer).bones;
             Transform[] reordered_bones = new Transform[reference_bones.Length];
 
             foreach (SkinnedMeshRenderer r in renderers)
@@ -2435,19 +2389,23 @@ namespace ClassLibrary4
         }
         #endregion
 
-		private static bool isFirst = true;
+        public void logSave(string txt)
+        {
+            Console.WriteLine(txt);
+        }
+
+        public void SetHarmony(Harmony input)
+        {
+            harmony = input;
+        }
+
+        private Harmony harmony;
+
+        private static bool isFirst = true;
 
         protected static Shader orgShader;
 		protected static MaterialCustoms mc;
 
-        private Assembly libAssembly;
-        private Type typeHairs = typeof(Hairs);
-        private Type typeHairObj;
-		private FieldInfo gameObjField;
-        private FieldInfo nowTabField;
-        private FieldInfo hairObjField;
-
-        private Type typeWearCustomEdit = typeof(WearCustomEdit);
         private WearCustomEdit wearCustomEdit = null;
 
 		private string assetBundlePath = Application.dataPath + "/../abdata";
