@@ -121,12 +121,22 @@ namespace ClassLibrary4
             SkinnedMeshRenderer[] renderers = attachObj.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive);
             Transform wear_animator_basebone = attachObj.transform.parent;
             Transform human_animator_basebone = null;
+            bool skinned_face_acce = false;
+
+            if( attachObj.name == "AcceParent")
+            {
+                skinned_face_acce = Transform_Utility.FindTransform(attachObj.transform, "cf_J_FaceRoot") != null || 
+                                    Transform_Utility.FindTransform(attachObj.transform, "cm_J_FaceRoot") != null;
+            }
+
             Current_additional_rootbones_.Clear();
             if (wear_animator_basebone.name != "cf_body_00" && wear_animator_basebone.name != "cf_body_mnpb" && 
                 wear_animator_basebone.name != "cm_body_00" && wear_animator_basebone.name != "cm_body_mnpb" && 
-                wear_animator_basebone.name != "N_silhouette")
+                wear_animator_basebone.name != "N_silhouette" && skinned_face_acce == false)
             {
                 // Skip when it is currently Body object that is loading and not Wears.
+                // Also skip all Skinned Accessory that is attached to FaceRoot.
+
                 human_animator_basebone = FindHumanAnimTransformFromWears(wear_animator_basebone);
                 bool female = bones.ContainsKey("cf_J_Root") ? true : false;
                 //basebone_of_currentloading = Transform_Utility.FindTransform(attachObj.transform.parent, female ? "cf_J_Hips" : "cm_J_Hips");
