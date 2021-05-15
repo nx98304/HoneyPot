@@ -523,10 +523,8 @@ namespace ClassLibrary4
             }
             try
             {
-                GameObject gameObject = acce.objAcs[slot]; 
-                Renderer[] renderers_in_acceobj = gameObject.GetComponentsInChildren<Renderer>(true);
-                MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
-                materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
+                GameObject acceobj_obj = acce.objAcs[slot]; 
+                Renderer[] renderers_in_acceobj = acceobj_obj.GetComponentsInChildren<Renderer>(true);
                 List<string> list = new List<string>();
                 foreach (Renderer r in renderers_in_acceobj)
                 {
@@ -535,7 +533,7 @@ namespace ClassLibrary4
                         string material_name = material.name.Replace(" (Instance)", "");
                         string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
                         if (material.renderQueue <= 2500)
-                        {
+                        {   //TODO: Why this??????????
                             list.Add(material_name);
                         }
                         if ("".Equals(material.shader.name) )
@@ -586,13 +584,20 @@ namespace ClassLibrary4
                         }
                     }
                 }
-                int num2 = 0;
-                foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
+                MaterialCustoms materialCustoms = acceobj_obj.GetComponent<MaterialCustoms>();
+                if (materialCustoms == null)
                 {
-                    materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
-                    materialCustoms.parameters[num2++].materialNames = list.ToArray();
+                    this.logSave(" -- This accessory doesn't have MaterialCustoms, try adding one to force colorable: " + accessoryData.assetbundleName.Replace("\\", "/"));
+                    materialCustoms = acceobj_obj.AddComponent<MaterialCustoms>();
+                    materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
+                    int num2 = 0;
+                    foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
+                    {
+                        materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
+                        materialCustoms.parameters[num2++].materialNames = list.ToArray();
+                    }
+                    MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
                 }
-                MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
                 acce.UpdateColorCustom(slot);
             }
             catch (Exception ex)
