@@ -14,12 +14,12 @@ using UnityEngine.SceneManagement;
 
 namespace ClassLibrary4
 {
-	[HarmonyPatch]
-	public class HoneyPot : MonoBehaviour
-	{
-		private void Start()
-		{
-			self = GameObject.Find("HoneyPot").GetComponent<HoneyPot>();
+    [HarmonyPatch]
+    public class HoneyPot : MonoBehaviour
+    {
+        private void Start()
+        {
+            self = GameObject.Find("HoneyPot").GetComponent<HoneyPot>();
         }
 
         //Generalized Render Queue retrival: SRQ MB will have the last say if it is present, 
@@ -74,9 +74,9 @@ namespace ClassLibrary4
         static void Postfix(Hairs __instance, HairParameter param)
         {
             SEX sex = (Hairs_humanField.GetValue(__instance) as Human).sex;
-            for ( int i = 0; i < 3; i++ )
+            for (int i = 0; i < 3; i++)
             {
-                if( __instance.objHairs[i] != null )
+                if (__instance.objHairs[i] != null)
                 {
                     int id = param.parts[i].ID;
                     HairData hair_data = (sex == SEX.FEMALE) ?
@@ -88,21 +88,21 @@ namespace ClassLibrary4
             __instance.ChangeColor(param);
         }
 
-		public void setHairShaderObj(GameObject objHair, string assetBundleName)
-		{
-			try
-			{
-				Renderer[] renderers = objHair.GetComponentsInChildren<Renderer>(true);
-				foreach (Renderer r in renderers)
-				{
-					foreach (Material material in r.materials)
-					{
-						if (HoneyPot.orgShader == null && !"".Equals(material.shader.name))
-						{
+        public void setHairShaderObj(GameObject objHair, string assetBundleName)
+        {
+            try
+            {
+                Renderer[] renderers = objHair.GetComponentsInChildren<Renderer>(true);
+                foreach (Renderer r in renderers)
+                {
+                    foreach (Material material in r.materials)
+                    {
+                        if (HoneyPot.orgShader == null && !"".Equals(material.shader.name))
+                        {
                             HoneyPot.orgShader = material.shader;
-						}                         
+                        }
                         if (HoneyPot.orgShader != null && "".Equals(material.shader.name))
-                        { 
+                        {
                             string inspector_key = (assetBundleName + "|" + material.name).Replace(" (Instance)", "");
                             this.logSave("Hair material: " + inspector_key);
                             int rq = material.renderQueue;
@@ -112,7 +112,7 @@ namespace ClassLibrary4
                                 string shader_name = HoneyPot.inspector[inspector_key];
                                 //Note: So, for HS hairs, ideally we want to convert all of them to PH hair shader
                                 //      because that's usually just better, but hairs that use "HSStandard" is an exception.
-                                if ( HoneyPot.presets.ContainsKey(shader_name) && HoneyPot.presets[shader_name].shader.name.Contains("HSStandard") )
+                                if (HoneyPot.presets.ContainsKey(shader_name) && HoneyPot.presets[shader_name].shader.name.Contains("HSStandard"))
                                 {
                                     material.shader = HoneyPot.presets[shader_name].shader;
                                     this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
@@ -152,16 +152,16 @@ namespace ClassLibrary4
                                 this.logSave("If we got here, it means this hair should be PH hair, but we failed to read its shader. Apply default PH hair shader: " + HoneyPot.orgShader.name);
                                 material.shader = HoneyPot.orgShader;
                             }
-                            material.renderQueue = rq; 
+                            material.renderQueue = rq;
                         }
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				this.logSave(ex.ToString());
-			}
-		}
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.logSave(ex.ToString());
+            }
+        }
         #endregion
 
         #region Studio item shader remapping 
@@ -169,7 +169,7 @@ namespace ClassLibrary4
         {
             Info.ItemLoadInfo itemLoadInfo = Singleton<Info>.Instance.dicItemLoadInfo[__result.itemInfo.no];
             self.setItemShader(__result.objectItem, itemLoadInfo.bundlePath.Replace("\\", "/"));
-            if(__result.isColor2 || __result.isChangeColor )
+            if (__result.isColor2 || __result.isChangeColor)
             {
                 __result.UpdateColor();
             }
@@ -184,13 +184,13 @@ namespace ClassLibrary4
                 // test
                 p.material.shader = HoneyPot.presets["Particle Add"].shader;
             }
-            foreach(Renderer r in renderers_in_children)
+            foreach (Renderer r in renderers_in_children)
             {
                 Type renderertype = r.GetType();
                 if (renderertype == typeof(ParticleSystemRenderer) ||
                     renderertype == typeof(LineRenderer) ||
                     renderertype == typeof(TrailRenderer) ||
-                    renderertype == typeof(ParticleRenderer) )
+                    renderertype == typeof(ParticleRenderer))
                 {
                     this.logSave(r.name + " is probably an effects renderer, needs special guesses.");
                     Material particle_mat = r.materials[0]; // assume one particle renderer only uses 1 material.
@@ -300,17 +300,17 @@ namespace ClassLibrary4
 
                             this.logSave("shader_name:" + shader_name);
 
-                            if ( shader_name.Contains_NoCase("distortion") )
+                            if (shader_name.Contains_NoCase("distortion"))
                             {
                                 this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
                                 shader_name = "Particle Add";
                                 material.shader = HoneyPot.presets[shader_name].shader;
-                                if ( guessing_renderqueue == -1 ) guessing_renderqueue = 4123;
+                                if (guessing_renderqueue == -1) guessing_renderqueue = 4123;
                             }
-                            else if ( shader_name.Contains_NoCase("alphatest") )
+                            else if (shader_name.Contains_NoCase("alphatest"))
                             {
-                                if ( guessing_renderqueue <= 2500 )
-                                { 
+                                if (guessing_renderqueue <= 2500)
+                                {
                                     this.logSave("An AlphaTest kind of shader that has non-transparent renderqueue, assigning PBRsp_alpha_culloff");
                                     shader_name = "PBRsp_alpha_culloff";
                                 }
@@ -322,14 +322,14 @@ namespace ClassLibrary4
                                 material.shader = HoneyPot.presets[shader_name].shader;
                             }
                             else
-                            { 
-                                if ( !HoneyPot.presets.ContainsKey(shader_name) )
+                            {
+                                if (!HoneyPot.presets.ContainsKey(shader_name))
                                 {
                                     this.logSave("Shader remapping info not found from shader.txt for this Studio item. Testing a few shader keywords to salvage.");
                                     foreach (string text2 in material.shaderKeywords)
                                     {
                                         this.logSave("shader keywords found:" + text2);
-                                        if ((text2.Contains_NoCase("alphapre") || material.name.Contains_NoCase("glass")) && 
+                                        if ((text2.Contains_NoCase("alphapre") || material.name.Contains_NoCase("glass")) &&
                                            !(text2.Contains_NoCase("leaf") || text2.Contains_NoCase("frond") || text2.Contains_NoCase("branch"))) //super last-ditch tests for glass-like material
                                         {
                                             this.logSave("Possible transparent glasses-like material.");
@@ -364,7 +364,7 @@ namespace ClassLibrary4
 
                                             // guessing any glass like item should have a very high render queue;
                                             // in this case anything you can get from getRenderQueue() is probably wrong and not suitable.
-                                            if (guessing_renderqueue == -1) guessing_renderqueue = 4001; 
+                                            if (guessing_renderqueue == -1) guessing_renderqueue = 4001;
                                         }
                                         else if (text2.Contains_NoCase("trans") || text2.Contains_NoCase("blend"))
                                         {
@@ -382,7 +382,7 @@ namespace ClassLibrary4
                                             // in this case, you can probably rely on getRenderQueue() results.
                                         }
                                     }
-                                } 
+                                }
                                 else
                                 {
                                     this.logSave("Shader remapping info found, remapping " + shader_name + " to " + HoneyPot.presets[shader_name].shader.name);
@@ -406,7 +406,7 @@ namespace ClassLibrary4
                                 }
                             }
 
-                            if ( !HoneyPot.presets.ContainsKey(shader_name) )
+                            if (!HoneyPot.presets.ContainsKey(shader_name))
                             {
                                 this.logSave("The preset shaders weren't prepared for this specific HS shader, and all guessing for shader keywords have failed, resorting to default.");
                                 material.shader = HoneyPot.presets["Standard"].shader;
@@ -421,12 +421,12 @@ namespace ClassLibrary4
                                     }
                                 }
                             }
-                            
+
                             if (material.HasProperty("_Glossiness") && material.HasProperty("_Color"))
                             {
                                 Color c = material.GetColor("_Color");
                                 this.logSave(" - Monitor this material's values, see if it is reset or has anomoly: ");
-                                this.logSave(" --- _Glossiness: " + material.GetFloat("_Glossiness") );
+                                this.logSave(" --- _Glossiness: " + material.GetFloat("_Glossiness"));
                                 this.logSave(" ---       color: (" + c.r + "," + c.g + "," + c.b + "," + c.a + ")");
                             }
                             material.renderQueue = guessing_renderqueue;
@@ -462,19 +462,19 @@ namespace ClassLibrary4
             }
             if (startIndex > -1)
             {
-                codes[startIndex-1].opcode = OpCodes.Nop;
-                codes[startIndex].opcode = OpCodes.Nop; 
+                codes[startIndex - 1].opcode = OpCodes.Nop;
+                codes[startIndex].opcode = OpCodes.Nop;
                 // Remove the UpdateColorCustom call at the end of AcceObj.SetupMaterials
             }
             return codes.AsEnumerable();
         }
 
-        private static MethodInfo AcceObj_SetupMaterials = 
-            Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj").GetMethod("SetupMaterials", new Type[]{ typeof(AccessoryData) });
+        private static MethodInfo AcceObj_SetupMaterials =
+            Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj").GetMethod("SetupMaterials", new Type[] { typeof(AccessoryData) });
 
         private static void AcceObj_UpdateColorCustom_Prefix(object __instance)
         {
-            AcceObj_SetupMaterials.Invoke(__instance, new object[]{ null });
+            AcceObj_SetupMaterials.Invoke(__instance, new object[] { null });
         }
 
         private static MethodInfo MaterialCustoms_Setup = typeof(MaterialCustoms).GetMethod("Setup", new Type[0]);
@@ -523,8 +523,9 @@ namespace ClassLibrary4
             }
             try
             {
-                GameObject acceobj_obj = acce.objAcs[slot]; 
+                GameObject acceobj_obj = acce.objAcs[slot];
                 Renderer[] renderers_in_acceobj = acceobj_obj.GetComponentsInChildren<Renderer>(true);
+                string try_this_shader_name = "";
                 List<string> list = new List<string>();
                 foreach (Renderer r in renderers_in_acceobj)
                 {
@@ -536,7 +537,7 @@ namespace ClassLibrary4
                         {   //TODO: Why this??????????
                             list.Add(material_name);
                         }
-                        if ("".Equals(material.shader.name) )
+                        if ("".Equals(material.shader.name))
                         {
                             this.logSave("Acce material: " + inspector_key);
                             int rq = material.renderQueue;
@@ -582,19 +583,21 @@ namespace ClassLibrary4
                             //important: RQ assignment has to go after shader assignment. 
                             //           fucking implicit setter changes stuff... 
                         }
+                        try_this_shader_name = material.shader.name;
                     }
                 }
                 MaterialCustoms materialCustoms = acceobj_obj.GetComponent<MaterialCustoms>();
                 if (materialCustoms == null)
                 {
-                    this.logSave(" -- This accessory doesn't have MaterialCustoms, try adding one to force colorable: " + accessoryData.assetbundleName.Replace("\\", "/"));
+                    this.logSave(" -- This accessory doesn't have MaterialCustoms (" + HoneyPot.mc.parameters.Length + "), try adding one to force colorable: " + accessoryData.assetbundleName.Replace("\\", "/"));
                     materialCustoms = acceobj_obj.AddComponent<MaterialCustoms>();
                     materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
-                    int num2 = 0;
+                    int idx = 0;
                     foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
                     {
-                        materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
-                        materialCustoms.parameters[num2++].materialNames = list.ToArray();
+                        materialCustoms.parameters[idx] = new MaterialCustoms.Parameter(copy);
+                        match_correct_shader_property(materialCustoms.parameters[idx], idx, try_this_shader_name);
+                        materialCustoms.parameters[idx++].materialNames = list.ToArray();
                     }
                     MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
                 }
@@ -603,6 +606,31 @@ namespace ClassLibrary4
             catch (Exception ex)
             {
                 this.logSave(ex.ToString());
+            }
+        }
+
+        Dictionary<string, string[]> MC_Mapping = new Dictionary<string, string[]>()
+        {
+            { "Shader Forge/PBR_SG",            new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBR_SG Alpha",      new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBR_SG DoubleSide", new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBR_SG Clip",       new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+        };
+
+        private void match_correct_shader_property(MaterialCustoms.Parameter mc, int idx, string shader_name)
+        {
+            if( shader_name == null || shader_name == "" )
+            {
+                logSave(" -- Renaming shader properties: shader_name is null or empty??");
+                return;
+            }
+            if( MC_Mapping.ContainsKey(shader_name) )
+            {
+                mc.propertyName = MC_Mapping[shader_name][idx];
+            } 
+            else
+            {
+                logSave(" -- Renaming shader properties: shader_name isn't in the special case list. Nothing was done.");
             }
         }
         #endregion
