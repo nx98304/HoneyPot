@@ -51,18 +51,18 @@ namespace ClassLibrary4
             { "Shader Forge/PBR_SG Alpha",      new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBR_SG DoubleSide", new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBR_SG Clip",       new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
-            { "Shader Forge/PBRsp_2layer",      new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_Color_2", "_SpecColor_2", "_not_mapped_" } },
-            { "Standard",                       new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
+            { "Shader Forge/PBRsp_2layer",      new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_Color_2", "_SpecColor_2", "_SpecColor_2" } },
+            { "Standard",                       new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
             { "Standard_Z",                     new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "Standard CustomMetallic",        new string[] { "_Color", "_SpecularColor", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
-            { "Standard_culloff",               new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
-            { "Standard_culloff_Z",             new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
-            { "Standard (Specular setup)",      new string[] { "_Color", "_SpecColor", "_not_mapped_", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
+            { "Standard CustomMetallic",        new string[] { "_Color", "_SpecularColor", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
+            { "Standard_culloff",               new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
+            { "Standard_culloff_Z",             new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
+            { "Standard (Specular setup)",      new string[] { "_Color", "_SpecColor", "_not_mapped_", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
             { "Standard (Specular setup)_culloff", new string[] { "_Color", "_SpecColor", "_not_mapped_", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "Standard_555",                   new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
+            { "Standard_555",                   new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
             { "HSStandard",                     new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "HSStandard (Two Colors)",        new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_Color_3", "_SpecColor_3", "_not_mapped_" } },
-        };
+            { "HSStandard (Two Colors)",        new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_Color_3", "_SpecColor_3", "_SpecColor_3" } },
+        };                                    //Note: the 7th idx is actually manipulating 6th's alpha value it seems, so only ones that runs TWO colors would need it...
 
         private void match_correct_shader_property(MaterialCustoms.Parameter mc, int idx, string shader_name)
         {
@@ -624,8 +624,9 @@ namespace ClassLibrary4
                             //           fucking implicit setter changes stuff... 
                         }
 
-                        if (material.renderQueue <= 3000)
+                        if (material.renderQueue <= 3600)
                         {   //Note: This is because we don't want to include glasses like accessories!!
+                            //Note: It seems all glasses (transparent Standard) materials are around RQ 3800 or more
                             list.Add(material_name);
                             try_this_shader_name = material.shader.name;
                         }
