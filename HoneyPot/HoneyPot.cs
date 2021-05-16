@@ -22,6 +22,7 @@ namespace ClassLibrary4
             self = GameObject.Find("HoneyPot").GetComponent<HoneyPot>();
         }
 
+        #region important helpers (RQ, MaterialCustoms parameter remapping)
         //Generalized Render Queue retrival: SRQ MB will have the last say if it is present, 
         //                                   otherwise use the CustomRenderQueue value. 
         private int getRenderQueue(string inspector_key, SetRenderQueue setRQ_MB)
@@ -43,6 +44,48 @@ namespace ClassLibrary4
             //this.logSave("set RQ: " + inspector_key + " = " + result);
             return result;
         }
+
+        Dictionary<string, string[]> MC_Mapping = new Dictionary<string, string[]>()
+        {
+            { "Shader Forge/PBR_SG",            new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBR_SG Alpha",      new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBR_SG DoubleSide", new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBR_SG Clip",       new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBRsp_2layer",      new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_Color_2", "_SpecColor_2", "_not_mapped_" } },
+            { "Standard",                       new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
+            { "Standard_Z",                     new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
+            { "Standard CustomMetallic",        new string[] { "_Color", "_SpecularColor", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
+            { "Standard_culloff",               new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
+            { "Standard_culloff_Z",             new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
+            { "Standard (Specular setup)",      new string[] { "_Color", "_SpecColor", "_not_mapped_", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
+            { "Standard (Specular setup)_culloff", new string[] { "_Color", "_SpecColor", "_not_mapped_", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
+            { "Standard_555",                   new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_GlossMapScale" } },
+            { "HSStandard",                     new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
+            { "HSStandard (Two Colors)",        new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_Color_3", "_SpecColor_3", "_not_mapped_" } },
+        };
+
+        private void match_correct_shader_property(MaterialCustoms.Parameter mc, int idx, string shader_name)
+        {
+            if (shader_name == null || shader_name == "") return;
+
+            if (MC_Mapping.ContainsKey(shader_name))
+            {
+                mc.propertyName = MC_Mapping[shader_name][idx];
+            }
+            else if (shader_name.Contains("HSStandard (Two Colors)")) //Note: match stricker rule first
+            {
+                mc.propertyName = MC_Mapping["HSStandard (Two Colors)"][idx];
+            }
+            else if (shader_name.Contains("HSStandard"))
+            {
+                mc.propertyName = MC_Mapping["HSStandard"][idx];
+            }
+            else if (shader_name.Contains("PBRsp_2layer"))
+            {
+                mc.propertyName = MC_Mapping["Shader Forge/PBRsp_2layer"][idx];
+            }
+        }
+        #endregion
 
         #region Any shader remapping that's material and texture only
         private static FieldInfo head_humanField = typeof(Head).GetField("human", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -533,10 +576,7 @@ namespace ClassLibrary4
                     {
                         string material_name = material.name.Replace(" (Instance)", "");
                         string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
-                        if (material.renderQueue <= 2500)
-                        {   //TODO: Why this??????????
-                            list.Add(material_name);
-                        }
+
                         if ("".Equals(material.shader.name))
                         {
                             this.logSave("Acce material: " + inspector_key);
@@ -583,13 +623,18 @@ namespace ClassLibrary4
                             //important: RQ assignment has to go after shader assignment. 
                             //           fucking implicit setter changes stuff... 
                         }
-                        try_this_shader_name = material.shader.name;
+
+                        if (material.renderQueue <= 3000)
+                        {   //Note: This is because we don't want to include glasses like accessories!!
+                            list.Add(material_name);
+                            try_this_shader_name = material.shader.name;
+                        }
                     }
                 }
                 MaterialCustoms materialCustoms = acceobj_obj.GetComponent<MaterialCustoms>();
                 if (materialCustoms == null)
                 {
-                    this.logSave(" -- This accessory doesn't have MaterialCustoms (" + HoneyPot.mc.parameters.Length + "), try adding one to force colorable: " + accessoryData.assetbundleName.Replace("\\", "/"));
+                    this.logSave(" -- This accessory doesn't have MaterialCustoms, try adding one: " + accessoryData.assetbundleName.Replace("\\", "/") + ", shader: " + try_this_shader_name);
                     materialCustoms = acceobj_obj.AddComponent<MaterialCustoms>();
                     materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
                     int idx = 0;
@@ -606,31 +651,6 @@ namespace ClassLibrary4
             catch (Exception ex)
             {
                 this.logSave(ex.ToString());
-            }
-        }
-
-        Dictionary<string, string[]> MC_Mapping = new Dictionary<string, string[]>()
-        {
-            { "Shader Forge/PBR_SG",            new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
-            { "Shader Forge/PBR_SG Alpha",      new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
-            { "Shader Forge/PBR_SG DoubleSide", new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
-            { "Shader Forge/PBR_SG Clip",       new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
-        };
-
-        private void match_correct_shader_property(MaterialCustoms.Parameter mc, int idx, string shader_name)
-        {
-            if( shader_name == null || shader_name == "" )
-            {
-                logSave(" -- Renaming shader properties: shader_name is null or empty??");
-                return;
-            }
-            if( MC_Mapping.ContainsKey(shader_name) )
-            {
-                mc.propertyName = MC_Mapping[shader_name][idx];
-            } 
-            else
-            {
-                logSave(" -- Renaming shader properties: shader_name isn't in the special case list. Nothing was done.");
             }
         }
         #endregion
@@ -656,10 +676,9 @@ namespace ClassLibrary4
             {
                 WearData wearData = wears.GetWearData(type);
                 bool is_a_HS_cloth_parts_that_remmapped_shader = false;
-                GameObject gameObject = wearobj.obj;
-                Renderer[] renderers_in_wearobj = gameObject.GetComponentsInChildren<Renderer>(true);
-                MaterialCustoms materialCustoms = gameObject.AddComponent<MaterialCustoms>();
-                materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
+                GameObject wearobj_obj = wearobj.obj;
+                Renderer[] renderers_in_wearobj = wearobj_obj.GetComponentsInChildren<Renderer>(true);
+                string try_this_shader_name = "";
                 List<string> list = new List<string>();
 
                 foreach (Renderer renderer in renderers_in_wearobj)
@@ -678,19 +697,12 @@ namespace ClassLibrary4
                         //       and they are not exactly rare occurrances. 
                         string material_name = material.name.Replace(" (Instance)", "");
                         string inspector_key = wearData.assetbundleName.Replace("\\", "/") + "|" + material_name;
-                        if (((//!renderer.name.Contains("_body_") && 
-                             renderer.tag.Contains("ObjColor")) || forceColorable) &&
+                        bool flag = !renderer.name.Contains("_unc_") &&
                             !material.name.Contains("cf_m_body_CustomMaterial") &&
                             !material.name.Contains("cm_m_body_CustomMaterial") &&
-                            "".Equals(material.shader.name))
-                        {
-                            list.Add(material_name);
-                        }
-                        if ("".Equals(material.shader.name) &&
-                            (//!renderer.name.Contains("_body_") &&
-                            !material.name.Contains("cf_m_body_CustomMaterial") &&
-                            !material.name.Contains("cm_m_body_CustomMaterial") &&
-                            !renderer.tag.Contains("New tag (8)") || type != WEAR_TYPE.TOP ))
+                            "".Equals(material.shader.name);
+                        if (//!renderer.name.Contains("_body_") &&
+                            type != WEAR_TYPE.TOP || flag && !renderer.tag.Contains("New tag (8)") )
                         {
                             int rq = getRenderQueue(inspector_key, renderer.gameObject.GetComponent<SetRenderQueue>());
                             this.logSave("Wear material: " + inspector_key + " RQ: " + rq);
@@ -734,18 +746,32 @@ namespace ClassLibrary4
                             material.renderQueue = rq;
                             is_a_HS_cloth_parts_that_remmapped_shader = true;
                         }
+                        if (((/*!renderer.name.Contains("_body_") &&*/
+                             renderer.tag.Contains("ObjColor")) || forceColorable) && flag)
+                        {
+                            list.Add(material_name);
+                            try_this_shader_name = material.shader.name;
+                        }
                     }
                 }
 
                 if (is_a_HS_cloth_parts_that_remmapped_shader)
                 {
-                    int num2 = 0;
-                    foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
+                    MaterialCustoms materialCustoms = wearobj_obj.GetComponent<MaterialCustoms>();
+                    if (materialCustoms == null && try_this_shader_name != "")
                     {
-                        materialCustoms.parameters[num2] = new MaterialCustoms.Parameter(copy);
-                        materialCustoms.parameters[num2++].materialNames = list.ToArray();
+                        this.logSave(" -- This wear doesn't have MaterialCustoms, try adding one: " + wearData.assetbundleName.Replace("\\", "/") + ", shader: " + try_this_shader_name);
+                        materialCustoms = wearobj_obj.AddComponent<MaterialCustoms>();
+                        materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
+                        int k = 0;
+                        foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
+                        {
+                            materialCustoms.parameters[k] = new MaterialCustoms.Parameter(copy);
+                            match_correct_shader_property(materialCustoms.parameters[k], k, try_this_shader_name);
+                            materialCustoms.parameters[k++].materialNames = list.ToArray();
+                        }
+                        MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
                     }
-                    MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
                     WearObj_SetupMaterials.Invoke(wearobj, new object[]{ null }); //the WearData is never used/checked in this call
                     wearobj.UpdateColorCustom();
                     if( this.wearCustomEdit != null && (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx )
