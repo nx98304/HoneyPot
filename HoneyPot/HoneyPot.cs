@@ -485,7 +485,8 @@ namespace ClassLibrary4
         #region Accessory shader remapping
         [HarmonyPatch(typeof(Accessories), "AccessoryInstantiate")]
         private static void Postfix(Accessories __instance, AccessoryParameter acceParam, int slot, bool fixAttachParent, AccessoryData prevData)
-        {   //Note: this is required because we 
+        {   //Note: this is required because we removed the UpdateColorCustom right at the end of SetupMaterials 
+            //      with the transpiler below
             __instance.UpdateColorCustom(slot);
             self.setAccsShader(__instance, acceParam, slot);
         }
