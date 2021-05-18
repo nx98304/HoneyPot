@@ -650,7 +650,8 @@ namespace ClassLibrary4
                         if (material.renderQueue <= 3600)
                         {   //Note: This is because we don't want to include glasses like accessories!!
                             //Note: It seems all glasses (transparent Standard) materials are around RQ 3800 or more
-                            list.Add(material_name);
+                            if( !list.Contains(material_name) )
+                                list.Add(material_name);
                             try_this_shader_name = material.shader.name;
                         }
                     }
