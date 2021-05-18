@@ -62,27 +62,44 @@ namespace ClassLibrary4
             { "Standard_555",                   new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
             { "HSStandard",                     new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
             { "HSStandard (Two Colors)",        new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_Color_3", "_SpecColor_3", "_SpecColor_3" } },
+            { "Alloy/Core",                     new string[] { "_Color", "_not_mapped_", "_Metal", "_Roughness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/Hair/ShaderForge_Hair", new string[] { "_Color", "_CuticleColor", "_CuticleExp", "_CuticleY", "_FrenelColor", "_not_mapped_", "_FrenelExp" } },
         };                                    //Note: the 7th idx is actually manipulating 6th's alpha value it seems, so only ones that runs TWO colors would need it...
 
-        private void match_correct_shader_property(MaterialCustoms.Parameter mc, int idx, string shader_name)
-        {
-            if (shader_name == null || shader_name == "") return;
+        private static FieldInfo MC_DataFloat_minField = typeof(MaterialCustoms).GetNestedType("Data_Float").GetField("min", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static FieldInfo MC_DataFloat_maxField = typeof(MaterialCustoms).GetNestedType("Data_Float").GetField("max", BindingFlags.NonPublic | BindingFlags.Instance);
 
-            if (MC_Mapping.ContainsKey(shader_name))
+        private void match_correct_shader_property(MaterialCustoms mc, string shader_name)
+        {
+            if ( shader_name.IsNullOrEmpty() ) return;
+
+            string key = "";
+            if (MC_Mapping.ContainsKey(shader_name))                  key = shader_name;
+            else if (shader_name.Contains("HSStandard (Two Colors)")) key = "HSStandard (Two Colors)";
+            else if (shader_name.Contains("HSStandard"))              key = "HSStandard";
+            else if (shader_name.Contains("PBRsp_2layer"))            key = "Shader Forge/PBRsp_2layer";
+            else if (shader_name.Contains("ShaderForge_Hair"))        key = "Shader Forge/Hair/ShaderForge_Hair";
+
+            if( !key.IsNullOrEmpty() )
+                for( int idx = 0; idx < MC_Mapping[key].Length; idx++ )
+                    mc.parameters[idx].propertyName = MC_Mapping[key][idx];
+            
+            if( key == "Shader Forge/Hair/ShaderForge_Hair" )
             {
-                mc.propertyName = MC_Mapping[shader_name][idx];
+                mc.parameters[2].type = MaterialCustoms.Parameter.TYPE.FLOAT11;
+                mc.parameters[3].type = MaterialCustoms.Parameter.TYPE.FLOAT11;
+                mc.parameters[6].type = MaterialCustoms.Parameter.TYPE.FLOAT11;
             }
-            else if (shader_name.Contains("HSStandard (Two Colors)")) //Note: match stricker rule first
+        }
+
+        private void match_correct_shader_property_data_range(MaterialCustoms mc, string shader_name)
+        {
+            if (shader_name.Contains("ShaderForge_Hair"))
             {
-                mc.propertyName = MC_Mapping["HSStandard (Two Colors)"][idx];
-            }
-            else if (shader_name.Contains("HSStandard"))
-            {
-                mc.propertyName = MC_Mapping["HSStandard"][idx];
-            }
-            else if (shader_name.Contains("PBRsp_2layer"))
-            {
-                mc.propertyName = MC_Mapping["Shader Forge/PBRsp_2layer"][idx];
+                MC_DataFloat_minField.SetValue(mc.datas[2], 1);
+                MC_DataFloat_maxField.SetValue(mc.datas[2], 20);
+                MC_DataFloat_minField.SetValue(mc.datas[6], 0);
+                MC_DataFloat_maxField.SetValue(mc.datas[6], 8);
             }
         }
         #endregion
@@ -573,6 +590,7 @@ namespace ClassLibrary4
                 List<string> list = new List<string>();
                 foreach (Renderer r in renderers_in_acceobj)
                 {
+                    this.logSave("Acce renderer: " + r.name);
                     foreach (Material material in r.materials)
                     {
                         string material_name = material.name.Replace(" (Instance)", "");
@@ -633,20 +651,25 @@ namespace ClassLibrary4
                         }
                     }
                 }
-                MaterialCustoms materialCustoms = acceobj_obj.GetComponent<MaterialCustoms>();
-                if (materialCustoms == null)
+
+                //Note: wait DUDE what the fuck. acceobj_obj is always going to be "AcceParent" which will never contain 
+                //      a MaterialCustoms. I suppose I can still always assume that AcceParent has only 1 child?
+                GameObject the_actual_acce_obj = acceobj_obj.transform.GetChild(0).gameObject;
+                MaterialCustoms materialCustoms = the_actual_acce_obj.GetComponent<MaterialCustoms>();
+                if (materialCustoms == null && try_this_shader_name != "")
                 {
                     this.logSave(" -- This accessory doesn't have MaterialCustoms, try adding one: " + accessoryData.assetbundleName.Replace("\\", "/") + ", shader: " + try_this_shader_name);
-                    materialCustoms = acceobj_obj.AddComponent<MaterialCustoms>();
+                    materialCustoms = the_actual_acce_obj.AddComponent<MaterialCustoms>();
                     materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
                     int idx = 0;
                     foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
                     {
                         materialCustoms.parameters[idx] = new MaterialCustoms.Parameter(copy);
-                        match_correct_shader_property(materialCustoms.parameters[idx], idx, try_this_shader_name);
                         materialCustoms.parameters[idx++].materialNames = list.ToArray();
                     }
+                    match_correct_shader_property(materialCustoms, try_this_shader_name);
                     MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
+                    match_correct_shader_property_data_range(materialCustoms, try_this_shader_name);
                 }
                 acce.UpdateColorCustom(slot);
             }
@@ -677,7 +700,7 @@ namespace ClassLibrary4
             try
             {
                 WearData wearData = wears.GetWearData(type);
-                bool is_a_HS_cloth_parts_that_remmapped_shader = false;
+                //bool is_a_HS_cloth_parts_that_remmapped_shader = false;
                 GameObject wearobj_obj = wearobj.obj;
                 Renderer[] renderers_in_wearobj = wearobj_obj.GetComponentsInChildren<Renderer>(true);
                 string try_this_shader_name = "";
@@ -746,7 +769,7 @@ namespace ClassLibrary4
                                 }
                             }
                             material.renderQueue = rq;
-                            is_a_HS_cloth_parts_that_remmapped_shader = true;
+                            //is_a_HS_cloth_parts_that_remmapped_shader = true;
                         }
                         if (((/*!renderer.name.Contains("_body_") &&*/
                              renderer.tag.Contains("ObjColor")) || forceColorable) && flag)
@@ -757,8 +780,8 @@ namespace ClassLibrary4
                     }
                 }
 
-                if (is_a_HS_cloth_parts_that_remmapped_shader)
-                {
+                //if (is_a_HS_cloth_parts_that_remmapped_shader)
+                //{
                     MaterialCustoms materialCustoms = wearobj_obj.GetComponent<MaterialCustoms>();
                     if (materialCustoms == null && try_this_shader_name != "")
                     {
@@ -769,9 +792,9 @@ namespace ClassLibrary4
                         foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
                         {
                             materialCustoms.parameters[k] = new MaterialCustoms.Parameter(copy);
-                            match_correct_shader_property(materialCustoms.parameters[k], k, try_this_shader_name);
                             materialCustoms.parameters[k++].materialNames = list.ToArray();
                         }
+                        match_correct_shader_property(materialCustoms, try_this_shader_name);
                         MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
                     }
                     WearObj_SetupMaterials.Invoke(wearobj, new object[]{ null }); //the WearData is never used/checked in this call
@@ -783,7 +806,7 @@ namespace ClassLibrary4
                         // This HS clothing is deemed non-colorchangable because of its MaterialCustom is not set.
                         this.wearCustomEdit.LoadedCoordinate(type);
                     }
-                }
+                //}
             }
             catch (Exception ex)
             {
