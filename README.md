@@ -21,12 +21,12 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - The **card face of coordinate cards** now displays all HS mods correctly, no longer just a bunch of purple shapes. 
 - **F12 key** for _applying_ HoneyPot shaders is no longer needed (and no longer functional). Both in the main game and the studio. 
 - Fixed issue where _skinned_ accessories for head/face will conflict with **BonesFramework** code. 
-- The colorable detection of HoneyPot now _mostly_ works for HS clothings and accessories: 
-  - All accessories are forced-colorable as they have always been, but some color properties were not controlled correctly in the past).
+- Improved color customization for both HS and PH clothings/accessories:
+  - All accessories are forced-colorable as they have always been, but some color properties were not controlled correctly in the past.
     - Especially some 2-color setup accessories and clothings. 
   - HoneyPot used to force-color all bras and shorts (including PH ones), but that function was lost for some time. Now it's back. 
   - Can further force all non-colorable clothings (including PH ones) by setting `ForceColor=TRUE` in `UserData/modprefs.ini`.
-    - **This will make some of your old cards' and scenes' clothings to change color.** It can be easily brought back because it's just now adjustable, but if you find this troublesome, then just don't set this modpref option. 
+    - **This will make some of your old cards' and scenes' clothings to change color.** You can just change the color back in chara maker because they are now adjustable, but if you find this troublesome, then just don't set this modpref option. 
   - Non-colorable clothings & accessories usually imply their materials have only 1 main color to begin with. So in the color UI, the sub color options will show up, but are mostly useless. 
 - A note: the **Standard_555** shader that was added back in 1.4.6 was not transplanted from Unity 5.3.x. Thanks Doodoo for pointing this out. 
 
