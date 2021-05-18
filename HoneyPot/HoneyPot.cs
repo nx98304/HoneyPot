@@ -20,6 +20,11 @@ namespace ClassLibrary4
         private void Start()
         {
             self = GameObject.Find("HoneyPot").GetComponent<HoneyPot>();
+            string str = ModPrefs.GetString("HoneyPot", "ForceColor", "", false);
+            if( str.Equals("TRUE") )
+            {
+                force_color_everything_that_doesnt_have_materialcustoms = true;
+            }
         }
 
         #region important helpers (RQ, MaterialCustoms parameter remapping)
@@ -52,15 +57,15 @@ namespace ClassLibrary4
             { "Shader Forge/PBR_SG DoubleSide", new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBR_SG Clip",       new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBRsp_2layer",      new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_Color_2", "_SpecColor_2", "_SpecColor_2" } },
-            { "Standard",                       new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "Standard_Z",                     new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "Standard CustomMetallic",        new string[] { "_Color", "_SpecularColor", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "Standard_culloff",               new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "Standard_culloff_Z",             new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "Standard (Specular setup)",      new string[] { "_Color", "_SpecColor", "_not_mapped_", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "Standard (Specular setup)_culloff", new string[] { "_Color", "_SpecColor", "_not_mapped_", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "Standard_555",                   new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
-            { "HSStandard",                     new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_EmissionColor", "_not_mapped_", "_not_mapped_" } },
+            { "Standard",                       new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Standard_Z",                     new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Standard CustomMetallic",        new string[] { "_Color", "_SpecularColor", "_Metallic", "_Glossiness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Standard_culloff",               new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Standard_culloff_Z",             new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Standard (Specular setup)",      new string[] { "_Color", "_SpecColor", "_not_mapped_", "_Glossiness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Standard (Specular setup)_culloff", new string[] { "_Color", "_SpecColor", "_not_mapped_", "_Glossiness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Standard_555",                   new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "HSStandard",                     new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "HSStandard (Two Colors)",        new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_Color_3", "_SpecColor_3", "_SpecColor_3" } },
             { "Alloy/Core",                     new string[] { "_Color", "_not_mapped_", "_Metal", "_Roughness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/Hair/ShaderForge_Hair", new string[] { "_Color", "_CuticleColor", "_CuticleExp", "_CuticleY", "_FrenelColor", "_not_mapped_", "_FrenelExp" } },
@@ -590,13 +595,12 @@ namespace ClassLibrary4
                 List<string> list = new List<string>();
                 foreach (Renderer r in renderers_in_acceobj)
                 {
-                    this.logSave("Acce renderer: " + r.name);
                     foreach (Material material in r.materials)
                     {
                         string material_name = material.name.Replace(" (Instance)", "");
                         string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
 
-                        if ("".Equals(material.shader.name))
+                        if (material.shader.name.IsNullOrEmpty()) //This is the only way we know it's from HS.
                         {
                             this.logSave("Acce material: " + inspector_key);
                             int rq = material.renderQueue;
@@ -700,11 +704,13 @@ namespace ClassLibrary4
             try
             {
                 WearData wearData = wears.GetWearData(type);
-                //bool is_a_HS_cloth_parts_that_remmapped_shader = false;
+
                 GameObject wearobj_obj = wearobj.obj;
                 Renderer[] renderers_in_wearobj = wearobj_obj.GetComponentsInChildren<Renderer>(true);
-                string try_this_shader_name = "";
-                List<string> list = new List<string>();
+                string backup_shader_name = "";
+                string priority_shader_name = "";
+                List<string> list_objcolor = new List<string>();
+                List<string> list_all_materials_without_body_material_mpoint = new List<string>();
 
                 foreach (Renderer renderer in renderers_in_wearobj)
                 {
@@ -722,18 +728,27 @@ namespace ClassLibrary4
                         //       and they are not exactly rare occurrances. 
                         string material_name = material.name.Replace(" (Instance)", "");
                         string inspector_key = wearData.assetbundleName.Replace("\\", "/") + "|" + material_name;
-                        bool flag = !renderer.name.Contains("_unc_") &&
+                        //Note @WTFsetWearShader: OK, so, this conditional is unnecessarily cluttered, 
+                        //                        and I am going to guess a lot of the conditions are overlapping
+                        //                        however there are just too many special cases. 
+                        //                        I have to kinda assume every condition was there for a reason. 
+                        //                        So I am not going to make this part any simpler.
+                        bool avoid_body_material_mpoint_flag =
                             !material.name.Contains("cf_m_body_CustomMaterial") &&
                             !material.name.Contains("cm_m_body_CustomMaterial") &&
-                            "".Equals(material.shader.name);
-                        if (//!renderer.name.Contains("_body_") &&
-                            type != WEAR_TYPE.TOP || flag && !renderer.tag.Contains("New tag (8)") )
+                            !material.name.Contains("cm_M_point") &&
+                            !material.name.Contains("cf_M_point") && //What is this anyway????
+                            !renderer.tag.Contains("New tag (8)"); //Apparently 4E28 == New tag (8) and 
+                                                                   //we don't have ObjSkinBody tag in PH???
+                        if ((type != WEAR_TYPE.TOP ||
+                            avoid_body_material_mpoint_flag) &&
+                            material.shader.name.IsNullOrEmpty()) //This is the only way we know it's from HS.
                         {
                             int rq = getRenderQueue(inspector_key, renderer.gameObject.GetComponent<SetRenderQueue>());
                             this.logSave("Wear material: " + inspector_key + " RQ: " + rq);
-                            if ( HoneyPot.inspector.ContainsKey(inspector_key) )
+                            if (HoneyPot.inspector.ContainsKey(inspector_key))
                             {
-                                if ( HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]) )
+                                if (HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]))
                                 {
                                     material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
                                     this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
@@ -760,7 +775,7 @@ namespace ClassLibrary4
                                     {
                                         this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_3mask as we find RQ value <= 2500.");
                                         material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
-                                    } 
+                                    }
                                     else
                                     {
                                         this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_3mask_alpha as we find RQ value > 2500.");
@@ -769,51 +784,64 @@ namespace ClassLibrary4
                                 }
                             }
                             material.renderQueue = rq;
-                            //is_a_HS_cloth_parts_that_remmapped_shader = true;
                         }
-                        if (((/*!renderer.name.Contains("_body_") &&*/
-                             renderer.tag.Contains("ObjColor")) || forceColorable) && flag)
+
+                        if (avoid_body_material_mpoint_flag)
                         {
-                            list.Add(material_name);
-                            try_this_shader_name = material.shader.name;
+                            if (!list_all_materials_without_body_material_mpoint.Contains(material_name))
+                            {
+                                list_all_materials_without_body_material_mpoint.Add(material_name);
+                                if (renderer.tag.Contains("ObjColor") || forceColorable)
+                                {    
+                                    list_objcolor.Add(material_name);
+                                    priority_shader_name = material.shader.name;
+                                    //Note: Since we know this renderer has ObjColor, it **must** intended to be colored.
+                                    //      so its material and shader must be the one that is more suitable for coloring.
+                                }
+                            }
                         }
+                        backup_shader_name = material.shader.name; //take whatever useful material as a backup.
                     }
                 }
 
-                //if (is_a_HS_cloth_parts_that_remmapped_shader)
-                //{
-                    MaterialCustoms materialCustoms = wearobj_obj.GetComponent<MaterialCustoms>();
-                    if (materialCustoms == null && try_this_shader_name != "")
+                if (list_objcolor.Count == 0 && force_color_everything_that_doesnt_have_materialcustoms)
+                {   //Note: list_objcolor == 0 means we didn't find priority_shader_name either.
+                    list_objcolor = list_all_materials_without_body_material_mpoint;
+                    priority_shader_name = backup_shader_name;
+                }
+
+                MaterialCustoms materialCustoms = wearobj_obj.GetComponent<MaterialCustoms>();
+                if (materialCustoms == null && list_objcolor.Count != 0)
+                {
+                    this.logSave(" -- This wear doesn't have MaterialCustoms, try adding one: " + wearData.assetbundleName.Replace("\\", "/") + ", shader: " + priority_shader_name);
+                    materialCustoms = wearobj_obj.AddComponent<MaterialCustoms>();
+                    materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
+                    int k = 0;
+                    foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
                     {
-                        this.logSave(" -- This wear doesn't have MaterialCustoms, try adding one: " + wearData.assetbundleName.Replace("\\", "/") + ", shader: " + try_this_shader_name);
-                        materialCustoms = wearobj_obj.AddComponent<MaterialCustoms>();
-                        materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
-                        int k = 0;
-                        foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
-                        {
-                            materialCustoms.parameters[k] = new MaterialCustoms.Parameter(copy);
-                            materialCustoms.parameters[k++].materialNames = list.ToArray();
-                        }
-                        match_correct_shader_property(materialCustoms, try_this_shader_name);
-                        MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
+                        materialCustoms.parameters[k] = new MaterialCustoms.Parameter(copy);
+                        materialCustoms.parameters[k++].materialNames = list_objcolor.ToArray();
                     }
-                    WearObj_SetupMaterials.Invoke(wearobj, new object[]{ null }); //the WearData is never used/checked in this call
-                    wearobj.UpdateColorCustom();
-                    if( this.wearCustomEdit != null && (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx )
-                    {
-                        // After a HS clothing is loaded, if wearCustomEdit is present and it is choosing the this wear slot
-                        // Try to force the LoadedCoordinate() to enable color UI. Because before this point in time
-                        // This HS clothing is deemed non-colorchangable because of its MaterialCustom is not set.
-                        this.wearCustomEdit.LoadedCoordinate(type);
-                    }
+                    match_correct_shader_property(materialCustoms, priority_shader_name);
+                    MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
+                }
+                WearObj_SetupMaterials.Invoke(wearobj, new object[] { null }); //the WearData is never used/checked in this call
+                wearobj.UpdateColorCustom();
+                if (this.wearCustomEdit != null && (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx)
+                {
+                    // After a HS clothing is loaded, if wearCustomEdit is present and it is choosing the this wear slot
+                    // Try to force the LoadedCoordinate() to enable color UI. Because before this point in time
+                    // This HS clothing is deemed non-colorchangable because of its MaterialCustom is not set.
+                    this.wearCustomEdit.LoadedCoordinate(type);
+                }
                 //}
             }
             catch (Exception ex)
             {
                 this.logSave(ex.ToString());
-            } 
+            }
         }
-        #endregion 
+        #endregion
 
         #region Shader preparations
         private void readInspector()
@@ -2486,6 +2514,7 @@ namespace ClassLibrary4
         private Harmony harmony;
 
         private static bool isFirst = true;
+        private bool force_color_everything_that_doesnt_have_materialcustoms = false;
 
         protected static Shader orgShader;
 		protected static MaterialCustoms mc;
