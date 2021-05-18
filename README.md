@@ -41,13 +41,13 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - `HoneyPot/shader.txt` to do the shader remapping. You can try to add new shader remapping rules here. See [How to use shader.txt effectively](#how-to-use-shadertxt-effectively). (The Material Editor mod makes it a lot easier to find suitable remap targets). 
 - If you see issues that are not Purple Color of Error, or *still* seeing Purple Color of Error despite having run HoneyPotInspector, please consult the [Known Issues](#known-issues) section.
 - `UserData/modprefs.ini` options:
-```
-[HoneyPot] 
-DoTransport=FALSE   
-ForceColor=TRUE     
-```
   - set `DoTransport=FALSE` to make HoneyPot NOT adding swimsuits to bras and shorts categories in chara maker.
   - set `ForceColor=TRUE` to make HoneyPot make all not-already-colorable clothings colorable.
+```
+[HoneyPot] 
+DoTransport=FALSE
+ForceColor=TRUE
+```
 
 ## Known Issues
 
