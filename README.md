@@ -15,8 +15,8 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 ### 1.4.8
 - Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases).
 - **BREAKING CHANGE** : 
-  - If you have been using **MoreAccessoriesPH**, you need to replace `BepInEx/plugins/MoreAccessories.dll` with the one bundled within this version. Special thanks to Joan6694 for accepting my change back to his codebase and helping prepare the new version!
-  - Remove `Plugins/PH_Fixes/PH_Fixes_HoneyPot.dll`. 
+  - If you have been using **MoreAccessoriesPH**, you need to **replace** `BepInEx/plugins/MoreAccessories.dll` with the one bundled within this version. Special thanks to Joan6694 for accepting my change back to his codebase and helping prepare the new version!
+  - **Remove** `Plugins/PH_Fixes/PH_Fixes_HoneyPot.dll`. 
   - (If you are really worried, be sure to make backups before removal/replacement!)
 - The **card face of coordinate cards** now displays all HS mods correctly, no longer just a bunch of purple shapes. 
 - **F12 key** for _applying_ HoneyPot shaders is no longer needed (and no longer functional). Both in the main game and the studio. 
@@ -26,7 +26,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
     - Especially some 2-color setup accessories and clothings. 
   - HoneyPot used to force-color all bras and shorts (including PH ones), but that function was lost for some time. Now it's back. 
   - Can further force all non-colorable clothings (including PH ones) by setting `ForceColor=TRUE` in `UserData/modprefs.ini`.
-    - This will make some of your old cards' and scenes' clothings to change color. It can be easily brought back because it's just now adjustable, but if you find this troublesome, then just don't set this modpref option. 
+    - **This will make some of your old cards' and scenes' clothings to change color.** It can be easily brought back because it's just now adjustable, but if you find this troublesome, then just don't set this modpref option. 
   - Non-colorable clothings & accessories usually imply their materials have only 1 main color to begin with. So in the color UI, the sub color options will show up, but are mostly useless. 
 - A note: the **Standard_555** shader that was added back in 1.4.6 was not transplanted from Unity 5.3.x. Thanks Doodoo for pointing this out. 
 
