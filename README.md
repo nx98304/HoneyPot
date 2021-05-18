@@ -43,9 +43,11 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - `UserData/modprefs.ini` options:
 ```
 [HoneyPot] 
-DoTransport=FALSE   //set this to make HoneyPot NOT adding swimsuits to bras and shorts categories in chara maker.
-ForceColor=TRUE     //set this to make HoneyPot make all not-already-colorable clothings colorable.
+DoTransport=FALSE   
+ForceColor=TRUE     
 ```
+  - set `DoTransport=FALSE` to make HoneyPot NOT adding swimsuits to bras and shorts categories in chara maker.
+  - set `ForceColor=TRUE` to make HoneyPot make all not-already-colorable clothings colorable.
 
 ## Known Issues
 
