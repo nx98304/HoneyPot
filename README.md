@@ -18,7 +18,8 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
   - If you have been using **MoreAccessoriesPH**, you need to **replace** `BepInEx/plugins/MoreAccessories.dll` with the one bundled within this version. Special thanks to Joan6694 for accepting my change back to his codebase and helping prepare the new version!
   - **Remove** `Plugins/PH_Fixes/PH_Fixes_HoneyPot.dll`. 
   - (If you are really worried, be sure to make backups before removal/replacement!)
-- The **card face of coordinate cards** now displays all HS mods correctly, no longer just a bunch of purple shapes. 
+- The **card face of coordinate cards** now displays all HS mods correctly, no longer just a bunch of purple shapes.
+  - **This only affects newly saved coordinate cards.** Load up your old cards, save them again, the card face should display correctly. 
 - **F12 key** for _applying_ HoneyPot shaders is **no longer needed** (and no longer overlaps functionality with the in-game console/Unity Runtime Editor). Both in the main game and the studio. 
 - Fixed issue where _skinned_ accessories for head/face will conflict with **BonesFramework** code. 
 - Improved color customization for both HS and PH clothings/accessories:
