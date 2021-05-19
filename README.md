@@ -4,7 +4,7 @@
 
 Some notes about this repository: 
 
-A lot of my fixes are ugly and need further adjustments, and there are also a lot of empty functions presumably left by Amamiya-san when he was still working on the project. 
+A lot of my early monkey patches have been reorganized, and a lot of empty functions presumably left by Amamiya-san are also now cleaned up. The code and comment quality still need some improvements, but in general with the notes I have left, it should not be too confusing. 
 
 This can be built with .Net Framework 3.5 and the dll references that's currently in the STN 3.1 pack. The .csproj file in the repository should be a good indicator of what assemblies/dlls to get. Note that I had to change all Harmony 1.0.9 usages to version 2 usages, because it was mixing here and there and you won't be able to build it when it was decompiled by dnSpy. 
 
