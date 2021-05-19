@@ -100,7 +100,7 @@ shader.txt 's remapping records is fairly limited before. But with the now enhan
 ### 1.4.6
 - **HoneyPot/HoneyPotInspector.exe updated!** When run, it will generate another file called `HoneyPot/FileDateTime.txt` to keep track of all your `.unity3d` files in `abdata/` folder. If the file is found and the creation time of the file is the same, it will skip processing. This vastly speed up the subsequent runs of the inspector exe. Now, please **DO NOT DELETE** `HoneyPot/HoneyPotInspector.txt` from the previous run, before executing the inspector again.   
 - **HSStandard** shader ported to Unity **5.5.5**, and making HoneyPot utilize them. (Thanks to Doodoo!) The `HoneyPot/shader.txt` file updated to reflect the addition.
-- ~~The **Standard** shader from Unity **5.3.x** also ported to Unity **5.5.5**,~~ as various HS mods are using them, and somehow the 5.5.5 native Standard shaders won't work properly as a substituion. (Also Thanks to Doodoo!) The `HoneyPot/shader.txt` file updated to reflect the addition (Standard_555).
+- ~~The **Standard** shader from Unity **5.3.x** also ported to Unity **5.5.5**~~ A modified version of Unity 5.5.5 Standard shader is included, as the vanilla 5.5 version is not entirely compatible with HS items using the 5.3 Standard shader somehow. (Also Thanks to Doodoo!) The `HoneyPot/shader.txt` file updated to reflect the addition (Standard_555).
 - Patched `Wears.UpdateShow(WEAR_SHOW_TYPE)` to reflect the fact that HS **tops can show bra when in full-state**. Now both HS top mods and PH top mods, with their correct list settings respectively, can utilize this feature in PH.   
 - Fixed HS Top and Bottom clothings interaction. Some of the tops that were meant to disable bottoms, but it disabled shorts instead in 1.4.5.
 
