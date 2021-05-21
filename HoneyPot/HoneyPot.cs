@@ -792,21 +792,25 @@ namespace ClassLibrary4
                             if (!list_all_materials_without_body_material_mpoint.Contains(material_name))
                             {
                                 list_all_materials_without_body_material_mpoint.Add(material_name);
-                                if (renderer.tag.Contains("ObjColor") || forceColorable)
-                                {    
-                                    list_objcolor.Add(material_name);
-                                    priority_shader_name = material.shader.name;
-                                    //Note: Since we know this renderer has ObjColor, it **must** intended to be colored.
-                                    //      so its material and shader must be the one that is more suitable for coloring.
-                                }
+                                //Note: No, we can't put the list_objcolor block in this because it might be
+                                //      multiple renderers with different tags that uses the same material.
+                            }
+                            if (renderer.tag.Contains("ObjColor") && !list_objcolor.Contains(material_name))
+                            {
+                                list_objcolor.Add(material_name);
+                                priority_shader_name = material.shader.name;
+                                //Note: Since we know this renderer has ObjColor, it **must** intended to be colored.
+                                //      so its material and shader must be the one that is more suitable for coloring.
                             }
                         }
                         backup_shader_name = material.shader.name; //take whatever useful material as a backup.
                     }
                 }
 
-                if (list_objcolor.Count == 0 && force_color_everything_that_doesnt_have_materialcustoms)
+                if ((list_objcolor.Count == 0 && force_color_everything_that_doesnt_have_materialcustoms)
+                    || forceColorable)
                 {   //Note: list_objcolor == 0 means we didn't find priority_shader_name either.
+                    //Note: forceColorable would color every renderer unconditionally.
                     list_objcolor = list_all_materials_without_body_material_mpoint;
                     priority_shader_name = backup_shader_name;
                 }
