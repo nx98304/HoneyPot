@@ -232,11 +232,24 @@ namespace ClassLibrary4
         #region Studio item shader remapping 
         private static void AddObjectItem_Load_Postfix(OCIItem __result)
         {
-            Info.ItemLoadInfo itemLoadInfo = Singleton<Info>.Instance.dicItemLoadInfo[__result.itemInfo.no];
-            self.setItemShader(__result.objectItem, itemLoadInfo.bundlePath.Replace("\\", "/"));
-            if (__result.isColor2 || __result.isChangeColor)
+            if (__result == null)
             {
-                __result.UpdateColor();
+                Console.WriteLine("HoneyPot detected invalid Studio items.");
+                return;
+            }
+
+            if (Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(__result.itemInfo.no))
+            {
+                Info.ItemLoadInfo itemLoadInfo = Singleton<Info>.Instance.dicItemLoadInfo[__result.itemInfo.no];
+                self.setItemShader(__result.objectItem, itemLoadInfo.bundlePath.Replace("\\", "/"));
+                if (__result.isColor2 || __result.isChangeColor)
+                {
+                    __result.UpdateColor();
+                }
+            }
+            else
+            {
+                Console.WriteLine("HoneyPot detected invalid item loadInfo. Maybe some item ID changed when that item was originally saved into the scene.");
             }
         }
 
