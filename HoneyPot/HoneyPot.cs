@@ -592,6 +592,9 @@ namespace ClassLibrary4
             return false;
         }
 
+        private static FieldInfo Accessories_acceObjsField = typeof(Accessories).GetField("acceObjs", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static FieldInfo AcceObj_objField = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj").GetField("obj");
+
         public void setAccsShader(Accessories acce, AccessoryParameter acceParam, int slot)
         {
             AccessoryCustom acceCustom = acceParam.slot[slot];
@@ -600,101 +603,111 @@ namespace ClassLibrary4
             {
                 return;
             }
+            GameObject acceobj_obj = null;
             try
-            {
-                GameObject acceobj_obj = acce.objAcs[slot];
-                Renderer[] renderers_in_acceobj = acceobj_obj.GetComponentsInChildren<Renderer>(true);
-                string try_this_shader_name = "";
-                List<string> list = new List<string>();
-                foreach (Renderer r in renderers_in_acceobj)
+            {   //Note: WHAT THE FUCK ILLUSION Accessories.objAcs getter by itself would not work without a patch
+                acceobj_obj = acce.objAcs[slot];
+            }
+            catch
+            {   //Note: Have to catch here to use the old method when MoreAccessoriesPH isn't in place.
+                object[] acceobjs = Accessories_acceObjsField.GetValue(acce) as object[];
+                if (slot < 10)
                 {
-                    foreach (Material material in r.materials)
+                    acceobj_obj = AcceObj_objField.GetValue(acceobjs[slot]) as GameObject;
+                }
+                else
+                {
+                    Console.WriteLine("Honeypot detects attempts to load accessory slot > 10, but MoreAccessoriesPH isn't in place. Ignored this accessory.");
+                    return;
+                }
+            }
+            Renderer[] renderers_in_acceobj = acceobj_obj.GetComponentsInChildren<Renderer>(true);
+            string try_this_shader_name = "";
+            List<string> list = new List<string>();
+            foreach (Renderer r in renderers_in_acceobj)
+            {
+                foreach (Material material in r.materials)
+                {
+                    string material_name = material.name.Replace(" (Instance)", "");
+                    string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
+
+                    if (material.shader.name.IsNullOrEmpty()) //This is the only way we know it's from HS.
                     {
-                        string material_name = material.name.Replace(" (Instance)", "");
-                        string inspector_key = accessoryData.assetbundleName.Replace("\\", "/") + "|" + material_name;
-
-                        if (material.shader.name.IsNullOrEmpty()) //This is the only way we know it's from HS.
+                        this.logSave("Acce material: " + inspector_key);
+                        int rq = material.renderQueue;
+                        if (HoneyPot.inspector.ContainsKey(inspector_key))
                         {
-                            this.logSave("Acce material: " + inspector_key);
-                            int rq = material.renderQueue;
-                            if (HoneyPot.inspector.ContainsKey(inspector_key))
+                            rq = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
+                            if (HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]))
                             {
-                                rq = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
-                                if (HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]))
+                                material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
+                                this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
+                                if (material.shader.name.Contains("HSStandard"))
                                 {
-                                    material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
-                                    this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
-                                    if (material.shader.name.Contains("HSStandard"))
-                                    {
-                                        this.logSave(" - HSStandard shader family detected for Accessories, trying to assign RenderType...");
-                                        this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
-                                        bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
-                                        bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
-                                        bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+                                    this.logSave(" - HSStandard shader family detected for Accessories, trying to assign RenderType...");
+                                    this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+                                    bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+                                    bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+                                    bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
 
-                                        this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+                                    this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
 
-                                        if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
-                                        if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
-                                        if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+                                    if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+                                    if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+                                    if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
 
-                                        this.logSave("  RenderType: " + material.GetTag("RenderType", false));
-                                    }
+                                    this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                }
+                            }
+                            else
+                            {
+                                if (rq <= 2500)
+                                {
+                                    this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
+                                    material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
                                 }
                                 else
                                 {
-                                    if (rq <= 2500)
-                                    {
-                                        this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
-                                        material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
-                                    }
-                                    else
-                                    {
-                                        this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name + " with high RQ to get transparency.");
-                                        material.shader = HoneyPot.presets["Standard"].shader;
-                                    }
+                                    this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name + " with high RQ to get transparency.");
+                                    material.shader = HoneyPot.presets["Standard"].shader;
                                 }
                             }
-                            material.renderQueue = rq;
-                            //important: RQ assignment has to go after shader assignment. 
-                            //           fucking implicit setter changes stuff... 
                         }
+                        material.renderQueue = rq;
+                        //important: RQ assignment has to go after shader assignment. 
+                        //           fucking implicit setter changes stuff... 
+                    }
 
-                        if (material.renderQueue <= 3600)
-                        {   //Note: This is because we don't want to include glasses like accessories!!
-                            //Note: It seems all glasses (transparent Standard) materials are around RQ 3800 or more
-                            if( !list.Contains(material_name) )
-                                list.Add(material_name);
-                            try_this_shader_name = material.shader.name;
-                        }
+                    if (material.renderQueue <= 3600)
+                    {   //Note: This is because we don't want to include glasses like accessories!!
+                        //Note: It seems all glasses (transparent Standard) materials are around RQ 3800 or more
+                        if( !list.Contains(material_name) )
+                            list.Add(material_name);
+                        try_this_shader_name = material.shader.name;
                     }
                 }
-
-                //Note: wait DUDE what the fuck. acceobj_obj is always going to be "AcceParent" which will never contain 
-                //      a MaterialCustoms. I suppose I can still always assume that AcceParent has only 1 child?
-                GameObject the_actual_acce_obj = acceobj_obj.transform.GetChild(0).gameObject;
-                MaterialCustoms materialCustoms = the_actual_acce_obj.GetComponent<MaterialCustoms>();
-                if (materialCustoms == null && try_this_shader_name != "")
-                {
-                    this.logSave(" -- This accessory doesn't have MaterialCustoms, try adding one: " + accessoryData.assetbundleName.Replace("\\", "/") + ", shader: " + try_this_shader_name);
-                    materialCustoms = the_actual_acce_obj.AddComponent<MaterialCustoms>();
-                    materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
-                    int idx = 0;
-                    foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
-                    {
-                        materialCustoms.parameters[idx] = new MaterialCustoms.Parameter(copy);
-                        materialCustoms.parameters[idx++].materialNames = list.ToArray();
-                    }
-                    match_correct_shader_property(materialCustoms, try_this_shader_name);
-                    MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
-                    match_correct_shader_property_data_range(materialCustoms, try_this_shader_name);
-                }
-                acce.UpdateColorCustom(slot);
             }
-            catch (Exception ex)
+
+            //Note: wait DUDE what the fuck. acceobj_obj is always going to be "AcceParent" which will never contain 
+            //      a MaterialCustoms. I suppose I can still always assume that AcceParent has only 1 child?
+            GameObject the_actual_acce_obj = acceobj_obj.transform.GetChild(0).gameObject;
+            MaterialCustoms materialCustoms = the_actual_acce_obj.GetComponent<MaterialCustoms>();
+            if (materialCustoms == null && try_this_shader_name != "")
             {
-                this.logSave(ex.ToString());
+                this.logSave(" -- This accessory doesn't have MaterialCustoms, try adding one: " + accessoryData.assetbundleName.Replace("\\", "/") + ", shader: " + try_this_shader_name);
+                materialCustoms = the_actual_acce_obj.AddComponent<MaterialCustoms>();
+                materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
+                int idx = 0;
+                foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
+                {
+                    materialCustoms.parameters[idx] = new MaterialCustoms.Parameter(copy);
+                    materialCustoms.parameters[idx++].materialNames = list.ToArray();
+                }
+                match_correct_shader_property(materialCustoms, try_this_shader_name);
+                MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
+                match_correct_shader_property_data_range(materialCustoms, try_this_shader_name);
             }
+            acce.UpdateColorCustom(slot);
         }
         #endregion
 
