@@ -32,7 +32,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
 - A note: the **Standard_555** shader that was added back in 1.4.6 was not transplanted from Unity 5.3.x. Thanks Doodoo for pointing this out. 
 
 ### Requirements & Installation
-- HoneyPot is still an IPA mod for now, but make sure your PH installation has **BepInEx 5.4.5** (other versions may not work. Still testing why HoneyPot is now locked into a super specific version of BepInEx)
+- HoneyPot is still an IPA mod for now, but make sure your PH installation has **BepInEx 5.4.x** (for its **HarmonyX 2.x and HarmonyX 2 interop layer**); Tested working with **5.4.0**, **5.4.5** and **5.4.11** (so should everything in-between); **confirmed not working with BepInEx 5.3 or before.**
 - Download from the releases page and extract the zip into PH root folder. When in doubt, download the _all package and just overwrite all files. (Backup your `HoneyPot/shader.txt` if needed) ; if you have been keeping updated, download the _trim package that only contain the updated files. 
   - **If you downloaded the _all package, and are upgrading from HoneyPot 1.4.5 or earlier directly**, do a complete clean run by also removing `HoneyPot/HoneyPotInspector.txt`.
 
