@@ -16,6 +16,7 @@ namespace ClassLibrary4
 			{
                 harmony = new Harmony(this.Name);
                 harmony.PatchAll(Assembly.GetExecutingAssembly());
+                harmony.PatchAll(typeof(HoneyPot));
             }
 			catch (Exception ex)
 			{

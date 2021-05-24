@@ -14,7 +14,6 @@ using UnityEngine.SceneManagement;
 
 namespace ClassLibrary4
 {
-    [HarmonyPatch]
     public class HoneyPot : MonoBehaviour
     {
         private void Start()
@@ -136,7 +135,8 @@ namespace ClassLibrary4
         private static FieldInfo Hairs_humanField = typeof(Hairs).GetField("human", BindingFlags.Instance | BindingFlags.NonPublic);
 
         [HarmonyPatch(typeof(Hairs), "Load")]
-        static void Postfix(Hairs __instance, HairParameter param)
+        [HarmonyPostfix]
+        private static void Postfix(Hairs __instance, HairParameter param)
         {
             SEX sex = (Hairs_humanField.GetValue(__instance) as Human).sex;
             for (int i = 0; i < 3; i++)
@@ -519,6 +519,7 @@ namespace ClassLibrary4
 
         #region Accessory shader remapping
         [HarmonyPatch(typeof(Accessories), "AccessoryInstantiate")]
+        [HarmonyPostfix]
         private static void Postfix(Accessories __instance, AccessoryParameter acceParam, int slot, bool fixAttachParent, AccessoryData prevData)
         {   //Note: this is required because we removed the UpdateColorCustom right at the end of SetupMaterials 
             //      with the transpiler below
@@ -559,6 +560,7 @@ namespace ClassLibrary4
         private static MethodInfo MaterialCustoms_Setup = typeof(MaterialCustoms).GetMethod("Setup", new Type[0]);
 
         [HarmonyPatch(typeof(MaterialCustoms), "Setup")]
+        [HarmonyPrefix]
         private static bool Prefix(MaterialCustoms __instance)
         {
             if (__instance == null || __instance.parameters == null)
@@ -716,6 +718,7 @@ namespace ClassLibrary4
         private static MethodInfo WearObj_SetupMaterials    = typeof(WearObj).GetMethod("SetupMaterials", new Type[] { typeof(WearData) });
 
         [HarmonyPatch(typeof(Wears), "WearInstantiate")]
+        [HarmonyPostfix]
         private static void Postfix(Wears __instance, WEAR_TYPE type, Material skinMaterial, Material customHighlightMat_Skin)
         {
             self.setWearShader(__instance, (int)type, type, (type == WEAR_TYPE.BRA || type == WEAR_TYPE.SHORTS) ? true : false);
@@ -2498,12 +2501,14 @@ namespace ClassLibrary4
         private static FieldInfo Wears_bodySkinMeshField = typeof(Wears).GetField("bodySkinMesh", BindingFlags.Instance | BindingFlags.NonPublic);
 
         [HarmonyPatch(typeof(CoordinateCapture), "SetHuman")]
+        [HarmonyPrefix]
         private static void Prefix(Human human)
         {
             reference_to_human = human;
         }
 
         [HarmonyPatch(typeof(SyncBoneWeight), "Awake")]
+        [HarmonyPrefix]
         private static void Prefix(SyncBoneWeight __instance)
         {
             if (reference_to_human == null) return;
