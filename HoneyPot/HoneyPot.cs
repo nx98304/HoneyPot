@@ -2490,7 +2490,7 @@ namespace ClassLibrary4
             }
             if( this.wearCustomEdit == null && SceneManager.GetActiveScene().name == "EditScene" ) 
             {
-                this.wearCustomEdit = UnityEngine.Object.FindObjectOfType<WearCustomEdit>();
+                this.wearCustomEdit = Resources.FindObjectsOfTypeAll<WearCustomEdit>()[0];
 			}
 		}
 
