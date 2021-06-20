@@ -72,6 +72,12 @@ ForceColor=TRUE
 ### ...that this mod probably will NEVER fix
 - Custom shader-heavy stuff. Like fancy particle effects, complex water effects, etc. 
 
+### ...that are related to Xyth24 "PH mods"
+- Xyth24's PH mods aren't really PH mods; they are HS1 mods with `.unity3d` file extension removed. Which means `HoneyPotInspector.exe` will not process them at all. 
+- The hair part of the Xyth24's head mods don't have issues, because all hairs are forced to use PH hair shaders by default. But accessories and other Xyth24 mods will fail to work if they *pretend* to be PH mods. 
+- **Fix step1:** Add `.unity3d` file extension back to Xyth24 abdatas, and run HoneyPotInspector.exe, so it picks up the mods now. 
+- **Fix step2:** Add `.unity3d` file extension to the first line of Xyth24 PH lists accordingly. 
+
 ## Possible Roadmap
 
 - Find a way to just disable every surface water / ground water HoneyPot detects. There cannot be any sensible way to remap water shaders.
