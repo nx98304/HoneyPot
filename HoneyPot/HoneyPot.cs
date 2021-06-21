@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Linq;
-using System.Threading;
 using Character;
 using IllusionPlugin;
 using HarmonyLib;
@@ -1054,6 +1053,7 @@ namespace ClassLibrary4
 		{
 			try
 			{
+                this.logSave("HoneyPot found " + HoneyPot.conflictList.Count + " ID conflicts in total. Please check UserData/conflict.txt");
 				StreamWriter streamWriter = new FileInfo(this.conflictText).CreateText();
 				foreach (string value in HoneyPot.conflictList)
 				{
@@ -1085,7 +1085,6 @@ namespace ClassLibrary4
             int cabIdx = 0;
             int startingIdx = 71;  //Some CAB actually start before 72.
             byte[] preCab = { 67, 65, 66 };
-            int j = startingIdx;
             int preCabIdx = 0;
             while( preCabIdx < 3 && startingIdx < 128 )
             {
@@ -1117,6 +1116,8 @@ namespace ClassLibrary4
         }
         //Note: End of adapted code from XUnity.Common.Utilities
 
+        static int asynctracker = 0;
+
         public IEnumerator getListContent(string assetBundleDir, string fileName)
 		{
 			Dictionary<int, AccessoryData> dictionary = null;
@@ -1141,6 +1142,7 @@ namespace ClassLibrary4
             //try
 			{   
                 AssetBundleCreateRequest abcr = AssetBundle.LoadFromFileAsync(assetBundleDir + "/" + fileName);
+                asynctracker++;
                 yield return abcr;
                 AssetBundle ab = abcr.assetBundle;
                 if (ab == null)
@@ -2158,6 +2160,7 @@ namespace ClassLibrary4
                     male_hair_dict = null;
                 }
                 ab.Unload(true);
+                asynctracker--;
             }
 
             //catch (Exception ex19)
@@ -2195,6 +2198,7 @@ namespace ClassLibrary4
             }
             try
             {
+                this.logSave("HoneyPot is duplicating swimsuits into various non-swimsuits categories...");
                 Dictionary<int, WearData> wearDictionary_Female = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BRA);
                 Dictionary<int, WearData> wearDictionary_Female2 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SHORTS);
                 Dictionary<int, WearData> wearDictionary_Female3 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM_BOTTOM);
@@ -2453,6 +2457,7 @@ namespace ClassLibrary4
                 {
                 }
             }
+            streamReader.Close();
         }
 
         public void readItemResolverTextOld(string assetBundleDir, string fileName)
@@ -2497,6 +2502,7 @@ namespace ClassLibrary4
                 {
                 }
             }
+            streamReader.Close();
         }
         #endregion
 
@@ -2526,9 +2532,6 @@ namespace ClassLibrary4
                 this.logSave("List crawled timestamp: " + t.ElapsedMilliseconds.ToString());
 				this.readInspector();
                 this.logSave("Inspector established timestamp: " + t.ElapsedMilliseconds.ToString());
-                this.exportConflict();
-				this.transportDicts();
-                this.logSave("Move categories timestamp: " + t.ElapsedMilliseconds.ToString());
                 HarmonyMethod acceobj_setupmaterials_transpiler = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_SetupMaterials_Transpiler), new[] { typeof(IEnumerable<CodeInstruction>) });
                 HarmonyMethod acceobj_updatecolorcustom_prefix  = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_UpdateColorCustom_Prefix));
                 HarmonyMethod head_changeeyebrow_postfix = new HarmonyMethod(typeof(HoneyPot), nameof(Head_ChangeEyebrow_Postfix));
@@ -2555,6 +2558,13 @@ namespace ClassLibrary4
             {
                 this.wearCustomEdit = Resources.FindObjectsOfTypeAll<WearCustomEdit>()[0];
 			}
+            if( !HoneyPot.allGetListContentDone && HoneyPot.asynctracker == 0 )
+            {
+                this.logSave("HoneyPot all StartCoroutine(getListContent) are finished.");
+                HoneyPot.allGetListContentDone = true;
+                this.exportConflict();
+                this.transportDicts();
+            }
 		}
 
         #region NotReallyRelated_To_HoneyPot: Mannequin BoneWeight fix if you changed the resources.assets FemaleBody
@@ -2613,6 +2623,7 @@ namespace ClassLibrary4
         private Harmony harmony;
 
         private static bool isFirst = true;
+        private static bool allGetListContentDone = false;
         private bool force_color_everything_that_doesnt_have_materialcustoms = false;
 
         protected static Shader orgShader;
