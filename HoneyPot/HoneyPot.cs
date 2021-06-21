@@ -5,12 +5,14 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Linq;
+using System.Threading;
 using Character;
 using IllusionPlugin;
 using HarmonyLib;
 using Studio;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 namespace ClassLibrary4
 {
@@ -1066,8 +1068,56 @@ namespace ClassLibrary4
                 this.logSave(ex.ToString());
             }
         }
-        
-		public void getListContent(string assetBundleDir, string fileName)
+
+        //Note: adapted from XUnity.Common.Utilities
+        public static void RandomizeCabWithAnyLength(byte[] assetBundleData)
+        {
+            FindAndReplaceCab(assetBundleData, 2048);
+        }
+        private static void FindAndReplaceCab(byte[] data, int maxIterations = -1)
+        {
+            var len = Math.Min(data.Length, maxIterations);
+            if (len == -1) len = data.Length;
+
+            char c;
+            byte b;
+            var newCab = "CAB-" + Guid.NewGuid().ToString("N");
+            int cabIdx = 0;
+            int startingIdx = 71;  //Some CAB actually start before 72.
+            byte[] preCab = { 67, 65, 66 };
+            int j = startingIdx;
+            int preCabIdx = 0;
+            while( preCabIdx < 3 && startingIdx < 128 )
+            {
+                if (data[startingIdx] == preCab[preCabIdx]) preCabIdx++;
+                else preCabIdx = 0;
+                startingIdx++;
+            }
+            if (startingIdx >= 128) startingIdx = 72; //Meaning it doesn't even have "CAB" in the header
+            //But is it possible for the CAB string without "CAB" to start before 72 ???
+            else startingIdx = startingIdx - 3;
+
+            int endingIdx = startingIdx;
+            while (data[endingIdx++] >= 32) ; 
+            //Treat any ascii lower than whitespace as a termination (just a guess)            
+            endingIdx--;
+            //self.logSave("newCab: " + newCab);
+            //StringBuilder src = new StringBuilder();
+            //StringBuilder dst = new StringBuilder();
+            for (int i = startingIdx; i < endingIdx && cabIdx < newCab.Length; i++)
+            { //Don't really care for CAB string longer than 32. We've substitute enough anyway.
+                b = data[i];
+                c = (char)b;
+                //src.Append(newCab[cabIdx]);
+                //dst.Append((char)data[i]);
+                data[i] = (byte)newCab[cabIdx++];
+            }
+            //self.logSave(" - src used: " + src.ToString());
+            //self.logSave(" - dst subd: " + dst.ToString());
+        }
+        //Note: End of adapted code from XUnity.Common.Utilities
+
+        public IEnumerator getListContent(string assetBundleDir, string fileName)
 		{
 			Dictionary<int, AccessoryData> dictionary = null;
 			Dictionary<int, HairData> dictionary2 = null;
@@ -1088,10 +1138,19 @@ namespace ClassLibrary4
 			Dictionary<int, WearData> dictionary17 = null;
 			Dictionary<int, WearData> dictionary18 = null;
             Dictionary<int, BackHairData> male_hair_dict = null;
-            try
-			{
-				AssetBundle assetBundle = AssetBundle.LoadFromFile(assetBundleDir + "/" + fileName);
-				foreach (TextAsset textAsset in assetBundle.LoadAllAssets<TextAsset>())
+            //try
+			{   
+                AssetBundleCreateRequest abcr = AssetBundle.LoadFromFileAsync(assetBundleDir + "/" + fileName);
+                yield return abcr;
+                AssetBundle ab = abcr.assetBundle;
+                if (ab == null)
+                {
+                    this.logSave("Loading " + fileName + "probably failed due to CAB-string issue. Reloading & changing cab..." );
+                    byte[] buffer = File.ReadAllBytes(assetBundleDir + "/" + fileName);
+                    RandomizeCabWithAnyLength(buffer);
+                    ab = AssetBundle.LoadFromMemory(buffer);
+                }
+                foreach (TextAsset textAsset in ab.LoadAllAssets<TextAsset>())
 				{
 					if (textAsset.name.Contains("ca_f_head"))
 					{
@@ -2097,15 +2156,16 @@ namespace ClassLibrary4
 					dictionary17 = null;
 					dictionary18 = null;
                     male_hair_dict = null;
-
                 }
-				assetBundle.Unload(true);
-			}
-			catch (Exception ex19)
-			{
-				this.logSave(ex19.ToString());
-			}
-		}
+                ab.Unload(true);
+            }
+
+            //catch (Exception ex19)
+            //{
+            //    this.logSave("Error when reading: " + assetBundleDir + "/" + fileName);
+            //    this.logSave(ex19.ToString());
+            //}
+        }
 
         private void transportDict(Dictionary<int, WearData> fromDict, Dictionary<int, WearData> toDict, int add, int order)
         {
@@ -2445,15 +2505,18 @@ namespace ClassLibrary4
 			if (HoneyPot.isFirst)
 			{
                 System.Diagnostics.Stopwatch t = new System.Diagnostics.Stopwatch();
+                this.logSave("HoneyPot Debug: timer frequency: " + System.Diagnostics.Stopwatch.Frequency);
                 t.Start();
                 this.readAllPHShaders();
                 this.loadShaderMapping();
                 this.logSave("Shader loaded timestamp: " + t.ElapsedMilliseconds.ToString());
 				try
 				{
-					foreach (FileInfo fileInfo in new DirectoryInfo(assetBundlePath + "/list/characustom").GetFiles())
+                    FileInfo[] list = new DirectoryInfo(assetBundlePath + "/list/characustom").GetFiles();
+                    this.logSave("List GetFiles timestamp: " + t.ElapsedMilliseconds.ToString());
+                    foreach (FileInfo fileInfo in list)
 					{
-						this.getListContent(assetBundlePath, "list/characustom/" + fileInfo.Name);
+						StartCoroutine(getListContent(assetBundlePath, "list/characustom/" + fileInfo.Name));
 					}
 				}
 				catch (Exception ex)
