@@ -12,11 +12,18 @@ using Studio;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using System.Threading;
 
 namespace ClassLibrary4
 {
     public class HoneyPot : MonoBehaviour
     {
+        private void Awake()
+        {
+            //Note: so this has been lacking all this time.. making HoneyPot object kept being re-created.
+            DontDestroyOnLoad(transform.gameObject);
+        }
+
         private void Start()
         {
             self = GameObject.Find("HoneyPot").GetComponent<HoneyPot>();
@@ -1143,14 +1150,25 @@ namespace ClassLibrary4
 			{   
                 AssetBundleCreateRequest abcr = AssetBundle.LoadFromFileAsync(assetBundleDir + "/" + fileName);
                 asynctracker++;
-                yield return abcr;
+                //yield return abcr;
+                while( !abcr.isDone )
+                {
+                    abcr.allowSceneActivation = true;
+                    yield return null;
+                }
                 AssetBundle ab = abcr.assetBundle;
                 if (ab == null)
-                {
-                    this.logSave("Loading " + fileName + "probably failed due to CAB-string issue. Reloading & changing cab..." );
+                {         
+                    this.logSave("Loading " + fileName + " probably failed due to CAB-string issue. Reloading & changing cab..." );
                     byte[] buffer = File.ReadAllBytes(assetBundleDir + "/" + fileName);
                     RandomizeCabWithAnyLength(buffer);
-                    ab = AssetBundle.LoadFromMemory(buffer);
+                    abcr = AssetBundle.LoadFromMemoryAsync(buffer);
+                    while (!abcr.isDone)
+                    {
+                        abcr.allowSceneActivation = true;
+                        yield return null;
+                    }
+                    ab = abcr.assetBundle;
                 }
                 foreach (TextAsset textAsset in ab.LoadAllAssets<TextAsset>())
 				{

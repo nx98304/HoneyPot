@@ -110,7 +110,7 @@ namespace ClassLibrary4
             //       to avoid multiple initializations and some erroneous order of init causing NREs
             if (level > 0)
             {
-                this.logSave("HoneyPot (re-)initializing after level was loaded.");
+                this.logSave("Initializing HoneyPot after level was loaded.");
                 GameObject gameObject = new GameObject("HoneyPot");
                 this.hp = gameObject.AddComponent<HoneyPot>();
                 this.hp.SetHarmony(harmony);
