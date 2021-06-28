@@ -1298,35 +1298,30 @@ namespace ClassLibrary4
 					}
 					if (dictionary18 != null)
 					{
-						string[] array2 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
+						string[] allines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+						for (int j = 0; j < allines.Length; j++)
 						{
-							'\n'
-						});
-						for (int j = 0; j < array2.Length; j++)
-						{
-							string[] array3 = array2[j].Split(new char[]
-							{
-								'\t'
-							});
-							if (array3.Length > 3)
+							string[] cells = allines[j].Split(new char[]{'\t'});
+							if (cells.Length > 3)
 							{
 								try
 								{
-									int num = int.Parse(array3[0]) % 1000;
-									if (array3[0].Length > 6)
-									{
-										num = int.Parse(array3[0]) % 1000000 + int.Parse(array3[0].Substring(0, 3)) * 1000;
+                                    int og_id = int.Parse(cells[0]);
+                                    int num = og_id % 1000;
+									if (cells[0].Length > 6)  //e.g og_id = 1234567
+                                    {                         //    cells[0].Substring(0, 3) = "123" 
+                                        num = og_id % 1000000 + int.Parse(cells[0].Substring(0, 3)) * 1000;
 									}
 									else
 									{
 										num += 838000;
 									}
-									WearData wearData = new WearData(num, array3[2], array3[4], array3[5], dictionary18.Count, false);
+									WearData wearData = new WearData(num, cells[2], cells[4], cells[5], dictionary18.Count, false);
 									wearData.id = num;
 									if (!dictionary18.ContainsKey(wearData.id))
 									{
 										dictionary18.Add(wearData.id, wearData);
-										HoneyPot.idFileDict[num] = array3[4];
+										HoneyPot.idFileDict[num] = cells[4];
 									}
 									else
 									{
@@ -1732,7 +1727,7 @@ namespace ClassLibrary4
 									WearData wearData = new WearData(num15, celldata[2], celldata[4], celldata[6], female_bra_dict.Count, false);
                                     wearData.id  = num15;
                                     wearData.nip = false; // NOTE: Curious. PH now activates nipple when Bra is shown regardless of this setting?
-                                                          //       No nipple actually shows through though. So all fine?
+                                                            //       No nipple actually shows through though. So all fine?
                                     WearData wearData9 = female_bra_dict[1];
 									if (!female_bra_dict.ContainsKey(wearData.id))
 									{
