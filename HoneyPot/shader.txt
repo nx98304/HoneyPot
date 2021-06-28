@@ -12,12 +12,18 @@ PBRsp_2layer_cutout|Shader Forge/PBRsp_2layer_cutout
 PBRsp_3mask_uv|Shader Forge/PBRsp_3mask_uv
 Unlit-Normal|Shader Forge/PBRsp_culloff
 Unlit-Alpha|Shader Forge/PBRsp_alpha_culloff
-Standard|Standard_Z
 PBRsp_texture_alpha|Shader Forge/PBRsp_texture_alpha
 PBRsp_texture_alpha_culloff|Shader Forge/PBRsp_texture_alpha_culloff
-1185|Standard_Z
--3985669645930629705|HSStandard
--8608838722815497166|HSStandard (Single Sided)
--3677531257736809634|HSStandard (Two Colors)
--7902135702503874624|HSStandard (Two Colors) (Single Sided)
-952725256833404699|Standard_555
+HSStandard|HSStandard
+HSStandard (Single Sided)|HSStandard (Single Sided)
+HSStandard (Two Colors)|HSStandard (Two Colors)
+HSStandard (Two Colors) (Single Sided)|HSStandard (Two Colors) (Single Sided)
+Standard|Standard_555
+hsstandard2side|HSStandard
+Standard_culloff|Standard_culloff
+Standard_culloff00|Standard_culloff
+Standard_culloff01|Standard_culloff
+StandardSpecular|Standard (Specular setup)
+StandardSpecular_culloff|Standard (Specular setup)_culloff
+-9046184444883282072|Shader Forge/PBRsp_texture_alpha_culloff
+standard|Standard_555
