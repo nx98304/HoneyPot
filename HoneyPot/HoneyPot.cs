@@ -12,7 +12,7 @@ using Studio;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
-using System.Threading;
+using System.Diagnostics;
 
 namespace ClassLibrary4
 {
@@ -1123,31 +1123,39 @@ namespace ClassLibrary4
         }
         //Note: End of adapted code from XUnity.Common.Utilities
 
+        private int extract_hi_3digits(int id)
+        {
+            int div = 1;                      
+            while (div <= id / 10) div *= 10;   //e.g. id = 1234567, div = 1000000
+            div /= 100;                         //     div = 10000
+            return id / div;                    //     return 1234567 / 10000 => 123
+        }
+
         static int asynctracker = 0;
 
         public IEnumerator getListContent(string assetBundleDir, string fileName)
-		{
-			Dictionary<int, AccessoryData> dictionary = null;
-			Dictionary<int, HairData> dictionary2 = null;
-			Dictionary<int, BackHairData> dictionary3 = null;
-			Dictionary<int, WearData> dictionary4 = null;
-			Dictionary<int, WearData> dictionary5 = null;
-			Dictionary<int, WearData> dictionary6 = null;
-			Dictionary<int, WearData> female_swim_dict = null;
-			Dictionary<int, WearData> dictionary8 = null;
-			Dictionary<int, WearData> female_bra_dict = null;
-			Dictionary<int, WearData> dictionary10 = null;
-			Dictionary<int, WearData> dictionary11 = null;
-			Dictionary<int, WearData> female_bot_dict = null;
-			Dictionary<int, WearData> dictionary13 = null;
-			Dictionary<int, WearData> female_top_dict = null;
-			Dictionary<int, PrefabData> dictionary15 = null;
-			Dictionary<int, PrefabData> dictionary16 = null;
-			Dictionary<int, WearData> dictionary17 = null;
-			Dictionary<int, WearData> dictionary18 = null;
-            Dictionary<int, BackHairData> male_hair_dict = null;
+        {
+            Dictionary<int, AccessoryData> acc_dict = null;
+            Dictionary<int, HairData> f_hair_dict = null;
+            Dictionary<int, BackHairData> f_hairB_dict = null;
+            Dictionary<int, WearData> f_socks_dict = null;
+            Dictionary<int, WearData> f_shoe_dict = null;
+            Dictionary<int, WearData> f_swimbot_dict = null;
+            Dictionary<int, WearData> f_swim_dict = null;
+            Dictionary<int, WearData> f_swimtop_dict = null;
+            Dictionary<int, WearData> f_bra_dict = null;
+            Dictionary<int, WearData> f_shorts_dict = null;
+            Dictionary<int, WearData> f_glove_dict = null;
+            Dictionary<int, WearData> f_bot_dict = null;
+            Dictionary<int, WearData> f_panst_dict = null;
+            Dictionary<int, WearData> f_top_dict = null;
+            Dictionary<int, PrefabData> f_brow_dict = null;
+            Dictionary<int, PrefabData> eyelash_dict = null;
+            Dictionary<int, WearData> m_wear_dict = null;
+            Dictionary<int, WearData> m_shoe_dict = null;
+            Dictionary<int, BackHairData> m_hair_dict = null;
             //try
-			{   
+            {   
                 AssetBundleCreateRequest abcr = AssetBundle.LoadFromFileAsync(assetBundleDir + "/" + fileName);
                 asynctracker++;
                 //yield return abcr;
@@ -1171,1006 +1179,914 @@ namespace ClassLibrary4
                     ab = abcr.assetBundle;
                 }
                 foreach (TextAsset textAsset in ab.LoadAllAssets<TextAsset>())
-				{
-					if (textAsset.name.Contains("ca_f_head"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.HEAD);
-					}
-					else if (textAsset.name.Contains("ca_f_hand"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.HAND);
-					}
-					else if (textAsset.name.Contains("ca_f_arm"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.ARM);
-					}
-					else if (textAsset.name.Contains("ca_f_back"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.BACK);
-					}
-					else if (textAsset.name.Contains("ca_f_breast"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.CHEST);
-					}
-					else if (textAsset.name.Contains("ca_f_ear"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.EAR);
-					}
-					else if (textAsset.name.Contains("ca_f_face"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.FACE);
-					}
-					else if (textAsset.name.Contains("ca_f_leg"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.LEG);
-					}
-					else if (textAsset.name.Contains("ca_f_megane"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.GLASSES);
-					}
-					else if (textAsset.name.Contains("ca_f_neck"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.NECK);
-					}
-					else if (textAsset.name.Contains("ca_f_shoulder"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.SHOULDER);
-					}
-					else if (textAsset.name.Contains("ca_f_waist"))
-					{
-						dictionary = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.WAIST);
-					}
-					else if (textAsset.name.Contains("cf_f_hairB"))
-					{
-						dictionary3 = CustomDataManager.Hair_b;
-					}
-					else if (textAsset.name.Contains("cf_f_hairF"))
-					{
-						dictionary2 = CustomDataManager.Hair_f;
-					}
-					else if (textAsset.name.Contains("cf_f_hairS"))
-					{
-						dictionary2 = CustomDataManager.Hair_s;
-					}
+                {
+                    if (textAsset.name.Contains("ca_f_head"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.HEAD);
+                    }
+                    else if (textAsset.name.Contains("ca_f_hand"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.HAND);
+                    }
+                    else if (textAsset.name.Contains("ca_f_arm"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.ARM);
+                    }
+                    else if (textAsset.name.Contains("ca_f_back"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.BACK);
+                    }
+                    else if (textAsset.name.Contains("ca_f_breast"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.CHEST);
+                    }
+                    else if (textAsset.name.Contains("ca_f_ear"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.EAR);
+                    }
+                    else if (textAsset.name.Contains("ca_f_face"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.FACE);
+                    }
+                    else if (textAsset.name.Contains("ca_f_leg"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.LEG);
+                    }
+                    else if (textAsset.name.Contains("ca_f_megane"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.GLASSES);
+                    }
+                    else if (textAsset.name.Contains("ca_f_neck"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.NECK);
+                    }
+                    else if (textAsset.name.Contains("ca_f_shoulder"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.SHOULDER);
+                    }
+                    else if (textAsset.name.Contains("ca_f_waist"))
+                    {
+                        acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.WAIST);
+                    }
+                    else if (textAsset.name.Contains("cf_f_hairB"))
+                    {
+                        f_hairB_dict = CustomDataManager.Hair_b;
+                    }
+                    else if (textAsset.name.Contains("cf_f_hairF"))
+                    {
+                        f_hair_dict = CustomDataManager.Hair_f;
+                    }
+                    else if (textAsset.name.Contains("cf_f_hairS"))
+                    {   
+                        //Note: Ok this is a bit strange. Of course we could use the same dictionary if the 
+                        //      signature type is the same. But doesn't this mean we also mix up the ID sections?
+                        f_hair_dict = CustomDataManager.Hair_s;
+                    }
                     else if (textAsset.name.Contains("cm_f_hair"))
                     {
-                        male_hair_dict = CustomDataManager.Hair_Male;
+                        m_hair_dict = CustomDataManager.Hair_Male;
                     }
-					else if (textAsset.name.Contains("cf_f_socks"))
-					{
-						dictionary4 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SOCKS);
-					}
-					else if (textAsset.name.Contains("cf_f_shoes"))
-					{
-						dictionary5 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SHOES);
-					}
-					else if (textAsset.name.Contains("cf_f_swimbot"))
-					{
-						dictionary6 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM_BOTTOM);
-					}
-					else if (textAsset.name.Contains("cf_f_swimtop"))
-					{
-						dictionary8 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM_TOP);
-					}
-					else if (textAsset.name.Contains("cf_f_swim"))
-					{
-						female_swim_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM);
-					}
-					else if (textAsset.name.Contains("cf_f_bra"))
-					{
-						female_bra_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BRA);
-					}
-					else if (textAsset.name.Contains("cf_f_shorts"))
-					{
-						dictionary10 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SHORTS);
-					}
-					else if (textAsset.name.Contains("cf_f_glove"))
-					{
-						dictionary11 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.GLOVE);
-					}
-					else if (textAsset.name.Contains("cf_f_panst"))
-					{
-						dictionary13 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.PANST);
-					}
-					else if (textAsset.name.Contains("cf_f_bot"))
-					{
-						female_bot_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BOTTOM);
-					}
-					else if (textAsset.name.Contains("cf_f_top"))
-					{
-                        female_top_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.TOP);
-					}
-					else if (textAsset.name.Contains("cf_m_eyebrow"))
-					{
-						dictionary15 = CustomDataManager.Eyebrow_Female;
-					}
-					else if (textAsset.name.Contains("cf_m_eyelashes"))
-					{
-						dictionary16 = CustomDataManager.Eyelash;
-					}
-					else if (textAsset.name.Contains("cm_f_body"))
-					{
-						dictionary17 = CustomDataManager.GetWearDictionary_Male(WEAR_TYPE.TOP);
-					}
-					else if (textAsset.name.Contains("cm_f_shoes"))
-					{
-						dictionary18 = CustomDataManager.GetWearDictionary_Male(WEAR_TYPE.SHOES);
-					}
-					if (dictionary18 != null)
-					{
-						string[] allines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
-						for (int j = 0; j < allines.Length; j++)
-						{
-							string[] cells = allines[j].Split(new char[]{'\t'});
-							if (cells.Length > 3)
-							{
-								try
-								{
-                                    int og_id = int.Parse(cells[0]);
-                                    int num = og_id % 1000;
-									if (cells[0].Length > 6)  //e.g og_id = 1234567
-                                    {                         //    cells[0].Substring(0, 3) = "123" 
-                                        num = og_id % 1000000 + int.Parse(cells[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num += 838000;
-									}
-									WearData wearData = new WearData(num, cells[2], cells[4], cells[5], dictionary18.Count, false);
-									wearData.id = num;
-									if (!dictionary18.ContainsKey(wearData.id))
-									{
-										dictionary18.Add(wearData.id, wearData);
-										HoneyPot.idFileDict[num] = cells[4];
-									}
-									else
-									{
-										this.addConflict(num, dictionary18[num].assetbundleName + "/" + dictionary18[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, dictionary18[num].name, wearData.name);
-									}
-								}
-								catch (Exception ex)
-								{
-									this.logSave(ex.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary17 != null)
-					{
-						string[] array4 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int k = 0; k < array4.Length; k++)
-						{
-							string[] array5 = array4[k].Split(new char[]
-							{
-								'\t'
-							});
-							if (array5.Length > 3)
-							{
-								try
-								{
-									int num2 = int.Parse(array5[0]) % 1000;
-									if (array5[0].Length > 6)
-									{
-										num2 = int.Parse(array5[0]) % 1000000 + int.Parse(array5[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num2 += 837000;
-									}
-									WearData wearData2 = new WearData(num2, array5[2], array5[4], array5[5], dictionary17.Count, false);
-									wearData2.id = num2;
-									if (!dictionary17.ContainsKey(wearData2.id))
-									{
-										dictionary17.Add(wearData2.id, wearData2);
-										HoneyPot.idFileDict[num2] = array5[4];
-									}
-									else
-									{
-										this.addConflict(num2, dictionary17[num2].assetbundleName + "/" + dictionary17[num2].prefab, wearData2.assetbundleName + "/" + wearData2.prefab, dictionary17[num2].name, wearData2.name);
-									}
-								}
-								catch (Exception ex2)
-								{
-									this.logSave(ex2.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary15 != null)
-					{
-						string[] array6 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int l = 0; l < array6.Length; l++)
-						{
-							string[] array7 = array6[l].Split(new char[]
-							{
-								'\t'
-							});
-							if (array7.Length > 3)
-							{
-								try
-								{
-									int num3 = int.Parse(array7[0]) % 1000;
-									if (array7[0].Length > 6)
-									{
-										num3 = int.Parse(array7[0]) % 1000000 + int.Parse(array7[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num3 += 835000;
-									}
-									PrefabData prefabData = new PrefabData(num3, array7[2], array7[4], array7[5], dictionary15.Count, false);
-									prefabData.id = num3;
-									if (!dictionary15.ContainsKey(prefabData.id))
-									{
-										dictionary15.Add(prefabData.id, prefabData);
-										HoneyPot.idFileDict[num3] = array7[4];
-									}
-									else
-									{
-										this.addConflict(num3, dictionary15[num3].assetbundleName + "/" + dictionary15[num3].prefab, prefabData.assetbundleName + "/" + prefabData.prefab, dictionary15[num3].name, prefabData.name);
-									}
-								}
-								catch (Exception ex3)
-								{
-									this.logSave(ex3.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary16 != null)
-					{
-						string[] array8 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int m = 0; m < array8.Length; m++)
-						{
-							string[] array9 = array8[m].Split(new char[]
-							{
-								'\t'
-							});
-							if (array9.Length > 3)
-							{
-								try
-								{
-									int num4 = int.Parse(array9[0]) % 1000;
-									if (array9[0].Length > 6)
-									{
-										num4 = int.Parse(array9[0]) % 1000000 + int.Parse(array9[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num4 += 836000;
-									}
-									PrefabData prefabData2 = new PrefabData(num4, array9[2], array9[4], array9[5], dictionary16.Count, false);
-									prefabData2.id = num4;
-									if (!dictionary16.ContainsKey(prefabData2.id))
-									{
-										dictionary16.Add(prefabData2.id, prefabData2);
-										HoneyPot.idFileDict[num4] = array9[4];
-									}
-									else
-									{
-										this.addConflict(num4, dictionary16[num4].assetbundleName + "/" + dictionary16[num4].prefab, prefabData2.assetbundleName + "/" + prefabData2.prefab, dictionary16[num4].name, prefabData2.name);
-									}
-								}
-								catch (Exception ex4)
-								{
-									this.logSave(ex4.ToString());
-								}
-							}
-						}
-					}
-					if (female_bot_dict != null)
-					{
-						string[] array10 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int n = 0; n < array10.Length; n++)
-						{
-							string[] celldata = array10[n].Split(new char[]
-							{
-								'\t'
-							});
-							if (celldata.Length > 3)
-							{
-								try
-								{
-									int num5 = int.Parse(celldata[0]) % 1000;
-									if (celldata[0].Length > 6)
-									{
-										num5 = int.Parse(celldata[0]) % 1000000 + int.Parse(celldata[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num5 += 821000;
-									}
-									WearData wearData = new WearData(num5, celldata[2], celldata[4], celldata[6], female_bot_dict.Count, false);
-                                    wearData.id = num5;
-									if (!female_bot_dict.ContainsKey(wearData.id))
-									{
-                                        wearData.liquid = celldata[11];
-                                        wearData.coordinates = int.Parse(celldata[14]);
-                                        wearData.shortsDisable = (!celldata[16].Equals("0"));
-
-                                        female_bot_dict.Add(wearData.id, wearData);
-										HoneyPot.idFileDict[num5] = celldata[4];
-									}
-									else
-									{
-										this.addConflict(num5, female_bot_dict[num5].assetbundleName + "/" + female_bot_dict[num5].prefab, wearData.assetbundleName + "/" + wearData.prefab, female_bot_dict[num5].name, wearData.name);
-									}
-								}
-								catch (Exception ex5)
-								{
-									this.logSave(ex5.ToString());
-								}
-							}
-						}
-					}
-					if (female_top_dict != null)
-					{
-						string[] array12 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num6 = 0; num6 < array12.Length; num6++)
-						{
-							string[] celldata = array12[num6].Split(new char[]
-							{
-								'\t'
-							});
-							if (celldata.Length > 3)
-							{
-								try
-								{
-									int num7 = int.Parse(celldata[0]) % 1000;
-									if (celldata[0].Length > 6)
-									{
-										num7 = int.Parse(celldata[0]) % 1000000 + int.Parse(celldata[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num7 += 820000;
-									}
-									WearData wearData = new WearData(num7, celldata[2], celldata[4], celldata[6], female_top_dict.Count, false);
-                                    wearData.id = num7;
-									if (!female_top_dict.ContainsKey(wearData.id))
-									{
-                                        wearData.liquid = celldata[11];
-                                        wearData.coordinates = int.Parse(celldata[14]);
-//                                        wearData.shortsDisable = (celldata[14].Equals("2"));
-                                        wearData.braDisable = (!celldata[15].Equals("0"));
-                                        wearData.nip = (!celldata[17].Equals("0"));
-
-                                        female_top_dict.Add(wearData.id, wearData);
-										HoneyPot.idFileDict[num7] = celldata[4];
-									}
-									else
-									{
-										this.addConflict(num7, female_top_dict[num7].assetbundleName + "/" + female_top_dict[num7].prefab, wearData.assetbundleName + "/" + wearData.prefab, female_top_dict[num7].name, wearData.name);
-									}
-								}
-								catch (Exception ex6)
-								{
-									this.logSave(ex6.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary13 != null)
-					{
-						string[] array14 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num8 = 0; num8 < array14.Length; num8++)
-						{
-							string[] array15 = array14[num8].Split(new char[]
-							{
-								'\t'
-							});
-							if (array15.Length > 3)
-							{
-								try
-								{
-									int num9 = int.Parse(array15[0]) % 1000;
-									if (array15[0].Length > 6)
-									{
-										num9 = int.Parse(array15[0]) % 1000000 + int.Parse(array15[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num9 += 828000;
-									}
-									WearData wearData5 = new WearData(num9, array15[2], array15[4], array15[6], dictionary13.Count, false);
-									wearData5.id = num9;
-									if (!dictionary13.ContainsKey(wearData5.id))
-									{
-										dictionary13.Add(wearData5.id, wearData5);
-										HoneyPot.idFileDict[num9] = array15[4];
-									}
-									else
-									{
-										this.addConflict(num9, dictionary13[num9].assetbundleName + "/" + dictionary13[num9].prefab, wearData5.assetbundleName + "/" + wearData5.prefab, dictionary13[num9].name, wearData5.name);
-									}
-								}
-								catch (Exception ex7)
-								{
-									this.logSave(ex7.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary11 != null)
-					{
-						string[] array16 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num10 = 0; num10 < array16.Length; num10++)
-						{
-							string[] array17 = array16[num10].Split(new char[]
-							{
-								'\t'
-							});
-							if (array17.Length > 3)
-							{
-								try
-								{
-									int num11 = int.Parse(array17[0]) % 1000;
-									if (array17[0].Length > 6)
-									{
-										num11 = int.Parse(array17[0]) % 1000000 + int.Parse(array17[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num11 += 827000;
-									}
-									WearData wearData6 = new WearData(num11, array17[2], array17[4], array17[6], dictionary11.Count, false);
-									wearData6.id = num11;
-									if (!dictionary11.ContainsKey(wearData6.id))
-									{
-										dictionary11.Add(wearData6.id, wearData6);
-										HoneyPot.idFileDict[num11] = array17[4];
-									}
-									else
-									{
-										this.addConflict(num11, dictionary11[num11].assetbundleName + "/" + dictionary11[num11].prefab, wearData6.assetbundleName + "/" + wearData6.prefab, dictionary11[num11].name, wearData6.name);
-									}
-								}
-								catch (Exception ex8)
-								{
-									this.logSave(ex8.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary10 != null)
-					{
-						string[] array18 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num12 = 0; num12 < array18.Length; num12++)
-						{
-							string[] array19 = array18[num12].Split(new char[]
-							{
-								'\t'
-							});
-							if (array19.Length > 3)
-							{
-								try
-								{
-									int num13 = int.Parse(array19[0]) % 1000;
-									if (array19[0].Length > 6)
-									{
-										num13 = int.Parse(array19[0]) % 1000000 + int.Parse(array19[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num13 += 823000;
-									}
-									WearData wearData7 = new WearData(num13, array19[2], array19[4], array19[6], dictionary10.Count, false);
-									wearData7.id = num13;
-									if (!dictionary10.ContainsKey(wearData7.id))
-									{
-                                        wearData7.liquid = array19[11];
-
-                                        dictionary10.Add(wearData7.id, wearData7);
-										HoneyPot.idFileDict[num13] = array19[4];
-									}
-									else
-									{
-										this.addConflict(num13, dictionary10[num13].assetbundleName + "/" + dictionary10[num13].prefab, wearData7.assetbundleName + "/" + wearData7.prefab, dictionary10[num13].name, wearData7.name);
-									}
-								}
-								catch (Exception ex9)
-								{
-									this.logSave(ex9.ToString());
-								}
-							}
-						}
-					}
-					if (female_bra_dict != null)
-					{
-						string[] array20 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num14 = 0; num14 < array20.Length; num14++)
-						{
-							string[] celldata = array20[num14].Split(new char[]
-							{
-								'\t'
-							});
-							if (celldata.Length > 3)
-							{
-								try
-								{
-									int num15 = int.Parse(celldata[0]) % 1000;
-									if (celldata[0].Length > 6)
-									{
-										num15 = int.Parse(celldata[0]) % 1000000 + int.Parse(celldata[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num15 += 822000;
-									}
-									WearData wearData = new WearData(num15, celldata[2], celldata[4], celldata[6], female_bra_dict.Count, false);
-                                    wearData.id  = num15;
-                                    wearData.nip = false; // NOTE: Curious. PH now activates nipple when Bra is shown regardless of this setting?
-                                                            //       No nipple actually shows through though. So all fine?
-                                    WearData wearData9 = female_bra_dict[1];
-									if (!female_bra_dict.ContainsKey(wearData.id))
-									{
-                                        wearData.liquid = celldata[11];
-
-                                        female_bra_dict.Add(wearData.id, wearData);
-										HoneyPot.idFileDict[num15] = celldata[4];
-									}
-									else
-									{
-										this.addConflict(num15, female_bra_dict[num15].assetbundleName + "/" + female_bra_dict[num15].prefab, wearData.assetbundleName + "/" + wearData.prefab, female_bra_dict[num15].name, wearData.name);
-									}
-								}
-								catch (Exception ex10)
-								{
-									this.logSave(ex10.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary8 != null)
-					{
-						string[] array22 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num16 = 0; num16 < array22.Length; num16++)
-						{
-							string[] array23 = array22[num16].Split(new char[]
-							{
-								'\t'
-							});
-							if (array23.Length > 3)
-							{
-								try
-								{
-									int num17 = int.Parse(array23[0]) % 1000;
-									if (array23[0].Length > 6)
-									{
-										num17 = int.Parse(array23[0]) % 1000000 + int.Parse(array23[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num17 += 825000;
-									}
-									WearData wearData10 = new WearData(num17, array23[2], array23[4], array23[6], dictionary8.Count, false);
-									wearData10.id = num17;
-									if (!dictionary8.ContainsKey(wearData10.id))
-									{
-                                        wearData10.liquid = array23[11];
-
-                                        dictionary8.Add(wearData10.id, wearData10);
-										HoneyPot.idFileDict[num17] = array23[4];
-									}
-									else
-									{
-										this.addConflict(num17, dictionary8[num17].assetbundleName + "/" + dictionary8[num17].prefab, wearData10.assetbundleName + "/" + wearData10.prefab, dictionary8[num17].name, wearData10.name);
-									}
-								}
-								catch (Exception ex11)
-								{
-									this.logSave(ex11.ToString());
-								}
-							}
-						}
-					}
-					if (female_swim_dict != null)
-					{
-						string[] array24 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num18 = 0; num18 < array24.Length; num18++)
-						{
-							string[] celldata = array24[num18].Split(new char[]
-							{
-								'\t'
-							});
-							if (celldata.Length > 3)
-							{
-								try
-								{
-									int num19 = int.Parse(celldata[0]) % 1000;
-									if (celldata[0].Length > 6)
-									{
-										num19 = int.Parse(celldata[0]) % 1000000 + int.Parse(celldata[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num19 += 824000;
-									}
-									WearData wearData = new WearData(num19, celldata[2], celldata[4], celldata[6], female_swim_dict.Count, false);
-                                    wearData.id = num19;
-									if (!female_swim_dict.ContainsKey(wearData.id))
-									{
-                                        // TODO: How do we specify that this swimsuit is top-bottom separated or not?
-                                        wearData.liquid = celldata[11];
-
-                                        female_swim_dict.Add(wearData.id, wearData);
-										HoneyPot.idFileDict[num19] = celldata[4];
-									}
-									else
-									{
-										this.addConflict(num19, female_swim_dict[num19].assetbundleName + "/" + female_swim_dict[num19].prefab, wearData.assetbundleName + "/" + wearData.prefab, female_swim_dict[num19].name, wearData.name);
-									}
-								}
-								catch (Exception ex12)
-								{
-									this.logSave(ex12.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary6 != null)
-					{
-						string[] array26 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num20 = 0; num20 < array26.Length; num20++)
-						{
-							string[] array27 = array26[num20].Split(new char[]
-							{
-								'\t'
-							});
-							if (array27.Length > 3)
-							{
-								try
-								{
-									int num21 = int.Parse(array27[0]) % 1000;
-									if (array27[0].Length > 6)
-									{
-										num21 = int.Parse(array27[0]) % 1000000 + int.Parse(array27[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num21 += 826000;
-									}
-									WearData wearData12 = new WearData(num21, array27[2], array27[4], array27[6], dictionary6.Count, false);
-									wearData12.id = num21;
-									if (!dictionary6.ContainsKey(wearData12.id))
-									{
-                                        wearData12.liquid = array27[11];
-
-										dictionary6.Add(wearData12.id, wearData12);
-										HoneyPot.idFileDict[num21] = array27[4];
-									}
-									else
-									{
-										this.addConflict(num21, dictionary6[num21].assetbundleName + "/" + dictionary6[num21].prefab, wearData12.assetbundleName + "/" + wearData12.prefab, dictionary6[num21].name, wearData12.name);
-									}
-								}
-								catch (Exception ex13)
-								{
-									this.logSave(ex13.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary5 != null)
-					{
-						string[] array28 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num22 = 0; num22 < array28.Length; num22++)
-						{
-							string[] array29 = array28[num22].Split(new char[]
-							{
-								'\t'
-							});
-							if (array29.Length > 3)
-							{
-								try
-								{
-									int num23 = int.Parse(array29[0]) % 1000;
-									if (array29[0].Length > 6)
-									{
-										num23 = int.Parse(array29[0]) % 1000000 + int.Parse(array29[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num23 += 830000;
-									}
-									WearData wearData13 = new WearData(num23, array29[2], array29[4], array29[6], dictionary5.Count, false);
-									wearData13.id = num23;
-									if (!dictionary5.ContainsKey(wearData13.id))
-									{
-										dictionary5.Add(wearData13.id, wearData13);
-										HoneyPot.idFileDict[num23] = array29[4];
-									}
-									else
-									{
-										this.addConflict(num23, dictionary5[num23].assetbundleName + "/" + dictionary5[num23].prefab, wearData13.assetbundleName + "/" + wearData13.prefab, dictionary5[num23].name, wearData13.name);
-									}
-								}
-								catch (Exception ex14)
-								{
-									this.logSave(ex14.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary4 != null)
-					{
-						string[] array30 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num24 = 0; num24 < array30.Length; num24++)
-						{
-							string[] array31 = array30[num24].Split(new char[]
-							{
-								'\t'
-							});
-							if (array31.Length > 3)
-							{
-								try
-								{
-									int num25 = int.Parse(array31[0]) % 1000;
-									if (array31[0].Length > 6)
-									{
-										num25 = int.Parse(array31[0]) % 1000000 + int.Parse(array31[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num25 += 829000;
-									}
-									WearData wearData14 = new WearData(num25, array31[2], array31[4], array31[6], dictionary4.Count, false);
-									wearData14.id = num25;
-									if (!dictionary4.ContainsKey(wearData14.id))
-									{
-										dictionary4.Add(wearData14.id, wearData14);
-										HoneyPot.idFileDict[num25] = array31[4];
-									}
-									else
-									{
-										this.addConflict(num25, dictionary4[num25].assetbundleName + "/" + dictionary4[num25].prefab, wearData14.assetbundleName + "/" + wearData14.prefab, dictionary4[num25].name, wearData14.name);
-									}
-								}
-								catch (Exception ex15)
-								{
-									this.logSave(ex15.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary != null)
-					{
-						string[] array32 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num26 = 0; num26 < array32.Length; num26++)
-						{
-							string[] array33 = array32[num26].Split(new char[]
-							{
-								'\t'
-							});
-							if (array33.Length > 3)
-							{
-								try
-								{
-									int num27 = int.Parse(array33[0]) % 1000;
-									if (array33[0].Length > 6)
-									{
-										num27 = int.Parse(array33[0]) % 1000000 + int.Parse(array33[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num27 += 832000;
-									}
-									AccessoryData accessoryData = new AccessoryData(num27, array33[2], array33[4], array33[5], array33[6], array33[8], ItemDataBase.SPECIAL.NONE, dictionary.Count, false);
-									accessoryData.id = num27;
-									if (!dictionary.ContainsKey(accessoryData.id))
-									{
-										dictionary.Add(accessoryData.id, accessoryData);
-										HoneyPot.idFileDict[num27] = array33[4];
-									}
-									else
-									{
-										this.addConflict(num27, dictionary[num27].assetbundleName + "/" + dictionary[num27].prefab_F, accessoryData.assetbundleName + "/" + accessoryData.prefab_F, dictionary[num27].name, accessoryData.name);
-									}
-								}
-								catch (Exception ex16)
-								{
-									this.logSave(ex16.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary2 != null)
-					{
-						string[] array34 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num28 = 0; num28 < array34.Length; num28++)
-						{
-							string[] array35 = array34[num28].Split(new char[]
-							{
-								'\t'
-							});
-							if (array35.Length > 3)
-							{
-								try
-								{
-									int num29 = int.Parse(array35[0]) % 1000;
-									if (array35[0].Length > 6)
-									{
-										num29 = int.Parse(array35[0]) % 1000000 + int.Parse(array35[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num29 += 833000;
-									}
-									HairData hairData = new HairData(num29, array35[2], array35[4], array35[6], dictionary2.Count, false);
-									hairData.id = num29;
-									if (!dictionary2.ContainsKey(hairData.id))
-									{
-										dictionary2.Add(hairData.id, hairData);
-										HoneyPot.idFileDict[num29] = array35[4];
-									}
-									else
-									{
-										this.addConflict(num29, dictionary2[num29].assetbundleName + "/" + dictionary2[num29].prefab, hairData.assetbundleName + "/" + hairData.prefab, dictionary2[num29].name, hairData.name);
-									}
-								}
-								catch (Exception ex17)
-								{
-									this.logSave(ex17.ToString());
-								}
-							}
-						}
-					}
-					if (dictionary3 != null)
-					{
-						string[] array36 = textAsset.text.Replace("\r\n", "\n").Split(new char[]
-						{
-							'\n'
-						});
-						for (int num30 = 0; num30 < array36.Length; num30++)
-						{
-							string[] array37 = array36[num30].Split(new char[]
-							{
-								'\t'
-							});
-							if (array37.Length > 3)
-							{
-								try
-								{
-									int num31 = int.Parse(array37[0]) % 1000;
-									if (array37[0].Length > 6)
-									{
-										num31 = int.Parse(array37[0]) % 1000000 + int.Parse(array37[0].Substring(0, 3)) * 1000;
-									}
-									else
-									{
-										num31 += 834000;
-									}
-									BackHairData backHairData = new BackHairData(num31, array37[2], array37[4], array37[6], dictionary3.Count, false, "セミロング", "1".Equals(array37[13]));
-									backHairData.id = num31;
-									if (!dictionary3.ContainsKey(backHairData.id))
-									{
-										dictionary3.Add(backHairData.id, backHairData);
-										HoneyPot.idFileDict[num31] = array37[4];
-									}
-									else
-									{
-										this.addConflict(num31, dictionary3[num31].assetbundleName + "/" + dictionary3[num31].prefab, backHairData.assetbundleName + "/" + backHairData.prefab, dictionary3[num31].name, backHairData.name);
-									}
-								}
-								catch (Exception ex18)
-								{
-									this.logSave(ex18.ToString());
-								}
-							}
-						}
-					}
-                    if (male_hair_dict != null)
+                    else if (textAsset.name.Contains("cf_f_socks"))
                     {
-                        string[] list = textAsset.text.Replace("\r\n", "\n").Split(new char[]
+                        f_socks_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SOCKS);
+                    }
+                    else if (textAsset.name.Contains("cf_f_shoes"))
+                    {
+                        f_shoe_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SHOES);
+                    }
+                    else if (textAsset.name.Contains("cf_f_swimbot"))
+                    {
+                        f_swimbot_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM_BOTTOM);
+                    }
+                    else if (textAsset.name.Contains("cf_f_swimtop"))
+                    {
+                        f_swimtop_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM_TOP);
+                    }
+                    else if (textAsset.name.Contains("cf_f_swim"))
+                    {
+                        f_swim_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM);
+                    }
+                    else if (textAsset.name.Contains("cf_f_bra"))
+                    {
+                        f_bra_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BRA);
+                    }
+                    else if (textAsset.name.Contains("cf_f_shorts"))
+                    {
+                        f_shorts_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SHORTS);
+                    }
+                    else if (textAsset.name.Contains("cf_f_glove"))
+                    {
+                        f_glove_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.GLOVE);
+                    }
+                    else if (textAsset.name.Contains("cf_f_panst"))
+                    {
+                        f_panst_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.PANST);
+                    }
+                    else if (textAsset.name.Contains("cf_f_bot"))
+                    {
+                        f_bot_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BOTTOM);
+                    }
+                    else if (textAsset.name.Contains("cf_f_top"))
+                    {
+                        f_top_dict = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.TOP);
+                    }
+                    else if (textAsset.name.Contains("cf_m_eyebrow"))
+                    {
+                        f_brow_dict = CustomDataManager.Eyebrow_Female;
+                    }
+                    else if (textAsset.name.Contains("cf_m_eyelashes"))
+                    {
+                        eyelash_dict = CustomDataManager.Eyelash;
+                    }
+                    else if (textAsset.name.Contains("cm_f_body"))
+                    {
+                        m_wear_dict = CustomDataManager.GetWearDictionary_Male(WEAR_TYPE.TOP);
+                    }
+                    else if (textAsset.name.Contains("cm_f_shoes"))
+                    {
+                        m_shoe_dict = CustomDataManager.GetWearDictionary_Male(WEAR_TYPE.SHOES);
+                    }
+                    if (m_shoe_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int j = 0; j < all_lines.Length; j++)
                         {
-                            '\n'
-                        });
-                        for (int i = 0; i < list.Length; i++)
-                        {
-                            string[] celldata = list[i].Split(new char[]
+                            string[] cells = all_lines[j].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
                             {
-                                '\t'
-                            });
-                            if (celldata.Length > 3)
-                            {
-                                try
-                                {
-                                    int id = int.Parse(celldata[0]) % 1000;
-                                    if (celldata[0].Length > 6)
-                                    {
-                                        id = int.Parse(celldata[0]) % 1000000 + int.Parse(celldata[0].Substring(0, 3)) * 1000;
-                                    }
-                                    else
-                                    {
-                                        id += 839000;
-                                    }
-                                    //Male Hair is ALWAYS set?
-                                    BackHairData backHairData = new BackHairData(id, celldata[2], celldata[4], celldata[5], male_hair_dict.Count, false, "セミロング", true);
-                                    backHairData.id = id;
-                                    if (!male_hair_dict.ContainsKey(backHairData.id))
-                                    {
-                                        male_hair_dict.Add(backHairData.id, backHairData);
-                                        HoneyPot.idFileDict[id] = celldata[4];
-                                    }
-                                    else
-                                    {
-                                        this.addConflict(id, male_hair_dict[id].assetbundleName + "/" + male_hair_dict[id].prefab, backHairData.assetbundleName + "/" + backHairData.prefab, male_hair_dict[id].name, backHairData.name);
-                                    }
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {                        
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                    //Trace.Assert( int.Parse(cells[0].Substring(0, 3)) == extract_hi_3digits(og_id) );
                                 }
-                                catch (Exception ex)
+                                else
                                 {
-                                    this.logSave(ex.ToString());
+                                    num += 838000;
+                                }
+
+                                if( !File.Exists(assetBundleDir + "/" + cells[4]) )
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData = new WearData(num, cells[2], cells[4], cells[5], m_shoe_dict.Count, false);
+                                wearData.id = num;
+                                if (!m_shoe_dict.ContainsKey(wearData.id))
+                                {
+                                    m_shoe_dict.Add(wearData.id, wearData);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, m_shoe_dict[num].assetbundleName + "/" + m_shoe_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, m_shoe_dict[num].name, wearData.name);
                                 }
                             }
                         }
                     }
-                    dictionary = null;
-					dictionary2 = null;
-					dictionary3 = null;
-					dictionary4 = null;
-					dictionary5 = null;
-					dictionary6 = null;
-                    female_swim_dict = null;
-					dictionary8 = null;
-                    female_bra_dict = null;
-					dictionary10 = null;
-					dictionary11 = null;
-                    female_bot_dict = null;
-					dictionary13 = null;
-                    female_top_dict = null;
-					dictionary15 = null;
-					dictionary16 = null;
-					dictionary17 = null;
-					dictionary18 = null;
-                    male_hair_dict = null;
+                    if (m_wear_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int k = 0; k < all_lines.Length; k++)
+                        {
+                            string[] cells = all_lines[k].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 837000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData2 = new WearData(num, cells[2], cells[4], cells[5], m_wear_dict.Count, false);
+                                wearData2.id = num;
+                                if (!m_wear_dict.ContainsKey(wearData2.id))
+                                {
+                                    m_wear_dict.Add(wearData2.id, wearData2);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, m_wear_dict[num].assetbundleName + "/" + m_wear_dict[num].prefab, wearData2.assetbundleName + "/" + wearData2.prefab, m_wear_dict[num].name, wearData2.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_brow_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 835000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                PrefabData prefabData = new PrefabData(num, cells[2], cells[4], cells[5], f_brow_dict.Count, false);
+                                prefabData.id = num;
+                                if (!f_brow_dict.ContainsKey(prefabData.id))
+                                {
+                                    f_brow_dict.Add(prefabData.id, prefabData);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_brow_dict[num].assetbundleName + "/" + f_brow_dict[num].prefab, prefabData.assetbundleName + "/" + prefabData.prefab, f_brow_dict[num].name, prefabData.name);
+                                }
+                            }
+                        }
+                    }
+                    if (eyelash_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 836000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                PrefabData prefabData2 = new PrefabData(num, cells[2], cells[4], cells[5], eyelash_dict.Count, false);
+                                prefabData2.id = num;
+                                if (!eyelash_dict.ContainsKey(prefabData2.id))
+                                {
+                                    eyelash_dict.Add(prefabData2.id, prefabData2);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, eyelash_dict[num].assetbundleName + "/" + eyelash_dict[num].prefab, prefabData2.assetbundleName + "/" + prefabData2.prefab, eyelash_dict[num].name, prefabData2.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_bot_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 821000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData = new WearData(num, cells[2], cells[4], cells[6], f_bot_dict.Count, false);
+                                wearData.id = num;
+                                if (!f_bot_dict.ContainsKey(wearData.id))
+                                {
+                                    wearData.liquid = cells[11];
+                                    wearData.coordinates = int.Parse(cells[14]);
+                                    wearData.shortsDisable = (!cells[16].Equals("0"));
+
+                                    f_bot_dict.Add(wearData.id, wearData);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_bot_dict[num].assetbundleName + "/" + f_bot_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_bot_dict[num].name, wearData.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_top_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 820000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData = new WearData(num, cells[2], cells[4], cells[6], f_top_dict.Count, false);
+                                wearData.id = num;
+                                if (!f_top_dict.ContainsKey(wearData.id))
+                                {
+                                    wearData.liquid = cells[11];
+                                    wearData.coordinates = int.Parse(cells[14]);
+                                    //wearData.shortsDisable = (cells[14].Equals("2"));
+                                    wearData.braDisable = (!cells[15].Equals("0"));
+                                    wearData.nip = (!cells[17].Equals("0"));
+
+                                    f_top_dict.Add(wearData.id, wearData);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_top_dict[num].assetbundleName + "/" + f_top_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_top_dict[num].name, wearData.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_panst_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 828000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData5 = new WearData(num, cells[2], cells[4], cells[6], f_panst_dict.Count, false);
+                                wearData5.id = num;
+                                if (!f_panst_dict.ContainsKey(wearData5.id))
+                                {
+                                    f_panst_dict.Add(wearData5.id, wearData5);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_panst_dict[num].assetbundleName + "/" + f_panst_dict[num].prefab, wearData5.assetbundleName + "/" + wearData5.prefab, f_panst_dict[num].name, wearData5.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_glove_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 827000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData6 = new WearData(num, cells[2], cells[4], cells[6], f_glove_dict.Count, false);
+                                wearData6.id = num;
+                                if (!f_glove_dict.ContainsKey(wearData6.id))
+                                {
+                                    f_glove_dict.Add(wearData6.id, wearData6);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_glove_dict[num].assetbundleName + "/" + f_glove_dict[num].prefab, wearData6.assetbundleName + "/" + wearData6.prefab, f_glove_dict[num].name, wearData6.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_shorts_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 823000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData7 = new WearData(num, cells[2], cells[4], cells[6], f_shorts_dict.Count, false);
+                                wearData7.id = num;
+                                if (!f_shorts_dict.ContainsKey(wearData7.id))
+                                {
+                                    wearData7.liquid = cells[11];
+                                    f_shorts_dict.Add(wearData7.id, wearData7);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_shorts_dict[num].assetbundleName + "/" + f_shorts_dict[num].prefab, wearData7.assetbundleName + "/" + wearData7.prefab, f_shorts_dict[num].name, wearData7.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_bra_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 822000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData = new WearData(num, cells[2], cells[4], cells[6], f_bra_dict.Count, false);
+                                wearData.id  = num;
+                                wearData.nip = false; // NOTE: Curious. PH now activates nipple when Bra is shown regardless of this setting?
+                                                      //       No nipple actually shows through though. So all fine?
+                                WearData wearData9 = f_bra_dict[1];
+                                if (!f_bra_dict.ContainsKey(wearData.id))
+                                {
+                                    wearData.liquid = cells[11];
+
+                                    f_bra_dict.Add(wearData.id, wearData);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_bra_dict[num].assetbundleName + "/" + f_bra_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_bra_dict[num].name, wearData.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_swimtop_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 825000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData10 = new WearData(num, cells[2], cells[4], cells[6], f_swimtop_dict.Count, false);
+                                wearData10.id = num;
+                                if (!f_swimtop_dict.ContainsKey(wearData10.id))
+                                {
+                                    wearData10.liquid = cells[11];
+                                    f_swimtop_dict.Add(wearData10.id, wearData10);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_swimtop_dict[num].assetbundleName + "/" + f_swimtop_dict[num].prefab, wearData10.assetbundleName + "/" + wearData10.prefab, f_swimtop_dict[num].name, wearData10.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_swim_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 824000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData = new WearData(num, cells[2], cells[4], cells[6], f_swim_dict.Count, false);
+                                wearData.id = num;
+                                if (!f_swim_dict.ContainsKey(wearData.id))
+                                {
+                                    // TODO: How do we specify that this swimsuit is top-bottom separated or not?
+                                    wearData.liquid = cells[11];
+                                    f_swim_dict.Add(wearData.id, wearData);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_swim_dict[num].assetbundleName + "/" + f_swim_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_swim_dict[num].name, wearData.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_swimbot_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 826000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData12 = new WearData(num, cells[2], cells[4], cells[6], f_swimbot_dict.Count, false);
+                                wearData12.id = num;
+                                if (!f_swimbot_dict.ContainsKey(wearData12.id))
+                                {
+                                    wearData12.liquid = cells[11];
+                                    f_swimbot_dict.Add(wearData12.id, wearData12);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_swimbot_dict[num].assetbundleName + "/" + f_swimbot_dict[num].prefab, wearData12.assetbundleName + "/" + wearData12.prefab, f_swimbot_dict[num].name, wearData12.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_shoe_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 830000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData13 = new WearData(num, cells[2], cells[4], cells[6], f_shoe_dict.Count, false);
+                                wearData13.id = num;
+                                if (!f_shoe_dict.ContainsKey(wearData13.id))
+                                {
+                                    f_shoe_dict.Add(wearData13.id, wearData13);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_shoe_dict[num].assetbundleName + "/" + f_shoe_dict[num].prefab, wearData13.assetbundleName + "/" + wearData13.prefab, f_shoe_dict[num].name, wearData13.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_socks_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 829000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                WearData wearData14 = new WearData(num, cells[2], cells[4], cells[6], f_socks_dict.Count, false);
+                                wearData14.id = num;
+                                if (!f_socks_dict.ContainsKey(wearData14.id))
+                                {
+                                    f_socks_dict.Add(wearData14.id, wearData14);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_socks_dict[num].assetbundleName + "/" + f_socks_dict[num].prefab, wearData14.assetbundleName + "/" + wearData14.prefab, f_socks_dict[num].name, wearData14.name);
+                                }
+                            }
+                        }
+                    }
+                    if (acc_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 832000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                AccessoryData accessoryData = new AccessoryData(num, cells[2], cells[4], cells[5], cells[6], cells[8], ItemDataBase.SPECIAL.NONE, acc_dict.Count, false);
+                                accessoryData.id = num;
+                                if (!acc_dict.ContainsKey(accessoryData.id))
+                                {
+                                    acc_dict.Add(accessoryData.id, accessoryData);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, acc_dict[num].assetbundleName + "/" + acc_dict[num].prefab_F, accessoryData.assetbundleName + "/" + accessoryData.prefab_F, acc_dict[num].name, accessoryData.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_hair_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {   // Note: So this section contains both F_HairF and F_HairS ?
+                                    num += 833000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                HairData hairData = new HairData(num, cells[2], cells[4], cells[6], f_hair_dict.Count, false);
+                                hairData.id = num;
+                                if (!f_hair_dict.ContainsKey(hairData.id))
+                                {
+                                    f_hair_dict.Add(hairData.id, hairData);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_hair_dict[num].assetbundleName + "/" + f_hair_dict[num].prefab, hairData.assetbundleName + "/" + hairData.prefab, f_hair_dict[num].name, hairData.name);
+                                }
+                            }
+                        }
+                    }
+                    if (f_hairB_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 834000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                BackHairData backHairData = new BackHairData(num, cells[2], cells[4], cells[6], f_hairB_dict.Count, false, "セミロング", "1".Equals(cells[13]));
+                                backHairData.id = num;
+                                if (!f_hairB_dict.ContainsKey(backHairData.id))
+                                {
+                                    f_hairB_dict.Add(backHairData.id, backHairData);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, f_hairB_dict[num].assetbundleName + "/" + f_hairB_dict[num].prefab, backHairData.assetbundleName + "/" + backHairData.prefab, f_hairB_dict[num].name, backHairData.name);
+                                }
+                            }
+                        }
+                    }
+                    if (m_hair_dict != null)
+                    {
+                        string[] all_lines = textAsset.text.Replace("\r\n", "\n").Split(new char[]{'\n'});
+                        for (int i = 0; i < all_lines.Length; i++)
+                        {
+                            string[] cells = all_lines[i].Split(new char[]{'\t'});
+                            if (cells.Length > 3)
+                            {
+                                int og_id = int.Parse(cells[0]);
+                                int num = og_id % 1000;
+                                if (cells[0].Length > 6)
+                                {
+                                    num = og_id % 1000000 + extract_hi_3digits(og_id) * 1000;
+                                }
+                                else
+                                {
+                                    num += 839000;
+                                }
+
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
+                                {
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    continue;
+                                }
+
+                                BackHairData backHairData = new BackHairData(num, cells[2], cells[4], cells[5], m_hair_dict.Count, false, "セミロング", true);
+                                backHairData.id = num;
+                                if (!m_hair_dict.ContainsKey(backHairData.id))
+                                {
+                                    m_hair_dict.Add(backHairData.id, backHairData);
+                                    HoneyPot.idFileDict[num] = cells[4];
+                                }
+                                else
+                                {
+                                    this.addConflict(num, m_hair_dict[num].assetbundleName + "/" + m_hair_dict[num].prefab, backHairData.assetbundleName + "/" + backHairData.prefab, m_hair_dict[num].name, backHairData.name);
+                                }
+                            }
+                        }
+                    }
+                    acc_dict = null;
+                    f_hair_dict = null;
+                    f_hairB_dict = null;
+                    f_socks_dict = null;
+                    f_shoe_dict = null;
+                    f_swimbot_dict = null;
+                    f_swim_dict = null;
+                    f_swimbot_dict = null;
+                    f_bra_dict = null;
+                    f_shorts_dict = null;
+                    f_glove_dict = null;
+                    f_bot_dict = null;
+                    f_panst_dict = null;
+                    f_top_dict = null;
+                    f_brow_dict = null;
+                    eyelash_dict = null;
+                    m_wear_dict = null;
+                    m_shoe_dict = null;
+                    m_hair_dict = null;
                 }
                 ab.Unload(true);
                 asynctracker--;
@@ -2523,8 +2439,8 @@ namespace ClassLibrary4
 		{
 			if (HoneyPot.isFirst)
 			{
-                System.Diagnostics.Stopwatch t = new System.Diagnostics.Stopwatch();
-                this.logSave("HoneyPot Debug: timer frequency: " + System.Diagnostics.Stopwatch.Frequency);
+                Stopwatch t = new Stopwatch();
+                this.logSave("HoneyPot Debug: timer frequency: " + Stopwatch.Frequency);
                 t.Start();
                 this.readAllPHShaders();
                 this.loadShaderMapping();
