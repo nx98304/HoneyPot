@@ -1031,7 +1031,7 @@ namespace ClassLibrary4
             {
                 if (!HoneyPot.PH_shaders.ContainsKey(m.shader.name))
                 {
-                    this.logSave("Found " + m.shader.name + " in hsstandardshaders2.");
+                    this.logSave("Found " + m.shader.name + " in hsstandardshaders.");
                     HoneyPot.PH_shaders[m.shader.name] = m.shader;
                 }
             }
