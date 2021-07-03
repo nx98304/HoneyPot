@@ -1024,7 +1024,7 @@ namespace ClassLibrary4
                 this.logSave("Somehow Standard shader cannot be loaded.");
             }
 
-            // Thank Doodoo for this!!!!!
+            // Thank AgiShark for this!!!!!
             AssetBundle bundle_HSStandard_PH = loadEmbeddedAssetBundle("ClassLibrary4.hsstandardshaders");
             Material[] all_hsstandard_materials = bundle_HSStandard_PH.LoadAllAssets<Material>();
             foreach (Material m in all_hsstandard_materials)
@@ -2447,7 +2447,7 @@ namespace ClassLibrary4
                 this.logSave("Shader loaded timestamp: " + t.ElapsedMilliseconds.ToString());
 				try
 				{
-                    FileInfo[] list = new DirectoryInfo(assetBundlePath + "/list/characustom").GetFiles();
+                    FileInfo[] list = new DirectoryInfo(assetBundlePath + "/list/characustom").GetFiles("*.unity3d");
                     this.logSave("List GetFiles timestamp: " + t.ElapsedMilliseconds.ToString());
                     foreach (FileInfo fileInfo in list)
 					{

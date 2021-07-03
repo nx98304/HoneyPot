@@ -29,7 +29,7 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
   - Can further force all non-colorable clothings (including PH ones) by setting `ForceColor=TRUE` in `UserData/modprefs.ini`.
     - **This will make some of your old cards' and scenes' clothings to change color.** You can just change the color back in chara maker because they are now adjustable. If you find this troublesome, just don't save anything and remove this modpref option.
   - Non-colorable clothings & accessories usually imply their materials have only 1 main color to begin with. So in the color UI, the sub color options will show up, but are mostly useless. 
-- A note: the **Standard_555** shader that was added back in 1.4.6 was not transplanted from Unity 5.3.x. Thanks Doodoo for pointing this out. 
+- A note: the **Standard_555** shader that was added back in 1.4.6 was not transplanted from Unity 5.3.x. Thanks AgiShark for pointing this out. 
 
 ### Requirements & Installation
 - HoneyPot is still an IPA mod for now, but make sure your PH installation has **BepInEx 5.2 or above**. If you somehow are using a PH installation without BepInEx and is trying to convert, please checkout BepInEx releases: https://github.com/BepInEx/BepInEx/releases 
@@ -106,8 +106,8 @@ shader.txt 's remapping records is fairly limited before. But with the now enhan
 
 ### 1.4.6
 - **HoneyPot/HoneyPotInspector.exe updated!** When run, it will generate another file called `HoneyPot/FileDateTime.txt` to keep track of all your `.unity3d` files in `abdata/` folder. If the file is found and the creation time of the file is the same, it will skip processing. This vastly speed up the subsequent runs of the inspector exe. Now, please **DO NOT DELETE** `HoneyPot/HoneyPotInspector.txt` from the previous run, before executing the inspector again.   
-- **HSStandard** shader ported to Unity **5.5.5**, and making HoneyPot utilize them. (Thanks to Doodoo!) The `HoneyPot/shader.txt` file updated to reflect the addition.
-- ~~The **Standard** shader from Unity **5.3.x** also ported to Unity **5.5.5**~~ A modified version of Unity 5.5.5 Standard shader is included, as the vanilla 5.5 version is not entirely compatible with HS items using the 5.3 Standard shader somehow. (Also Thanks to Doodoo!) The `HoneyPot/shader.txt` file updated to reflect the addition (Standard_555).
+- **HSStandard** shader ported to Unity **5.5.5**, and making HoneyPot utilize them. (Thanks to AgiShark!) The `HoneyPot/shader.txt` file updated to reflect the addition.
+- ~~The **Standard** shader from Unity **5.3.x** also ported to Unity **5.5.5**~~ A modified version of Unity 5.5.5 Standard shader is included, as the vanilla 5.5 version is not entirely compatible with HS items using the 5.3 Standard shader somehow. (Also Thanks to AgiShark!) The `HoneyPot/shader.txt` file updated to reflect the addition (Standard_555).
 - Patched `Wears.UpdateShow(WEAR_SHOW_TYPE)` to reflect the fact that HS **tops can show bra when in full-state**. Now both HS top mods and PH top mods, with their correct list settings respectively, can utilize this feature in PH.   
 - Fixed HS Top and Bottom clothings interaction. Some of the tops that were meant to disable bottoms, but it disabled shorts instead in 1.4.5.
 
