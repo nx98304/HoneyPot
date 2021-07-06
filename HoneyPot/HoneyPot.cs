@@ -2528,7 +2528,11 @@ namespace ClassLibrary4
             foreach (SkinnedMeshRenderer r in renderers)
             {
                 if (r.bones.Length < 1 || r.name != "cf_O_body_00") continue;
-                for (int i = 0; i < r.bones.Length; i++)
+                if (r.bones.Length != reference_bones.Length)
+                {
+                    self.logSave("HoneyPot warning: SyncBoneWeight instance's cf_O_body_00 has different number of bones than our reference body.");
+                }
+                for (int i = 0; i < r.bones.Length && i < reference_bones.Length; i++)
                 {
                     int j = 0;
                     while (reference_bones[i].name != r.bones[j].name) j++;
