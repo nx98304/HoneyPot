@@ -739,8 +739,7 @@ namespace ClassLibrary4
                 bool bodyskin_substituted = false;
                 foreach (Renderer renderer in componentsInChildren)
                 {   // Make sure these leftover default materials are also replaced by the naked body skin
-                    if (renderer.sharedMaterial == null) return;
-                    self.logSave("WearInstantiate Postfix: " + renderer.sharedMaterial.name);
+                    if (renderer.sharedMaterial == null) continue;
                     if (renderer.sharedMaterial.name.Contains("lambert") ||
                         renderer.sharedMaterial.name.Contains("clipping"))
                     {
