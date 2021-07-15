@@ -723,12 +723,35 @@ namespace ClassLibrary4
 
         #region Wears shader remapping
         private static FieldInfo wearcustomedit_nowtabField = typeof(WearCustomEdit).GetField("nowTab", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static FieldInfo Wears_bodySkinMeshField    = typeof(Wears).GetField("bodySkinMesh", BindingFlags.Instance | BindingFlags.NonPublic); 
         private static MethodInfo WearObj_SetupMaterials    = typeof(WearObj).GetMethod("SetupMaterials", new Type[] { typeof(WearData) });
 
         [HarmonyPatch(typeof(Wears), "WearInstantiate")]
         [HarmonyPostfix]
         private static void Postfix(Wears __instance, WEAR_TYPE type, Material skinMaterial, Material customHighlightMat_Skin)
         {
+            if (type == WEAR_TYPE.TOP)
+            {
+                if (__instance.GetWearObj(type) == null) return;
+
+                GameObject obj = __instance.GetWearObj(type).obj;
+                Renderer[] componentsInChildren = obj.GetComponentsInChildren<Renderer>(true);
+                bool bodyskin_substituted = false;
+                foreach (Renderer renderer in componentsInChildren)
+                {   // Make sure these leftover default materials are also replaced by the naked body skin
+                    if (renderer.sharedMaterial == null) return;
+                    self.logSave("WearInstantiate Postfix: " + renderer.sharedMaterial.name);
+                    if (renderer.sharedMaterial.name.Contains("lambert") ||
+                        renderer.sharedMaterial.name.Contains("clipping"))
+                    {
+                        renderer.sharedMaterial = (Wears_bodySkinMeshField.GetValue(__instance) as SkinnedMeshRenderer).sharedMaterial;
+                        renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+                        bodyskin_substituted = true;
+                    }
+                }
+                if( bodyskin_substituted )
+                    __instance.ChangeBodyMaterial(Wears_bodySkinMeshField.GetValue(__instance) as SkinnedMeshRenderer);
+            }
             self.setWearShader(__instance, (int)type, type, (type == WEAR_TYPE.BRA || type == WEAR_TYPE.SHORTS) ? true : false);
         }
 
@@ -2500,8 +2523,7 @@ namespace ClassLibrary4
         //TODO: To_be_moved: This should be moved out of HoneyPot when I have time. 
         //      Should really be combined with the body mesh NML fixes that I hardcoded in Assembly-CSharp.dll
         private static Human reference_to_human = null;
-        private static FieldInfo Wears_bodySkinMeshField = typeof(Wears).GetField("bodySkinMesh", BindingFlags.Instance | BindingFlags.NonPublic);
-
+        
         [HarmonyPatch(typeof(CoordinateCapture), "SetHuman")]
         [HarmonyPrefix]
         private static void Prefix(Human human)
