@@ -49,20 +49,48 @@ namespace ClassLibrary4
             }
         }
 
+        private static Transform find_first_transform_BFS(Transform from, string name)
+        {
+            Queue<Transform> transform_BFS_queue = new Queue<Transform>();
+            Transform result = null;
+            transform_BFS_queue.Enqueue(from);
+            while (transform_BFS_queue.Count > 0)
+            {
+                from = transform_BFS_queue.Dequeue();
+                if (from.name == name)
+                {
+                    result = from;
+                    break;
+                }
+                for (int i = 0; i < from.childCount; i++)
+                    transform_BFS_queue.Enqueue(from.GetChild(i));
+            }
+            return result;
+        }
+
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             FieldInfo fi1  = typeof(Wears).GetField("baseBoneRoot", BindingFlags.NonPublic | BindingFlags.Instance);
             MethodInfo mi1 = typeof(AttachBoneWeight).GetMethod("Attach", BindingFlags.Public | BindingFlags.Static);
             MethodInfo mi2 = typeof(Wears).GetMethod("ReAttachDynamicBone"); // ??? I can't specify BindingFlags here???
+            MethodInfo mi3 = typeof(Transform_Utility).GetMethod("FindTransform", BindingFlags.Public | BindingFlags.Static);
             var codes = new List<CodeInstruction>(instructions);
+            int firstFindTransform_index = -1;
             int meshRootConditionStart_index = -1;
             int meshRootConditionEnd_index = -1;
             int elseBlockStart_index = -1;
             int elseBlockEnd_index = -1;
-            for (int i = 0; i < codes.Count - 3; i++)
+            for (int i = 1; i < codes.Count - 3; i++)
             {
-                if (meshRootConditionStart_index < 0 &&
-                    codes[i].opcode == OpCodes.Ldloc_3)
+                if(firstFindTransform_index < 0 &&
+                   codes[i].opcode  == OpCodes.Call &&
+                   codes[i].operand == mi3)
+                {
+                    firstFindTransform_index = i;
+                    codes[i].operand = typeof(Wears_WearInstantiate_Patch).GetMethod(nameof(find_first_transform_BFS), BindingFlags.NonPublic | BindingFlags.Static);
+                }
+                else if(meshRootConditionStart_index < 0 &&
+                        codes[i].opcode == OpCodes.Ldloc_3)
                 {
                     meshRootConditionStart_index = i;
                 }
