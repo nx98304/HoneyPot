@@ -11,8 +11,11 @@ namespace ClassLibrary4
 {
     //Note: This patch is for removing the cm/cf_N_O_root transform check within WearInstantiate
     //      Because I have to make this work with HS1 clothings that doesn't conform to the HS1/PH shared clothing spec
-    //      Additional checks and animator transform tree structure manipulation added within 
-    //      AttachBoneWeight.Attach() with yet another Prefix patch.
+    //      Two issues: 
+    //      1. Some HS1 clothing mods doesn't respect N_O_root structure. Need to add the node into the structure. 
+    //      2. Some HS1 clothing mods have erroneously have multiple N_O_roots because they use messed-up mod templates.
+    //         This is subtle but PH's Transform_Utility.FindTransform uses DFS (Transform.Enumerator.MoveNext) 
+    //         But we actually needs BFS here, again. 
     [HarmonyPatch(typeof(Wears), "WearInstantiate")]
     public class Wears_WearInstantiate_Patch
     {
@@ -49,6 +52,7 @@ namespace ClassLibrary4
             }
         }
 
+        //To substitute Transform_Utility.FindTransform where needed. 
         private static Transform find_first_transform_BFS(Transform from, string name)
         {
             Queue<Transform> transform_BFS_queue = new Queue<Transform>();
@@ -58,7 +62,7 @@ namespace ClassLibrary4
             {
                 from = transform_BFS_queue.Dequeue();
                 if (from.name == name)
-                {
+                { //Note: we don't use result as the iterator because it must not return anything when not found. 
                     result = from;
                     break;
                 }
@@ -68,6 +72,7 @@ namespace ClassLibrary4
             return result;
         }
 
+        //Note: this whole section won't make any sense unless you are reading WearInstantiate's IL code as reference.
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             FieldInfo fi1  = typeof(Wears).GetField("baseBoneRoot", BindingFlags.NonPublic | BindingFlags.Instance);
