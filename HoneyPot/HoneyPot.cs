@@ -207,8 +207,20 @@ namespace ClassLibrary4
                                 else {
                                     if (rq <= 2500)
                                     {
-                                        this.logSave("This part of the hair mod seems to be non-transparent: " + HoneyPot.inspector[inspector_key] + ", default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
-                                        material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
+                                        material.shader = HoneyPot.presets["Standard"].shader;
+                                        this.logSave("This part of the hair mod seems to be non-transparent: " + HoneyPot.inspector[inspector_key] + ", default to " + HoneyPot.presets["Standard"].shader.name);
+                                        this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+                                        bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+                                        bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+                                        bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+
+                                        this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+
+                                        if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+                                        if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+                                        if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+
+                                        this.logSave("  RenderType: " + material.GetTag("RenderType", false));
                                     }
                                     else
                                     {
@@ -671,16 +683,28 @@ namespace ClassLibrary4
                             }
                             else
                             {
-                                if (rq <= 2500)
-                                {
-                                    this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
-                                    material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
-                                }
-                                else
-                                {
-                                    this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name + " with high RQ to get transparency.");
-                                    material.shader = HoneyPot.presets["Standard"].shader;
-                                }
+                                //if (rq <= 2500)
+                                //{
+                                //    this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
+                                //    material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
+                                //}
+                                //else
+                                //{
+                                material.shader = HoneyPot.presets["Standard"].shader;
+                                this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name/* + " with high RQ to get transparency."*/);
+                                this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+                                bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+                                bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+                                bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+
+                                this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+
+                                if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+                                if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+                                if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+
+                                this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                //}
                             }
                         }
                         material.renderQueue = rq;
@@ -831,16 +855,30 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    if (rq <= 2500)
-                                    {
-                                        this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_3mask as we find RQ value <= 2500.");
-                                        material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
-                                    }
-                                    else
-                                    {
-                                        this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_3mask_alpha as we find RQ value > 2500.");
-                                        material.shader = HoneyPot.presets["PBRsp_3mask_alpha"].shader;
-                                    }
+                                    //if (rq <= 2500)
+                                    //{
+                                    //    this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_3mask as we find RQ value <= 2500.");
+                                    //    material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
+                                    //}
+                                    //else
+                                    //{
+                                    //    this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_3mask_alpha as we find RQ value > 2500.");
+                                    //    material.shader = HoneyPot.presets["PBRsp_3mask_alpha"].shader;
+                                    //}
+                                    material.shader = HoneyPot.presets["Standard"].shader;
+                                    this.logSave(" - Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to Standard.");
+                                    this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+                                    bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+                                    bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+                                    bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+
+                                    this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+
+                                    if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+                                    if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+                                    if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+
+                                    this.logSave("  RenderType: " + material.GetTag("RenderType", false));
                                 }
                             }
                             material.renderQueue = rq;
