@@ -1085,26 +1085,41 @@ namespace ClassLibrary4
             {
                 this.logSave("Somehow Standard shader cannot be loaded.");
             }
-
-            // Thank AgiShark for this!!!!!
-            AssetBundle bundle_HSStandard_PH = 
-                AssetBundle.LoadFromFile(additionalShaderPath + "/hsstandardshaders_for_ph");
-            Material[] all_hsstandard_materials = bundle_HSStandard_PH.LoadAllAssets<Material>();
-            foreach (Material m in all_hsstandard_materials)
-            {
-                if (!HoneyPot.PH_shaders.ContainsKey(m.shader.name))
-                {
-                    this.logSave("Found " + m.shader.name + " in hsstandardshaders.");
-                    HoneyPot.PH_shaders[m.shader.name] = m.shader;
-                }
-            }
-            this.logSave(HoneyPot.PH_shaders.Count + " shaders found.");
-
             GameObject proxy_to_get_material_customs = bundle.LoadAsset<GameObject>("p_cf_yayoi_top");
             HoneyPot.mc = proxy_to_get_material_customs.GetComponentInChildren<MaterialCustoms>();
 
             bundle.Unload(false);
-            bundle_HSStandard_PH.Unload(false);
+
+            // Thank AgiShark for this!!!!! 
+            foreach ( string fullname in Directory.GetFiles(additionalShaderPath) )
+            {
+                string only_filename = fullname.Substring(fullname.LastIndexOfAny(new char[] { '\\', '/' }) + 1);
+                if (only_filename.LastIndexOf(".bak") > 0 ||
+                    only_filename == "ph_shaders.unity3d") continue; // skipping any backups and the special cases
+
+                AssetBundle additional_shaders = AssetBundle.LoadFromFile(fullname);
+                Shader[] all_additional_shaders = additional_shaders.LoadAllAssets<Shader>();
+
+                foreach (Shader s in all_additional_shaders)
+                {
+                    if (!HoneyPot.PH_shaders.ContainsKey(s.name))
+                    {
+                        this.logSave("Found " + s.name + " in " + only_filename);
+                        HoneyPot.PH_shaders[s.name] = s;
+                    }
+                }
+                Material[] all_additional_materials = additional_shaders.LoadAllAssets<Material>();
+                foreach (Material m in all_additional_materials)
+                {
+                    if (!HoneyPot.PH_shaders.ContainsKey(m.shader.name))
+                    {
+                        this.logSave("Found " + m.shader.name + " in " + only_filename);
+                        HoneyPot.PH_shaders[m.shader.name] = m.shader;
+                    }
+                }
+                additional_shaders.Unload(false);
+            }
+            logSave(HoneyPot.PH_shaders.Count + " shaders found.");
         }
         #endregion
 
