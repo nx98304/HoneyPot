@@ -6,8 +6,8 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Linq;
 using Character;
-using IllusionPlugin;
 using HarmonyLib;
+using BepInEx;
 using Studio;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -27,11 +27,6 @@ namespace ClassLibrary4
         private void Start()
         {
             self = GameObject.Find("HoneyPot").GetComponent<HoneyPot>();
-            string str = ModPrefs.GetString("HoneyPot", "ForceColor", "", false);
-            if( str.Equals("TRUE") )
-            {
-                force_color_everything_that_doesnt_have_materialcustoms = true;
-            }
         }
 
         #region important helpers (RQ, MaterialCustoms parameter remapping)
@@ -2198,8 +2193,7 @@ namespace ClassLibrary4
 
         private void transportDicts()
         {
-            string @string = ModPrefs.GetString("HoneyPot", "DoTransport", "", false);
-            if ("FALSE".Equals(@string))
+            if ( !do_transport )
             {
                 return;
             }
@@ -2634,7 +2628,8 @@ namespace ClassLibrary4
 
         private static bool isFirst = true;
         private static bool allGetListContentDone = false;
-        private bool force_color_everything_that_doesnt_have_materialcustoms = false;
+        public  static bool force_color_everything_that_doesnt_have_materialcustoms = false;
+        public  static bool do_transport = false;
 
         protected static Shader orgShader;
         protected static MaterialCustoms mc;

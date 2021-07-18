@@ -40,9 +40,8 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\..\PlayHome64bit_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="IllusionPlugin">
-      <Private>True</Private>
-      <HintPath>..\..\..\[OPTIONAL] BRExtras\Patchers\Illusion Plugin Architecture v3.4.1\IPA\Data\Managed\IllusionPlugin.dll</HintPath>
+    <Reference Include="BepInEx">
+      <HintPath>..\..\..\[BR]R3 Backup _old\BepInEx_R3\core\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="System">
       <HintPath>..\..\..\PlayHome64bit_Data\Managed\System.dll</HintPath>
