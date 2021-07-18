@@ -72,11 +72,5 @@
     <Compile Include="WearObj_SetupMaterials_Patch.cs" />
     <Compile Include="Wears_UpdateShow_Patches.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="ph_shaders.unity3d" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="hsstandardshaders" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

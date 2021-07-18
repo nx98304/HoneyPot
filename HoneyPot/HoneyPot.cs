@@ -1036,28 +1036,30 @@ namespace ClassLibrary4
             }
         }
 
-        private AssetBundle loadEmbeddedAssetBundle(string embedded_name)
-        {
-            Stream shader_rawstream = Assembly.GetExecutingAssembly().GetManifestResourceStream(embedded_name);
-            byte[] buffer = new byte[16 * 1024];
-            byte[] rawbyte;
-            using (MemoryStream ms = new MemoryStream())
-            {
-                int read;
-                while ((read = shader_rawstream.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    ms.Write(buffer, 0, read);
-                }
-                rawbyte = ms.ToArray();
-                ms.Close();
-            }
-            shader_rawstream.Close();
-            return AssetBundle.LoadFromMemory(rawbyte);
-        }
+        //Note: The HS1 shaders and additional shaders are no longer embedded since 1.5.0 
+        //      Keeping this code just for future reference
+        //private AssetBundle loadEmbeddedAssetBundle(string embedded_name)
+        //{
+        //    Stream shader_rawstream = Assembly.GetExecutingAssembly().GetManifestResourceStream(embedded_name);
+        //    byte[] buffer = new byte[16 * 1024];
+        //    byte[] rawbyte;
+        //    using (MemoryStream ms = new MemoryStream())
+        //    {
+        //        int read;
+        //        while ((read = shader_rawstream.Read(buffer, 0, buffer.Length)) > 0)
+        //        {
+        //            ms.Write(buffer, 0, read);
+        //        }
+        //        rawbyte = ms.ToArray();
+        //        ms.Close();
+        //    }
+        //    shader_rawstream.Close();
+        //    return AssetBundle.LoadFromMemory(rawbyte);
+        //}
 
         private void readAllPHShaders()
         {
-            AssetBundle bundle = loadEmbeddedAssetBundle("ClassLibrary4.ph_shaders.unity3d");
+            AssetBundle bundle = AssetBundle.LoadFromFile(additionalShaderPath + "/ph_shaders.unity3d");
             Shader[] all_shaders = bundle.LoadAllAssets<Shader>();
             foreach (Shader s in all_shaders)
             {
@@ -1085,7 +1087,8 @@ namespace ClassLibrary4
             }
 
             // Thank AgiShark for this!!!!!
-            AssetBundle bundle_HSStandard_PH = loadEmbeddedAssetBundle("ClassLibrary4.hsstandardshaders");
+            AssetBundle bundle_HSStandard_PH = 
+                AssetBundle.LoadFromFile(additionalShaderPath + "/hsstandardshaders_for_ph");
             Material[] all_hsstandard_materials = bundle_HSStandard_PH.LoadAllAssets<Material>();
             foreach (Material m in all_hsstandard_materials)
             {
@@ -2619,21 +2622,22 @@ namespace ClassLibrary4
         private bool force_color_everything_that_doesnt_have_materialcustoms = false;
 
         protected static Shader orgShader;
-		protected static MaterialCustoms mc;
+        protected static MaterialCustoms mc;
 
         private WearCustomEdit wearCustomEdit = null;
 
-		private string assetBundlePath = Application.dataPath + "/../abdata";
-		private string conflictText    = Application.dataPath + "/../UserData/conflict.txt";
-		private string inspectorText   = Application.dataPath + "/../HoneyPot/HoneyPotInspector.txt";
-		private string shaderText      = Application.dataPath + "/../HoneyPot/shader.txt";
+        private string assetBundlePath      = Application.dataPath + "/../abdata";
+        private string conflictText         = Application.dataPath + "/../UserData/conflict.txt";
+        private string inspectorText        = Application.dataPath + "/../HoneyPot/HoneyPotInspector.txt";
+        private string shaderText           = Application.dataPath + "/../HoneyPot/shader.txt";
+        private string additionalShaderPath = Application.dataPath + "/../HoneyPot/shaders";
 
-		private static Dictionary<string, string> inspector     = new Dictionary<string, string>(StringComparer.CurrentCultureIgnoreCase);
-		private static Dictionary<string, PresetShader> presets = new Dictionary<string, PresetShader>();
-		private static Dictionary<int, string> idFileDict       = new Dictionary<int, string>();
-		private static List<string> conflictList                = new List<string>();
+        private static Dictionary<string, string> inspector     = new Dictionary<string, string>(StringComparer.CurrentCultureIgnoreCase);
+        private static Dictionary<string, PresetShader> presets = new Dictionary<string, PresetShader>();
+        private static Dictionary<int, string> idFileDict       = new Dictionary<int, string>();
+        private static List<string> conflictList                = new List<string>();
 
-		private static Dictionary<string, int> material_rq   = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
+        private static Dictionary<string, int> material_rq   = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
         private static Dictionary<string, Shader> PH_shaders = new Dictionary<string, Shader>();
         private static HoneyPot self;
     }
