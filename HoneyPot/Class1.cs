@@ -16,7 +16,7 @@ namespace ClassLibrary4
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             harmony.PatchAll(typeof(HoneyPot));
 
-            forceColor  = Config.Bind<bool>("HoneyPot", "ForceColor", false, "[Relevant items reloading required] Enable to force-colorable to all HoneyPot imported items, bras and shorts are force-colorable regardless.");
+            forceColor  = Config.Bind<bool>("HoneyPot", "ForceColor", false, "[Relevant items reloading required] Enable to force-colorable to all clothings and accessories (not limited to HS1 items); bras and shorts are force-colorable regardless.");
             doTransport = Config.Bind<bool>("HoneyPot", "DoTransport (Restart Required)", false, "[Game restart required] Enable to duplicate all swimsuits into bras and shorts categories, among other things...");
 
             forceColor.SettingChanged += delegate (object sender, EventArgs args)
