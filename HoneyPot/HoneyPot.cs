@@ -742,7 +742,7 @@ namespace ClassLibrary4
 
         #region Wears shader remapping
         private static FieldInfo wearcustomedit_nowtabField = typeof(WearCustomEdit).GetField("nowTab", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static FieldInfo Wears_bodySkinMeshField    = typeof(Wears).GetField("bodySkinMesh", BindingFlags.Instance | BindingFlags.NonPublic); 
+        private static FieldInfo Wears_bodySkinMeshField    = typeof(Wears).GetField("bodySkinMesh", BindingFlags.Instance | BindingFlags.NonPublic);
         private static MethodInfo WearObj_SetupMaterials    = typeof(WearObj).GetMethod("SetupMaterials", new Type[] { typeof(WearData) });
 
         [HarmonyPatch(typeof(Wears), "WearInstantiate")]
@@ -931,7 +931,6 @@ namespace ClassLibrary4
                     // This HS clothing is deemed non-colorchangable because of its MaterialCustom is not set.
                     this.wearCustomEdit.LoadedCoordinate(type);
                 }
-                //}
             }
             catch (Exception ex)
             {
