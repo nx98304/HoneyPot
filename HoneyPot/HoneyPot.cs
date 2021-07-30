@@ -740,20 +740,22 @@ namespace ClassLibrary4
         }
         #endregion
 
-        #region Wears shader remapping
+        #region Wears shader remapping & Show root processing for DoTransport
         private static FieldInfo wearcustomedit_nowtabField = typeof(WearCustomEdit).GetField("nowTab", BindingFlags.Instance | BindingFlags.NonPublic);
         private static FieldInfo Wears_bodySkinMeshField    = typeof(Wears).GetField("bodySkinMesh", BindingFlags.Instance | BindingFlags.NonPublic);
         private static MethodInfo WearObj_SetupMaterials    = typeof(WearObj).GetMethod("SetupMaterials", new Type[] { typeof(WearData) });
+        private static MethodInfo WearObj_SetupShow         = typeof(WearObj).GetMethod("SetupShow", new Type[0]);
 
         [HarmonyPatch(typeof(Wears), "WearInstantiate")]
         [HarmonyPostfix]
         private static void Postfix(Wears __instance, WEAR_TYPE type, Material skinMaterial, Material customHighlightMat_Skin)
         {
+            WearObj wearobj = __instance.GetWearObj(type);
+            if (wearobj == null) return;
+            GameObject obj = wearobj.obj;
+
             if (type == WEAR_TYPE.TOP)
             {
-                if (__instance.GetWearObj(type) == null) return;
-
-                GameObject obj = __instance.GetWearObj(type).obj;
                 Renderer[] componentsInChildren = obj.GetComponentsInChildren<Renderer>(true);
                 bool bodyskin_substituted = false;
                 foreach (Renderer renderer in componentsInChildren)
@@ -769,6 +771,72 @@ namespace ClassLibrary4
                 }
                 if( bodyskin_substituted )
                     __instance.ChangeBodyMaterial(Wears_bodySkinMeshField.GetValue(__instance) as SkinnedMeshRenderer);
+            }
+
+            if (do_transport)
+            { 
+                //Note: It ended up much easier to just change the transform.name as I originally planned. 
+                //      Because there are internal logic about WEAR_SHOW_TYPE related code that is just hard to follow,
+                //      and since the game has been using the prefab transform structure as "the spec" 
+                //      to determine how to show clothings (see WearObj.ShowRoots), this is just cleaner.
+                if (type == WEAR_TYPE.BRA)
+                {
+                    Transform upper = Transform_Utility.FindTransform(obj.transform, "N_top_a");
+                    if( upper )
+                    {
+                        upper.name = "cf_O_bra_d";
+                        Transform upper2 = Transform_Utility.FindTransform(obj.transform, "N_top_b");
+                        if (upper2) upper2.name = "cf_O_bra_n";
+
+                        WearObj_SetupShow.Invoke(wearobj, new object[0]);
+                        //Note: The transplanted swimsuits are mostly 2-piece-in-1, so we have to hide all lower half
+                        //      The user has to choose the lower half in "Shorts" category manually. 
+                        Transform hide = Transform_Utility.FindTransform(obj.transform, "N_bot_a");
+                        if (hide) hide.gameObject.SetActive(false);
+                        hide = Transform_Utility.FindTransform(obj.transform, "N_bot_b");
+                        if (hide) hide.gameObject.SetActive(false);
+                        hide = Transform_Utility.FindTransform(obj.transform, "N_bot_d");
+                        if (hide) hide.gameObject.SetActive(false);
+                        hide = Transform_Utility.FindTransform(obj.transform, "N_bot_n");
+                        if (hide) hide.gameObject.SetActive(false);
+                        hide = Transform_Utility.FindTransform(obj.transform, "N_bot_op1");
+                        if (hide) hide.gameObject.SetActive(false);
+                    }
+                }
+                else if (type == WEAR_TYPE.SHORTS)
+                {
+                    Transform lower = Transform_Utility.FindTransform(obj.transform, "N_bot_a");
+                    bool lower_found = false;
+                    if (lower)
+                    {
+                        lower.name = "cf_O_shorts_d";
+                        Transform lower2 = Transform_Utility.FindTransform(obj.transform, "N_bot_b");
+                        if (lower2) lower2.name = "cf_O_shorts_n";
+                        lower_found = true;
+                    }
+                    else
+                    {
+                        lower = Transform_Utility.FindTransform(obj.transform, "N_bot_d");
+                        if (lower)
+                        {
+                            lower.name = "cf_O_shorts_d";
+                            Transform lower2 = Transform_Utility.FindTransform(obj.transform, "N_bot_n");
+                            if (lower2) lower2.name = "cf_O_shorts_n";
+                            lower_found = true;
+                        }
+                    }
+                    if (lower_found)
+                    {
+                        WearObj_SetupShow.Invoke(wearobj, new object[0]);
+                        //Note: The transplanted swimsuits are mostly 2-piece-in-1, so we have to hide all upper half
+                        Transform hide = Transform_Utility.FindTransform(obj.transform, "N_top_a");
+                        if (hide) hide.gameObject.SetActive(false);
+                        hide = Transform_Utility.FindTransform(obj.transform, "N_top_b");
+                        if (hide) hide.gameObject.SetActive(false);
+                        hide = Transform_Utility.FindTransform(obj.transform, "N_top_op1");
+                        if (hide) hide.gameObject.SetActive(false);
+                    }
+                }
             }
             self.setWearShader(__instance, (int)type, type, (type == WEAR_TYPE.BRA || type == WEAR_TYPE.SHORTS) ? true : false);
         }

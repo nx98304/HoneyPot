@@ -17,7 +17,7 @@ namespace ClassLibrary4
             harmony.PatchAll(typeof(HoneyPot));
 
             forceColor  = Config.Bind<bool>("HoneyPot", "ForceColor", false, "[Relevant items reloading required] Enable to force-colorable to all clothings (not limited to HS1 ones); bras, shorts and accessories are force-colorable regardless.");
-            doTransport = Config.Bind<bool>("HoneyPot", "DoTransport (Restart Required)", false, "[Game restart required] Enable to duplicate all swimsuits into bras and shorts categories, among other things...");
+            doTransport = Config.Bind<bool>("HoneyPot", "DoTransport (Restart Required)", false, "[Game restart required] Enable to duplicate all swimsuits into bras and shorts categories, among other things...; Please understand that the duplicated swimsuits in Bra/Shorts category do need to occupy difference ID ranges, so it will somewhat raise the possibility of clothing mod ID conflict.");
 
             forceColor.SettingChanged += delegate (object sender, EventArgs args)
             {
