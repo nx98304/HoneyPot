@@ -29,7 +29,7 @@ namespace ClassLibrary4
             self = GameObject.Find("HoneyPot").GetComponent<HoneyPot>();
         }
 
-        #region important helpers (RQ, MaterialCustoms parameter remapping)
+        #region important helpers (RQ, MaterialCustoms parameter remapping, Standard shader rendertype setup)
         //Generalized Render Queue retrival: SRQ MB will have the last say if it is present, 
         //                                   otherwise use the CustomRenderQueue value. 
         private int getRenderQueue(string inspector_key, SetRenderQueue setRQ_MB)
@@ -109,6 +109,22 @@ namespace ClassLibrary4
                 MC_DataFloat_maxField.SetValue(mc.datas[6], 8);
             }
         }
+
+        private void setup_standard_shader_render_type(Material material)
+        {
+            logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
+            bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
+            bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
+            bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
+
+            logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
+
+            if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
+            if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
+            if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
+
+            logSave("  RenderType: " + material.GetTag("RenderType", false));
+        }
         #endregion
 
         #region Any shader remapping that's material and texture only
@@ -165,11 +181,7 @@ namespace ClassLibrary4
                 {
                     foreach (Material material in r.materials)
                     {
-                        if (HoneyPot.orgShader == null && !"".Equals(material.shader.name))
-                        {
-                            HoneyPot.orgShader = material.shader;
-                        }
-                        if (HoneyPot.orgShader != null && "".Equals(material.shader.name))
+                        if (HoneyPot.PH_hair_shader != null && "".Equals(material.shader.name))
                         {
                             string inspector_key = (assetBundleName + "|" + material.name).Replace(" (Instance)", "");
                             this.logSave("Hair material: " + inspector_key);
@@ -178,6 +190,7 @@ namespace ClassLibrary4
                             {
                                 rq = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
                                 string shader_name = HoneyPot.inspector[inspector_key];
+                                bool culloff = shader_name.Contains_NoCase("culloff") ? true : false;
                                 //Note: So, for HS hairs, ideally we want to convert all of them to PH hair shader
                                 //      because that's usually just better, but hairs that use "HSStandard" is an exception.
                                 if (HoneyPot.presets.ContainsKey(shader_name) && HoneyPot.presets[shader_name].shader.name.Contains("HSStandard"))
@@ -186,51 +199,40 @@ namespace ClassLibrary4
                                     this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
 
                                     this.logSave(" - HSStandard shader family detected for Hairs, trying to assign RenderType...");
-                                    this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
-                                    bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
-                                    bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
-                                    bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
-
-                                    this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
-
-                                    if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
-                                    if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
-                                    if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
-
-                                    this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                    setup_standard_shader_render_type(material);
                                 }
                                 else {
-                                    if (rq <= 2500)
+                                    if (r.tag == "ObjHairAcs")
+                                    {   //Note: remember, we originally don't care whatever HS hair shader it uses, so it's not guaranteed 
+                                        //      that the shader_name is in presets at all.
+                                        string temp_shader_name = shader_name;
+                                        if ( !HoneyPot.presets.ContainsKey(shader_name) )
+                                        {
+                                            temp_shader_name = rq <= 2500 ? "Standard" : "PBRsp_3mask_alpha";
+                                        }
+                                        material.shader = HoneyPot.presets[temp_shader_name].shader;
+                                        logSave("This part of the hair is hair embedded accessories. Normal shader mapping rule applies: " + shader_name + " ==> " + material.shader.name);
+
+                                        if (material.shader.name.Contains("Standard"))
+                                            setup_standard_shader_render_type(material);
+                                    }
+                                    else if (rq <= 2500)
                                     {
-                                        material.shader = HoneyPot.presets["Standard"].shader;
-                                        this.logSave("This part of the hair mod seems to be non-transparent: " + HoneyPot.inspector[inspector_key] + ", default to " + HoneyPot.presets["Standard"].shader.name);
-                                        this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
-                                        bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
-                                        bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
-                                        bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
-
-                                        this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
-
-                                        if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
-                                        if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
-                                        if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
-
-                                        this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                        material.shader = culloff ? HoneyPot.PH_hair_shader_co : HoneyPot.PH_hair_shader_o;
+                                        logSave("Seemingly non-transparent HS hair shader detected: " + shader_name + ", trying to mapping appropriate PH hair shaders: " + material.shader.name);
                                     }
                                     else
                                     {
-                                        // TODO: We know PH hair shader is better. but we also want to distinguish culloff vs not culloff hair
-                                        //       but how do we do that here?
-                                        this.logSave("We know the hair shader is " + HoneyPot.inspector[inspector_key] + ", but PH's hair shader is almost always better: " + HoneyPot.orgShader.name);
-                                        material.shader = HoneyPot.orgShader;
+                                        material.shader = culloff ? HoneyPot.PH_hair_shader_c : HoneyPot.PH_hair_shader;
+                                        logSave("Usual HS hair shader detected: " + shader_name + ", trying to mapping appropriate PH hair shaders: " + material.shader.name);
                                     }
                                 }
                             }
                             else
                             {
                                 // catch all using the standard PH hair shader.
-                                this.logSave("If we got here, it means this hair should be PH hair, but we failed to read its shader. Apply default PH hair shader: " + HoneyPot.orgShader.name);
-                                material.shader = HoneyPot.orgShader;
+                                material.shader = HoneyPot.PH_hair_shader;
+                                logSave("If we got here, it means this hair should be PH hair, but we failed to read its shader. Apply default PH hair shader: " + material.shader.name); 
                             }
                             material.renderQueue = rq;
                         }
@@ -482,19 +484,8 @@ namespace ClassLibrary4
                                     material.shader = HoneyPot.presets[shader_name].shader;
                                     if (material.shader.name.Contains("HSStandard"))
                                     {
-                                        this.logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
-                                        this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
-                                        bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
-                                        bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
-                                        bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
-
-                                        this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
-
-                                        if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
-                                        if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
-                                        if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
-
-                                        this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                        logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
+                                        setup_standard_shader_render_type(material);
                                     }
                                 }
                             }
@@ -662,18 +653,7 @@ namespace ClassLibrary4
                                 if (material.shader.name.Contains("HSStandard"))
                                 {
                                     this.logSave(" - HSStandard shader family detected for Accessories, trying to assign RenderType...");
-                                    this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
-                                    bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
-                                    bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
-                                    bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
-
-                                    this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
-
-                                    if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
-                                    if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
-                                    if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
-
-                                    this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                    setup_standard_shader_render_type(material);
                                 }
                             }
                             else
@@ -687,18 +667,7 @@ namespace ClassLibrary4
                                 //{
                                 material.shader = HoneyPot.presets["Standard"].shader;
                                 this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name/* + " with high RQ to get transparency."*/);
-                                this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
-                                bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
-                                bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
-                                bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
-
-                                this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
-
-                                if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
-                                if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
-                                if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
-
-                                this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                setup_standard_shader_render_type(material);
                                 //}
                             }
                         }
@@ -901,19 +870,8 @@ namespace ClassLibrary4
                                     this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
                                     if (material.shader.name.Contains("HSStandard"))
                                     {
-                                        this.logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
-                                        this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
-                                        bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
-                                        bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
-                                        bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
-
-                                        this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
-
-                                        if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
-                                        if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
-                                        if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
-
-                                        this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                        logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
+                                        setup_standard_shader_render_type(material);
                                     }
                                 }
                                 else
@@ -930,18 +888,7 @@ namespace ClassLibrary4
                                     //}
                                     material.shader = HoneyPot.presets["Standard"].shader;
                                     this.logSave(" - Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to Standard.");
-                                    this.logSave("  (Rendering) Mode: " + material.GetFloat("_Mode"));
-                                    bool isAlphaTest = material.IsKeywordEnabled("_ALPHATEST_ON");
-                                    bool isAlphaPremultiply = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON");
-                                    bool isAlphaBlend = material.IsKeywordEnabled("_ALPHABLEND_ON");
-
-                                    this.logSave("  (TEST, PREMULTIPLY, BLEND) = " + isAlphaTest + "," + isAlphaPremultiply + "," + isAlphaBlend);
-
-                                    if (isAlphaTest) material.SetOverrideTag("RenderType", "TransparentCutout");
-                                    if (isAlphaPremultiply) material.SetOverrideTag("RenderType", "Transparent");
-                                    if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
-
-                                    this.logSave("  RenderType: " + material.GetTag("RenderType", false));
+                                    setup_standard_shader_render_type(material);
                                 }
                             }
                             material.renderQueue = rq;
@@ -1083,7 +1030,10 @@ namespace ClassLibrary4
                 this.logSave(ex.ToString());
             }
 
-            HoneyPot.orgShader = PH_shaders["Shader Forge/Hair/ShaderForge_Hair"];
+            HoneyPot.PH_hair_shader    = PH_shaders["Shader Forge/Hair/ShaderForge_Hair"];
+            HoneyPot.PH_hair_shader_c  = PH_shaders["Shader Forge/Hair/ShaderForge_Hair_CullOff"];
+            HoneyPot.PH_hair_shader_o  = PH_shaders["Shader Forge/Hair/ShaderForge_Hair_Opaque"];
+            HoneyPot.PH_hair_shader_co = PH_shaders["Shader Forge/Hair/ShaderForge_Hair_CullOff Opaque"];
 
             // Adding two specific PresetShader only for simple particle effects: 
             if (!HoneyPot.presets.ContainsKey("Particle Add"))
@@ -2698,7 +2648,11 @@ namespace ClassLibrary4
         public  static bool force_color_everything_that_doesnt_have_materialcustoms = false;
         public  static bool do_transport = false;
 
-        protected static Shader orgShader;
+        protected static Shader PH_hair_shader;
+        protected static Shader PH_hair_shader_c;
+        protected static Shader PH_hair_shader_o;
+        protected static Shader PH_hair_shader_co;
+
         protected static MaterialCustoms mc;
 
         private WearCustomEdit wearCustomEdit = null;
