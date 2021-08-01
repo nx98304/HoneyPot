@@ -196,7 +196,7 @@ namespace ClassLibrary4
                                 if (HoneyPot.presets.ContainsKey(shader_name) && HoneyPot.presets[shader_name].shader.name.Contains("HSStandard"))
                                 {
                                     material.shader = HoneyPot.presets[shader_name].shader;
-                                    this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
+                                    this.logSave("shader (RQ " + rq + "): " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
 
                                     this.logSave(" - HSStandard shader family detected for Hairs, trying to assign RenderType...");
                                     setup_standard_shader_render_type(material);
@@ -211,7 +211,7 @@ namespace ClassLibrary4
                                             temp_shader_name = rq <= 2500 ? "Standard" : "PBRsp_3mask_alpha";
                                         }
                                         material.shader = HoneyPot.presets[temp_shader_name].shader;
-                                        logSave("This part of the hair is hair embedded accessories. Normal shader mapping rule applies: " + shader_name + " ==> " + material.shader.name);
+                                        logSave("This part of the hair is hair embedded accessories. Normal shader mapping rule applies (RQ " + rq + "): " + shader_name + " ==> " + material.shader.name);
 
                                         if (material.shader.name.Contains("Standard"))
                                             setup_standard_shader_render_type(material);
@@ -219,12 +219,12 @@ namespace ClassLibrary4
                                     else if (rq <= 2500)
                                     {
                                         material.shader = culloff ? HoneyPot.PH_hair_shader_co : HoneyPot.PH_hair_shader_o;
-                                        logSave("Seemingly non-transparent HS hair shader detected: " + shader_name + ", trying to mapping appropriate PH hair shaders: " + material.shader.name);
+                                        logSave("Seemingly non-transparent HS hair shader (RQ " + rq + "): " + shader_name + ", mapping appropriate PH hair shaders: " + material.shader.name);
                                     }
                                     else
                                     {
                                         material.shader = culloff ? HoneyPot.PH_hair_shader_c : HoneyPot.PH_hair_shader;
-                                        logSave("Usual HS hair shader detected: " + shader_name + ", trying to mapping appropriate PH hair shaders: " + material.shader.name);
+                                        logSave("Usual HS hair shader detected (RQ " + rq + "): " + shader_name + ", trying to mapping appropriate PH hair shaders: " + material.shader.name);
                                     }
                                 }
                             }
@@ -232,7 +232,7 @@ namespace ClassLibrary4
                             {
                                 // catch all using the standard PH hair shader.
                                 material.shader = HoneyPot.PH_hair_shader;
-                                logSave("If we got here, it means this hair should be PH hair, but we failed to read its shader. Apply default PH hair shader: " + material.shader.name); 
+                                logSave("This hair should be PH hair, but we failed to read its shader. Apply default PH hair shader (RQ " + rq + "): " + material.shader.name); 
                             }
                             material.renderQueue = rq;
                         }
