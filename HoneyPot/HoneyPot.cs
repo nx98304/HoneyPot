@@ -216,6 +216,11 @@ namespace ClassLibrary4
                                         if (material.shader.name.Contains("Standard"))
                                             setup_standard_shader_render_type(material);
                                     }
+                                    else if (PBRsp_alpha_blend_mapping_toggle && rq > 2500 && shader_name == "PBRsp_alpha_blend")
+                                    {
+                                        material.shader = HoneyPot.presets["PBRsp_texture_alpha"].shader;
+                                        logSave("PBRsp_alpha_blend found, mapping to PBRsp_texture_alpha (experimental) (RQ " + rq + ")");
+                                    }
                                     else if (rq <= 2500)
                                     {
                                         material.shader = culloff ? HoneyPot.PH_hair_shader_co : HoneyPot.PH_hair_shader_o;
@@ -2664,6 +2669,9 @@ namespace ClassLibrary4
         private static bool allGetListContentDone = false;
         public  static bool force_color_everything_that_doesnt_have_materialcustoms = false;
         public  static bool do_transport = false;
+        public  static bool fix_bad_transform = false;
+        public  static bool PBRsp_alpha_blend_mapping_toggle = false;
+        public  static bool reassign_rq_to_alpha_blend_or_lowest_rq_item = false;
 
         protected static Shader PH_hair_shader;
         protected static Shader PH_hair_shader_c;
