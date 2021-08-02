@@ -630,8 +630,10 @@ namespace ClassLibrary4
                 }
             }
             Renderer[] renderers_in_acceobj = acceobj_obj.GetComponentsInChildren<Renderer>(true);
-            string try_this_shader_name = "";
-            List<string> list = new List<string>();
+            string backup_shader_name = "";
+            string priority_shader_name = "";
+            List<string> list_all_materials_excluding_glass = new List<string>();
+            List<string> list_objcolor                      = new List<string>();
             foreach (Renderer r in renderers_in_acceobj)
             {
                 foreach (Material material in r.materials)
@@ -679,31 +681,46 @@ namespace ClassLibrary4
                     if (material.renderQueue <= 3600)
                     {   //Note: This is because we don't want to include glasses like accessories!!
                         //Note: It seems all glasses (transparent Standard) materials are around RQ 3800 or more
-                        if( !list.Contains(material_name) )
-                            list.Add(material_name);
-                        try_this_shader_name = material.shader.name;
+                        //Note: Now make this part the same logic as setWearShader();
+                        if( !list_all_materials_excluding_glass.Contains(material_name) )
+                            list_all_materials_excluding_glass.Add(material_name);
+
+                        if (r.tag == "ObjColor" && !list_objcolor.Contains(material_name))
+                        {
+                            list_objcolor.Add(material_name);
+                            priority_shader_name = material.shader.name;
+                        }
+                        backup_shader_name = material.shader.name;
                     }
                 }
+            }
+
+            if (list_objcolor.Count == 0)
+            {   //Note: list_objcolor == 0 means we didn't find priority_shader_name either.
+                //      Since acce are always forced colorable, so if we don't find any 4E2D tag then we just
+                //      treat it as if it's all colorable.
+                list_objcolor = list_all_materials_excluding_glass;
+                priority_shader_name = backup_shader_name;
             }
 
             //Note: wait DUDE what the fuck. acceobj_obj is always going to be "AcceParent" which will never contain 
             //      a MaterialCustoms. I suppose I can still always assume that AcceParent has only 1 child?
             GameObject the_actual_acce_obj = acceobj_obj.transform.GetChild(0).gameObject;
             MaterialCustoms materialCustoms = the_actual_acce_obj.GetComponent<MaterialCustoms>();
-            if (materialCustoms == null && try_this_shader_name != "")
+            if (materialCustoms == null && priority_shader_name != "")
             {
-                this.logSave(" -- This accessory doesn't have MaterialCustoms, try adding one: " + accessoryData.assetbundleName.Replace("\\", "/") + ", shader: " + try_this_shader_name);
+                this.logSave(" -- This accessory doesn't have MaterialCustoms, try adding one: " + accessoryData.assetbundleName.Replace("\\", "/") + ", shader: " + priority_shader_name);
                 materialCustoms = the_actual_acce_obj.AddComponent<MaterialCustoms>();
                 materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
                 int idx = 0;
                 foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
                 {
                     materialCustoms.parameters[idx] = new MaterialCustoms.Parameter(copy);
-                    materialCustoms.parameters[idx++].materialNames = list.ToArray();
+                    materialCustoms.parameters[idx++].materialNames = list_objcolor.ToArray();
                 }
-                match_correct_shader_property(materialCustoms, try_this_shader_name);
+                match_correct_shader_property(materialCustoms, priority_shader_name);
                 MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
-                match_correct_shader_property_data_range(materialCustoms, try_this_shader_name);
+                match_correct_shader_property_data_range(materialCustoms, priority_shader_name);
             }
             acce.UpdateColorCustom(slot);
         }
