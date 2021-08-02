@@ -88,13 +88,16 @@ namespace ClassLibrary4
                     iter_from_human_animator = iter_from_human_animator.FindDescendant("cf_J_Mune00_s_R");
                 else if (iter_from_human_animator.name == iter_from_human_animator.parent.name ||
                          iter_from_human_animator.name == "cf_N_k" ||
-                         iter_from_human_animator.name == "cm_N_k") 
+                         iter_from_human_animator.name == "cm_N_k" ||
+                         iter_from_human_animator.name == "N_move" ) 
                     continue;
                 //    NOTE: Somehow the PH p_cf_anim bone hierarchy is different from the clothings at Mune00 and Mune00_t
                 //          but they should become the same again at Mune00_s_L/R 
-                // skipped: cf&cm_N_k, cf_J_Mune00>cf_J_Mune00
+                // skipped: cf&cm_N_k, cf_J_Mune00>cf_J_Mune00 ; Also N_move -- I am assuming no one is stupid enough to 
+                //          add additional_bones under N_move. But I might be proved wrong... 
 
                 iter_from_wear_animator = Transform_Utility.FindTransform(wear_animator_basebone, iter_from_human_animator.name);
+
                 if (iter_from_wear_animator != null)
                 {
                     for (int i = 0; i < iter_from_wear_animator.childCount; i++)
@@ -118,6 +121,12 @@ namespace ClassLibrary4
 
         public static bool Prefix(ref Dictionary<string, Transform> bones, GameObject attachObj, bool includeInactive)
         {
+            // TODO: Apparently BonesFramework can add bones to custom heads. 
+            //       This is something that I am pretty sure this procedure don't work. 
+            //       But if PH is going to support custom heads better one day, however slim possibility that is
+            //       this will need to get another fix. I think it's best we separate the procedure that processes
+            //       body bones and face bones. These 2 set of bones are separate in the main game code anyway. 
+
             SkinnedMeshRenderer[] renderers = attachObj.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive);
             Transform wear_animator_basebone = attachObj.transform.parent;
             Transform human_animator_basebone = null;
@@ -125,13 +134,18 @@ namespace ClassLibrary4
 
             if( attachObj.name == "AcceParent")
             {
-                skinned_face_acce = Transform_Utility.FindTransform(attachObj.transform, "cf_J_FaceRoot") != null || 
+                skinned_face_acce = Transform_Utility.FindTransform(attachObj.transform, "cf_J_FaceRoot") != null ||
                                     Transform_Utility.FindTransform(attachObj.transform, "cm_J_FaceRoot") != null;
+                //Note: This is really important here -- for Non-Head Skinned accessories, we still want to 
+                //      potentially process them for additional bones, however the attachObj here isn't N_O_root, 
+                //      it is already "AcceParent" which is one-level above the prefab animator. 
+                //      If we don't reset wear_animator_basebone here, all the following code will break. 
+                wear_animator_basebone = attachObj.transform.GetChild(0);
             }
 
             Current_additional_rootbones_.Clear();
-            if (wear_animator_basebone.name != "cf_body_00" && wear_animator_basebone.name != "cf_body_mnpb" && 
-                wear_animator_basebone.name != "cm_body_00" && wear_animator_basebone.name != "cm_body_mnpb" && 
+            if (wear_animator_basebone.name != "cf_body_00" && wear_animator_basebone.name != "cf_body_mnpb" &&
+                wear_animator_basebone.name != "cm_body_00" && wear_animator_basebone.name != "cm_body_mnpb" &&
                 wear_animator_basebone.name != "N_silhouette" && skinned_face_acce == false)
             {
                 // Skip when it is currently Body object that is loading and not Wears.
@@ -139,12 +153,13 @@ namespace ClassLibrary4
 
                 human_animator_basebone = FindHumanAnimTransformFromWears(wear_animator_basebone);
                 bool female = bones.ContainsKey("cf_J_Root") ? true : false;
-                //basebone_of_currentloading = Transform_Utility.FindTransform(attachObj.transform.parent, female ? "cf_J_Hips" : "cm_J_Hips");
                 // WTF: Apparently Bonesframework's additional bones can appear under the J_Root tree AND ALSO N_O_Root tree.
                 // This means we just can't assume. 
                 // This should be the cloth's animator root transform, so we just ListupBones with BOTH tree. 
+                // Also note, when this is a skinned acce, we want to limit it to AcceParent instead of Wears.
+                // Otherwise AcceParent will be treated as an additional bone. 
 
-                while (wear_animator_basebone.parent.name != "Wears" )
+                while (wear_animator_basebone.parent.name != "Wears" && wear_animator_basebone.parent.name != "AcceParent")
                     wear_animator_basebone = wear_animator_basebone.parent;
 
                 //Console.WriteLine(wear_animator_basebone.name + ": -- Checking J_Root tree --");
