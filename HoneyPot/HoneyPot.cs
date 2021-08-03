@@ -153,6 +153,18 @@ namespace ClassLibrary4
         #region Hairs shader remapping
         private static FieldInfo Hairs_humanField = typeof(Hairs).GetField("human", BindingFlags.Instance | BindingFlags.NonPublic);
 
+        [HarmonyPatch(typeof(HairObj), "SetParent", new Type[] { typeof(Transform) })]
+        [HarmonyPrefix]
+        private static bool HairObj_SetParent_Prefix(HairObj __instance, Transform hirsParent)
+        {
+            __instance.obj.transform.SetParent(hirsParent, false);
+            // Note: So the original HairObj.SetParent function tries to reset all potential transform SRT 
+            //       from the prefab root node it loaded, but it doesn't really seem like PH mods are affect by 
+            //       NOT doing it; however the HS mods are definitely affected by it. So we patch this function
+            //       to have it NOT doing it. 
+            return false;
+        }
+
         [HarmonyPatch(typeof(Hairs), "Load")]
         [HarmonyPostfix]
         private static void Postfix(Hairs __instance, HairParameter param)
@@ -2669,7 +2681,6 @@ namespace ClassLibrary4
         private static bool allGetListContentDone = false;
         public  static bool force_color_everything_that_doesnt_have_materialcustoms = false;
         public  static bool do_transport = false;
-        public  static bool fix_bad_transform = false;
         public  static bool PBRsp_alpha_blend_mapping_toggle = false;
         public  static bool reassign_rq_to_alpha_blend_or_lowest_rq_item = false;
 
