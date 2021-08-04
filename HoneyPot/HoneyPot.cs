@@ -229,10 +229,16 @@ namespace ClassLibrary4
                                         if (material.shader.name.Contains("Standard"))
                                             setup_standard_shader_render_type(material);
                                     }
-                                    else if (PBRsp_alpha_blend_mapping_toggle && rq > 2500 && shader_name == "PBRsp_alpha_blend")
+                                    else if (PBRsp_alpha_blend_to_hsstandard && rq > 2500 && shader_name == "PBRsp_alpha_blend")
                                     {
-                                        material.shader = HoneyPot.presets["PBRsp_texture_alpha"].shader;
-                                        logSave("PBRsp_alpha_blend found, mapping to PBRsp_texture_alpha (experimental) (RQ " + rq + ")");
+                                        material.shader = HoneyPot.presets["HSStandard"].shader;
+                                        material.EnableKeyword("_ALPHABLEND_ON");
+                                        material.SetInt("_Mode", 3);   // Fade
+                                        material.SetInt("_ZWrite", 0);
+                                        material.SetInt("_SrcBlend", 5);  // SrcAlpha
+                                        material.SetInt("_DstBlend", 10); // OneMinusSrcAlpha
+                                        material.SetOverrideTag("RenderType", "Transparent");
+                                        logSave("Using HSStandard + _ALPHABLEND_ON for PBRsp_alpha_blend (RQ " + rq + ") ");
                                     }
                                     else if (rq <= 2500)
                                     {
@@ -2682,7 +2688,7 @@ namespace ClassLibrary4
         private static bool allGetListContentDone = false;
         public  static bool force_color_everything_that_doesnt_have_materialcustoms = false;
         public  static bool do_transport = false;
-        public  static bool PBRsp_alpha_blend_mapping_toggle = false;
+        public  static bool PBRsp_alpha_blend_to_hsstandard = false;
         public  static bool hsstandard_on_hair = false;
 
         protected static Shader PH_hair_shader;
