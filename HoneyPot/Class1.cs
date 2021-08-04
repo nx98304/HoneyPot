@@ -23,8 +23,10 @@ namespace ClassLibrary4
         {
             forceColor        = Config.Bind<bool>("HoneyPot", "ForceColor", false, "[Relevant items reloading required] Enable to force-colorable to all clothings (not limited to HS1 ones); bras, shorts and accessories are force-colorable regardless.");
             doTransport       = Config.Bind<bool>("HoneyPot", "DoTransport (Restart Required)", false, "[Game restart required] Enable to duplicate all swimsuits into bras and shorts categories, among other things...; Please understand that the duplicated swimsuits in Bra/Shorts category do need to occupy difference ID ranges, so it will somewhat raise the possibility of clothing mod ID conflict.");
-            pbrspAlphaBlend_1 = Config.Bind<bool>("HoneyPot", "(DEBUG) PBRsp_alpha_blend - opt1", false, "[Relevant items reloading required] Testing if Shader Forge/PBRsp_texture_alpha (PH) is good enough subsitution for PBRsp_alpha_blend (HS1). Some hairs might need it.");
-            pbrspAlphaBlend_2 = Config.Bind<bool>("HoneyPot", "(DEBUG) PBRsp_alpha_blend - opt2", false, "(Not yet implemented) Testing if changing RQ value for originally PBRsp_alpha_blend or lowest rq value renderers can work...");
+            pbrspAlphaBlend_1 = Config.Bind<bool>("HoneyPot", "Hair: PBRsp_alpha_blend to PBRsp_texture_alpha", false, "[Relevant items reloading required] Shader Forge/PBRsp_texture_alpha (PH) can substitute PBRsp_alpha_blend (HS1) to an extent. But it's by no means perfect, so I am making this an option.");
+            //Need another option here to allow disabling any _zd like hair meshes.
+            //Oh hey, since it's possible to have HSStandard as the true alpha blend shader... use that instead of PBRsp_alpha_blend???
+            hairHSStandard    = Config.Bind<bool>("HoneyPot", "Hair: allow using HSStandard shader on hair", true, "[Relevant items reloading required] Some hair that is using HSStandard is just not set up in a way that can use PH hair shaders, but PH hair shaders most of the time are just better than HS shaders, so I am making this an option.");
 
             forceColor.SettingChanged += delegate (object sender, EventArgs args)
             {
@@ -41,15 +43,15 @@ namespace ClassLibrary4
                 HoneyPot.PBRsp_alpha_blend_mapping_toggle = pbrspAlphaBlend_1.Value;
             };
 
-            pbrspAlphaBlend_2.SettingChanged += delegate (object sender, EventArgs args)
+            hairHSStandard.SettingChanged += delegate (object sender, EventArgs args)
             {
-                HoneyPot.reassign_rq_to_alpha_blend_or_lowest_rq_item = pbrspAlphaBlend_2.Value;
+                HoneyPot.hsstandard_on_hair = hairHSStandard.Value;
             };
 
             HoneyPot.force_color_everything_that_doesnt_have_materialcustoms = forceColor.Value;
             HoneyPot.do_transport                                            = doTransport.Value;
             HoneyPot.PBRsp_alpha_blend_mapping_toggle                        = pbrspAlphaBlend_1.Value;
-            HoneyPot.reassign_rq_to_alpha_blend_or_lowest_rq_item            = pbrspAlphaBlend_2.Value;
+            HoneyPot.hsstandard_on_hair                                      = hairHSStandard.Value;
         }
 
         public void OnLevelWasLoaded(int level)
@@ -75,7 +77,7 @@ namespace ClassLibrary4
         private static ConfigEntry<bool> forceColor;
         private static ConfigEntry<bool> doTransport;
         private static ConfigEntry<bool> pbrspAlphaBlend_1;
-        private static ConfigEntry<bool> pbrspAlphaBlend_2;
+        private static ConfigEntry<bool> hairHSStandard;
 
         private Harmony harmony;
         private HoneyPot hp;

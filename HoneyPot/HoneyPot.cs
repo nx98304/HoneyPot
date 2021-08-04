@@ -205,7 +205,8 @@ namespace ClassLibrary4
                                 bool culloff = shader_name.Contains_NoCase("culloff") ? true : false;
                                 //Note: So, for HS hairs, ideally we want to convert all of them to PH hair shader
                                 //      because that's usually just better, but hairs that use "HSStandard" is an exception.
-                                if (HoneyPot.presets.ContainsKey(shader_name) && HoneyPot.presets[shader_name].shader.name.Contains("HSStandard"))
+                                if (hsstandard_on_hair && 
+                                    HoneyPot.presets.ContainsKey(shader_name) && HoneyPot.presets[shader_name].shader.name.Contains("HSStandard"))
                                 {
                                     material.shader = HoneyPot.presets[shader_name].shader;
                                     this.logSave("shader (RQ " + rq + "): " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
@@ -2682,7 +2683,7 @@ namespace ClassLibrary4
         public  static bool force_color_everything_that_doesnt_have_materialcustoms = false;
         public  static bool do_transport = false;
         public  static bool PBRsp_alpha_blend_mapping_toggle = false;
-        public  static bool reassign_rq_to_alpha_blend_or_lowest_rq_item = false;
+        public  static bool hsstandard_on_hair = false;
 
         protected static Shader PH_hair_shader;
         protected static Shader PH_hair_shader_c;
