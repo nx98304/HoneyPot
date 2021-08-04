@@ -184,6 +184,32 @@ namespace ClassLibrary4
             __instance.ChangeColor(param);
         }
 
+        // Note: This has to be added for HSStandard on hair category because hair doesn't have MaterialCustoms
+        //       and also the UI color options only maps to Cuticle / Frensel colors. The mapping isn't ideal
+        //       but it is better than nothing. Users very likely will still require Material Editor most of the time.
+        [HarmonyPatch(typeof(ColorParameter_Hair), "SetToMaterial", new Type[] { typeof(Material) })]
+        [HarmonyPrefix]
+        private static bool Prefix(ColorParameter_Hair __instance, Material material)
+        {
+            material.color = __instance.mainColor;
+            if (material.shader.name == "HSStandard")
+            {
+                material.SetColor(CustomDataManager._SpecColor,  __instance.cuticleColor);
+                material.SetFloat("_NormalStrength",             __instance.cuticleExp /20); // mapping 0 - 20 to 0 - 1
+                // frenselColor not used. 
+                material.SetFloat(CustomDataManager._Smoothness, __instance.fresnelExp / 8); // mapping 0 - 8 to 0 - 1
+                material.SetFloat(CustomDataManager._Metallic,   __instance.fresnelExp / 8); // mapping 0 - 8 to 0 - 1
+            }
+            else
+            {
+                material.SetColor(CustomDataManager._CuticleColor, __instance.cuticleColor);
+                material.SetFloat(CustomDataManager._CuticleExp,   __instance.cuticleExp);
+                material.SetColor(CustomDataManager._FrenelColor,  __instance.fresnelColor);
+                material.SetFloat(CustomDataManager._FrenelExp,    __instance.fresnelExp);
+            }
+            return false;
+        }
+
         public void setHairShaderObj(GameObject objHair, string assetBundleName)
         {
             try
