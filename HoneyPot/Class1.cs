@@ -22,7 +22,7 @@ namespace ClassLibrary4
         private void doConfig()
         {
             forceColor        = Config.Bind<bool>("HoneyPot", "ForceColor", false, "[Relevant items reloading required] Enable to force-colorable to all clothings (not limited to HS1 ones); bras, shorts and accessories are force-colorable regardless.");
-            doTransport       = Config.Bind<bool>("HoneyPot", "DoTransport (Restart Required)", false, "[Game restart required] Enable to duplicate all swimsuits into bras and shorts categories, among other things...; Please understand that the duplicated swimsuits in Bra/Shorts category do need to occupy difference ID ranges, so it will somewhat raise the possibility of clothing mod ID conflict.");
+            entryDuplicate    = Config.Bind("HoneyPot", "Duplicate clothing entries (Restart Required)", HoneyPot.CLOTHING_ENTRY_DUPLICATE.NONE, "[Game restart required] Enable to duplicate clothing entries into other entries for more flexible clothing setup. Please understand that the duplicated entries do need to occupy difference ID ranges, and excess entries in a category may slow down opening of such category's sub-menu.");
             pbrspAlphaBlend_1 = Config.Bind<bool>("HoneyPot", "Hair: PBRsp_alpha_blend to HSStandard+ALPHABLEND", true, "[Relevant items reloading required] The ported HSStandard when set to alpha blend mode, does seem to serve as good enough PBRsp_alpha_blend substitude.\n\nDo note that the built in PH color options in the hair category doesn't support HSStandard well, you will need Material Editor. Also if prior to activate this option your card is already saved with Material Editor data, Material Editor probably will take higher priority.");
             hairHSStandard    = Config.Bind<bool>("HoneyPot", "Hair: Keep HSStandard on HS1 hairs", true, "[Relevant items reloading required] PH hair shaders are generally better than HS1 shaders even for HS1 hairs, but some hairs that were using HSStandard will NEVER work with PH hair shaders without render queue issue or weird highlights. Use this option with your own judgement.\n\nDo note that the built in PH color options in the hair category doesn't support HSStandard well, you will need Material Editor. Also if prior to activate this option your card is already saved with Material Editor data, Material Editor probably will take higher priority.");
 
@@ -31,9 +31,9 @@ namespace ClassLibrary4
                 HoneyPot.force_color_everything_that_doesnt_have_materialcustoms = forceColor.Value;
             };
 
-            doTransport.SettingChanged += delegate (object sender, EventArgs args)
+            entryDuplicate.SettingChanged += delegate (object sender, EventArgs args)
             {
-                HoneyPot.do_transport = doTransport.Value;
+                HoneyPot.entry_duplicate_flags = entryDuplicate.Value;
             };
 
             pbrspAlphaBlend_1.SettingChanged += delegate (object sender, EventArgs args)
@@ -47,7 +47,7 @@ namespace ClassLibrary4
             };
 
             HoneyPot.force_color_everything_that_doesnt_have_materialcustoms = forceColor.Value;
-            HoneyPot.do_transport                                            = doTransport.Value;
+            HoneyPot.entry_duplicate_flags                                   = entryDuplicate.Value;
             HoneyPot.PBRsp_alpha_blend_to_hsstandard                         = pbrspAlphaBlend_1.Value;
             HoneyPot.hsstandard_on_hair                                      = hairHSStandard.Value;
         }
@@ -73,7 +73,7 @@ namespace ClassLibrary4
         }
 
         private static ConfigEntry<bool> forceColor;
-        private static ConfigEntry<bool> doTransport;
+        private static ConfigEntry<HoneyPot.CLOTHING_ENTRY_DUPLICATE> entryDuplicate;
         private static ConfigEntry<bool> pbrspAlphaBlend_1;
         private static ConfigEntry<bool> hairHSStandard;
 

@@ -5,9 +5,9 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Linq;
+using System.ComponentModel;
 using Character;
 using HarmonyLib;
-using BepInEx;
 using Studio;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -809,7 +809,7 @@ namespace ClassLibrary4
                     __instance.ChangeBodyMaterial(Wears_bodySkinMeshField.GetValue(__instance) as SkinnedMeshRenderer);
             }
 
-            if (do_transport)
+            if ((entry_duplicate_flags & CLOTHING_ENTRY_DUPLICATE.SWIM_TO_BRA_N_SHORT) != CLOTHING_ENTRY_DUPLICATE.NONE)
             { 
                 //Note: It ended up much easier to just change the transform.name as I originally planned. 
                 //      Because there are internal logic about WEAR_SHOW_TYPE related code that is just hard to follow,
@@ -1203,13 +1203,23 @@ namespace ClassLibrary4
         #endregion
 
         #region Processing CustomDataManager, lists & moving them, noticing conflicts. 
-        private void addConflict(int id, string asset1, string asset2, string name1, string name2)
+        private void addConflict(int id, string asset1, string asset2, string name1, string name2, bool duplicating = false)
         {
             if (!asset1.Equals(asset2))
             {
-                HoneyPot.conflictList.Add(string.Concat(
-                    new object[] { "[conflict] id:", id, ",asset:", name1, "(", asset1, ") - ", name2, "(", asset2, ")" }
-                ));
+                if (duplicating)
+                {
+                    HoneyPot.conflictList.Add(string.Concat(
+                        new object[] { "[conflict-when-duplicating] id:", id, ",\n  asset1: ", name1, " (", asset1, ")\n  asset2: ", name2, " (", asset2, ")" }
+                    ));
+                }
+                else
+                {
+                    HoneyPot.conflictList.Add(string.Concat(
+                        new object[] { "[conflict] id:", id, ",\n  asset1: ", name1, " (", asset1, ")\n  asset2: ", name2, " (", asset2, ")" }
+                    ));
+                    HoneyPot.num_of_conflict_you_should_really_worry_about++;
+                }
             }
         }
 
@@ -1217,8 +1227,10 @@ namespace ClassLibrary4
 		{
 			try
 			{
-                this.logSave("HoneyPot found " + HoneyPot.conflictList.Count + " ID conflicts in total. Please check UserData/conflict.txt");
-				StreamWriter streamWriter = new FileInfo(this.conflictText).CreateText();
+                logSave("HoneyPot found " + HoneyPot.conflictList.Count + " ID conflicts in total. Please check UserData/conflict.txt");
+                logSave("  - " + HoneyPot.num_of_conflict_you_should_really_worry_about + " actual mod ID conflicts.");
+                logSave("  - " + (HoneyPot.conflictList.Count - HoneyPot.num_of_conflict_you_should_really_worry_about) + " clothing duplicating attempts failed due to already occupied IDs.");
+                StreamWriter streamWriter = new FileInfo(this.conflictText).CreateText();
 				foreach (string value in HoneyPot.conflictList)
 				{
 					streamWriter.WriteLine(value);
@@ -2270,20 +2282,25 @@ namespace ClassLibrary4
                         wearData.name = "#" + wearData.name;
                     }
                     toDict.Add(wearData.id, wearData);
-                    this.logSave("[wear add]" + wearData.name);
+                    logSave("[wear add]" + wearData.name);
+                } 
+                else
+                {
+                    int num = wearData.id;
+                    logSave("Unable to duplicate " + wearData.name + " [NEW ID:" + wearData.id + "] to target category, because that ID is already occupied by " + toDict[num].name);
+                    this.addConflict(num, toDict[num].assetbundleName + "/" + toDict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, toDict[num].name, wearData.name, true);
                 }
             }
         }
 
         private void transportDicts()
         {
-            if ( !do_transport )
+            if ( entry_duplicate_flags == CLOTHING_ENTRY_DUPLICATE.NONE )
             {
                 return;
             }
             try
             {
-                this.logSave("HoneyPot is duplicating swimsuits into various non-swimsuits categories...");
                 Dictionary<int, WearData> wearDictionary_Female = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BRA);
                 Dictionary<int, WearData> wearDictionary_Female2 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SHORTS);
                 Dictionary<int, WearData> wearDictionary_Female3 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM_BOTTOM);
@@ -2292,11 +2309,34 @@ namespace ClassLibrary4
                 Dictionary<int, WearData> wearDictionary_Female6 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.PANST);
                 Dictionary<int, WearData> wearDictionary_Female7 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.BOTTOM);
                 Dictionary<int, WearData> wearDictionary_Female8 = CustomDataManager.GetWearDictionary_Female(WEAR_TYPE.SWIM);
-                this.transportDict(wearDictionary_Female8, wearDictionary_Female, 829100, 95);
-                this.transportDict(wearDictionary_Female8, wearDictionary_Female2, 828100, 94);
-                this.transportDict(wearDictionary_Female4, wearDictionary_Female5, 825100, 91);
-                this.transportDict(wearDictionary_Female3, wearDictionary_Female6, 826100, 92);
-                this.transportDict(wearDictionary_Female7, wearDictionary_Female6, 827100, 93);
+                if ((entry_duplicate_flags & CLOTHING_ENTRY_DUPLICATE.SWIM_TO_BRA_N_SHORT) != CLOTHING_ENTRY_DUPLICATE.NONE) {
+                    logSave("------------------------------------------------------------------------------");
+                    logSave("HoneyPot is duplicating swimsuits into bra & short category (the 2-piece ones)");
+                    logSave("------------------------------------------------------------------------------");
+                    transportDict(wearDictionary_Female8, wearDictionary_Female, 829100, 95);
+                    transportDict(wearDictionary_Female8, wearDictionary_Female2, 828100, 94);
+                }
+                if ((entry_duplicate_flags & CLOTHING_ENTRY_DUPLICATE.SWIMTOP_TO_GLOVE) != CLOTHING_ENTRY_DUPLICATE.NONE)
+                {
+                    logSave("----------------------------------------------------");
+                    logSave("HoneyPot is duplicating swim top into glove category");
+                    logSave("----------------------------------------------------");
+                    transportDict(wearDictionary_Female4, wearDictionary_Female5, 825100, 91);
+                }
+                if ((entry_duplicate_flags & CLOTHING_ENTRY_DUPLICATE.SWIMBOT_TO_PANST) != CLOTHING_ENTRY_DUPLICATE.NONE)
+                {
+                    logSave("-------------------------------------------------------");
+                    logSave("HoneyPot is duplicating swim bottom into panst category");
+                    logSave("-------------------------------------------------------");
+                    transportDict(wearDictionary_Female3, wearDictionary_Female6, 826100, 92);
+                }
+                if ((entry_duplicate_flags & CLOTHING_ENTRY_DUPLICATE.BOTTOM_TO_PANST) != CLOTHING_ENTRY_DUPLICATE.NONE)
+                {
+                    logSave("--------------------------------------------------");
+                    logSave("HoneyPot is duplicating bottom into panst category");
+                    logSave("--------------------------------------------------");
+                    transportDict(wearDictionary_Female7, wearDictionary_Female6, 827100, 93);
+                }
             }
             catch (Exception ex)
             {
@@ -2647,8 +2687,8 @@ namespace ClassLibrary4
             {
                 this.logSave("HoneyPot all StartCoroutine(getListContent) are finished.");
                 HoneyPot.allGetListContentDone = true;
-                this.exportConflict();
                 this.transportDicts();
+                this.exportConflict();
             }
 		}
 
@@ -2708,14 +2748,29 @@ namespace ClassLibrary4
             harmony = input;
         }
 
+        [Flags]
+        public enum CLOTHING_ENTRY_DUPLICATE
+        {
+            NONE = 0,
+            [Description("Duplicate 2-Piece Swimsuits into Bras and Shorts")]
+            SWIM_TO_BRA_N_SHORT = 2,
+            [Description("Duplicate Swim Tops into Gloves")]
+            SWIMTOP_TO_GLOVE = 4,
+            [Description("Duplicate Swim Bottoms into Pansts")]
+            SWIMBOT_TO_PANST = 8,
+            [Description("Duplicate Bottoms into Pansts")]
+            BOTTOM_TO_PANST = 16,
+            ALL = 30
+        }
+
         private Harmony harmony;
 
         private static bool isFirst = true;
         private static bool allGetListContentDone = false;
         public  static bool force_color_everything_that_doesnt_have_materialcustoms = false;
-        public  static bool do_transport = false;
         public  static bool PBRsp_alpha_blend_to_hsstandard = false;
         public  static bool hsstandard_on_hair = false;
+        public  static CLOTHING_ENTRY_DUPLICATE entry_duplicate_flags = CLOTHING_ENTRY_DUPLICATE.NONE;
 
         protected static Shader PH_hair_shader;
         protected static Shader PH_hair_shader_c;
@@ -2736,6 +2791,7 @@ namespace ClassLibrary4
         private static Dictionary<string, PresetShader> presets = new Dictionary<string, PresetShader>();
         private static Dictionary<int, string> idFileDict       = new Dictionary<int, string>();
         private static List<string> conflictList                = new List<string>();
+        private static int num_of_conflict_you_should_really_worry_about = 0;
 
         private static Dictionary<string, int> material_rq   = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
         private static Dictionary<string, Shader> PH_shaders = new Dictionary<string, Shader>();
