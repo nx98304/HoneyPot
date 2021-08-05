@@ -60,6 +60,7 @@
   <ItemGroup>
     <Compile Include="AddObjectItem_Load_Patches.cs" />
     <Compile Include="Class1.cs" />
+    <Compile Include="EditMode_CreateColorChangeButton_Patch.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HoneyPot.cs" />
     <Compile Include="HoneyPotStudio.cs" />
