@@ -52,12 +52,19 @@ namespace ClassLibrary4
             return result;
         }
 
+        // Note: remember, we started out getting the MaterialCustoms from a PBRsp_3mask clothing. 
+        //       This is why when we assign MaterialCustoms we need this propertyName remapping.
         Dictionary<string, string[]> MC_Mapping = new Dictionary<string, string[]>()
         {
             { "Shader Forge/PBR_SG",            new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBR_SG Alpha",      new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBR_SG DoubleSide", new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBR_SG Clip",       new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBRsp",               new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBRsp_alpha",         new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBRsp_alpha_culloff", new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBRsp_culloff",       new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBRsp_cutout_culloff",new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBRsp_2layer",      new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_Color_2", "_SpecColor_2", "_SpecColor_2" } },
             { "Standard",                       new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Standard_Z",                     new string[] { "_Color", "_not_mapped_", "_Metallic", "_Glossiness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
@@ -124,6 +131,73 @@ namespace ClassLibrary4
             if (isAlphaBlend) material.SetOverrideTag("RenderType", "Transparent");
 
             logSave("  RenderType: " + material.GetTag("RenderType", false));
+        }
+        #endregion
+
+        #region Cross-category, low-level data method patches
+        
+        // Note: This is needed for force-colorable NOT to assign a default, pure white color to Wears
+        //       when its WearObj.wearParam is not available (which is common for previously non-colorable saved cards) 
+        //       And so pure white color basically serves as a "reset color", too.
+        [HarmonyPatch(typeof(ColorParameter_PBR2), "SetMaterialCustoms", new Type[] { typeof(MaterialCustoms) })]
+        [HarmonyPrefix]
+        private static bool Prefix(ColorParameter_PBR2 __instance, MaterialCustoms custom)
+        {
+            if (force_color_everything_that_doesnt_have_materialcustoms &&
+                __instance.mainColor1 == Color.white && __instance.specColor1 == Color.white &&
+                __instance.mainColor2 == Color.white && __instance.specColor2 == Color.white &&
+                __instance.specular1 == 0 && __instance.specular2 == 0 && __instance.smooth1 == 0 && __instance.smooth2 == 0)
+            {
+                self.logSave("HoneyPot ForceColor: ColorParameter_PBR2.SetMaterialCustoms detected default color (should be because wearParam.color was null).");
+                __instance.mainColor1 = custom.GetColor("MainColor");
+                __instance.specColor1 = custom.GetColor("MainSpecColor");
+                __instance.specular1  = custom.GetFloat("MainMetallic");
+                __instance.smooth1    = custom.GetFloat("MainSmoothness");
+                __instance.mainColor2 = custom.GetColor("SubColor");
+                __instance.specColor2 = custom.GetColor("SubSpecColor");
+                __instance.specular2  = custom.GetFloat("SubMetallic");
+                __instance.smooth2    = custom.GetFloat("SubSmoothness");
+                return false;
+            }
+            return true;
+        }
+
+        private static MethodInfo MaterialCustoms_Setup = typeof(MaterialCustoms).GetMethod("Setup", new Type[0]);
+
+        // Note: This was moved here from old PH_Fixes_HoneyPot.dll
+        [HarmonyPatch(typeof(MaterialCustoms), "Setup")]
+        [HarmonyPrefix]
+        private static bool Prefix(MaterialCustoms __instance)
+        {
+            if (__instance == null || __instance.parameters == null)
+                return false;
+
+            Renderer[] componentsInChildren = __instance.GetComponentsInChildren<Renderer>(true);
+            __instance.datas = new MaterialCustoms.Data_Base[__instance.parameters.Length];
+            for (int i = 0; i < __instance.parameters.Length; i++)
+            {
+                MaterialCustoms.Parameter parameter = __instance.parameters[i];
+                if (parameter == null)
+                    return false;
+
+                if (parameter.type == MaterialCustoms.Parameter.TYPE.FLOAT01)
+                {
+                    __instance.datas[i] = new MaterialCustoms.Data_Float(parameter, componentsInChildren, 0f, 1f);
+                }
+                else if (parameter.type == MaterialCustoms.Parameter.TYPE.FLOAT11)
+                {
+                    __instance.datas[i] = new MaterialCustoms.Data_Float(parameter, componentsInChildren, -1f, 1f);
+                }
+                else if (parameter.type == MaterialCustoms.Parameter.TYPE.COLOR)
+                {
+                    __instance.datas[i] = new MaterialCustoms.Data_Color(parameter, componentsInChildren);
+                }
+                else if (parameter.type == MaterialCustoms.Parameter.TYPE.ALPHA)
+                {
+                    __instance.datas[i] = new MaterialCustoms.Data_Alpha(parameter, componentsInChildren);
+                }
+            }
+            return false;
         }
         #endregion
 
@@ -613,43 +687,6 @@ namespace ClassLibrary4
             AcceObj_SetupMaterials.Invoke(__instance, new object[] { null });
         }
 
-        private static MethodInfo MaterialCustoms_Setup = typeof(MaterialCustoms).GetMethod("Setup", new Type[0]);
-
-        [HarmonyPatch(typeof(MaterialCustoms), "Setup")]
-        [HarmonyPrefix]
-        private static bool Prefix(MaterialCustoms __instance)
-        {
-            if (__instance == null || __instance.parameters == null)
-                return false;
-
-            Renderer[] componentsInChildren = __instance.GetComponentsInChildren<Renderer>(true);
-            __instance.datas = new MaterialCustoms.Data_Base[__instance.parameters.Length];
-            for (int i = 0; i < __instance.parameters.Length; i++)
-            {
-                MaterialCustoms.Parameter parameter = __instance.parameters[i];
-                if (parameter == null)
-                    return false;
-
-                if (parameter.type == MaterialCustoms.Parameter.TYPE.FLOAT01)
-                {
-                    __instance.datas[i] = new MaterialCustoms.Data_Float(parameter, componentsInChildren, 0f, 1f);
-                }
-                else if (parameter.type == MaterialCustoms.Parameter.TYPE.FLOAT11)
-                {
-                    __instance.datas[i] = new MaterialCustoms.Data_Float(parameter, componentsInChildren, -1f, 1f);
-                }
-                else if (parameter.type == MaterialCustoms.Parameter.TYPE.COLOR)
-                {
-                    __instance.datas[i] = new MaterialCustoms.Data_Color(parameter, componentsInChildren);
-                }
-                else if (parameter.type == MaterialCustoms.Parameter.TYPE.ALPHA)
-                {
-                    __instance.datas[i] = new MaterialCustoms.Data_Alpha(parameter, componentsInChildren);
-                }
-            }
-            return false;
-        }
-
         private static FieldInfo Accessories_acceObjsField = typeof(Accessories).GetField("acceObjs", BindingFlags.NonPublic | BindingFlags.Instance);
         private static FieldInfo AcceObj_objField = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj").GetField("obj");
 
@@ -776,7 +813,7 @@ namespace ClassLibrary4
         }
         #endregion
 
-        #region Wears shader remapping & Show root processing for DoTransport
+        #region Wears shader remapping & Show root processing for duplicating swimsuits into bra & short categories
         private static FieldInfo wearcustomedit_nowtabField = typeof(WearCustomEdit).GetField("nowTab", BindingFlags.Instance | BindingFlags.NonPublic);
         private static FieldInfo Wears_bodySkinMeshField    = typeof(Wears).GetField("bodySkinMesh", BindingFlags.Instance | BindingFlags.NonPublic);
         private static MethodInfo WearObj_SetupMaterials    = typeof(WearObj).GetMethod("SetupMaterials", new Type[] { typeof(WearData) });
@@ -1003,6 +1040,16 @@ namespace ClassLibrary4
                     }
                     match_correct_shader_property(materialCustoms, priority_shader_name);
                     MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
+                    //logSave(" [Debug] materialCustoms -------------------------------");
+                    //logSave("    - MainColor     : " + materialCustoms.GetColor("MainColor"));
+                    //logSave("    - MainSpecColor : " + materialCustoms.GetColor("MainSpecColor"));
+                    //logSave("    - MainMetallic  : " + materialCustoms.GetFloat("MainMetallic"));
+                    //logSave("    - MainSmoothness: " + materialCustoms.GetFloat("MainSmoothness"));
+                    //logSave("    - SubColor      : " + materialCustoms.GetColor("SubColor"));
+                    //logSave("    - SubSpecColor  : " + materialCustoms.GetColor("SubSpecColor"));
+                    //logSave("    - SubMetallic   : " + materialCustoms.GetFloat("SubMetallic"));
+                    //logSave("    - SubSmoothness : " + materialCustoms.GetFloat("SubSmoothness"));
+                    //logSave(" [end of Debug] ----------------------------------------");
                 }
                 WearObj_SetupMaterials.Invoke(wearobj, new object[] { null }); //the WearData is never used/checked in this call
                 wearobj.UpdateColorCustom();
