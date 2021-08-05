@@ -6,6 +6,14 @@ using HarmonyLib;
 
 namespace ClassLibrary4
 {
+    // Note: This is for removing a final instruction inside WearObj.SetupMaterials so that it doesn't out right 
+    //       removes wearParam.color when loading a card and sees that particular WearObj doesn't have MaterialCustoms
+    //       because ALL HS1 clothings doesn't have MaterialCustoms. 
+    //       However this also make it possible for unused wearParam.color to be saved to a card: 
+    //       1) attach a clothing that is colorable
+    //       2) and now attach a clothing that is NOT colorable -- the wearParam.color from 1) is not cleared because of this patch
+    //       3) save the card -- the wearParam.color is in there now.
+    //       4) this compounds with ForceColor option that these left over colors will potentially show up unwanted. 
     [HarmonyPatch(typeof(WearObj), "SetupMaterials", new Type[] { typeof(WearData) })]
     public class WearObj_SetupMaterials_Patch
     {
