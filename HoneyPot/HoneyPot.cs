@@ -1082,17 +1082,27 @@ namespace ClassLibrary4
                     //       When this and only this should we ever consider about force color options.
                     //       And this also means it will color all renderers unconditonally, so sometimes it is not desirable.
                     if ( force_color ) 
-                    {   // Note: I know, this really is more complicated than it should be. And I have no way of knowing
-                        //       if I will be able to support StudioClothEditor / PHSAddon in the same way. Will investigate. 
+                    {   // Note: I know, this really is more complicated than it should be. 
+                        //       Trying to support things like StudioClothesEditor makes it even more complicated, but hey.
                         if ( ( wears.wearParam.wears[idx].color != null &&
-                              !check_default_color_param(wears.wearParam.wears[idx].color) )
-                              ||
-                             ( force_color_key.IsPressed() && 
-                               wearCustomEdit != null && 
-                              (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx ) )
+                              !check_default_color_param(wears.wearParam.wears[idx].color) ) )
                         {
                             list_objcolor = list_all_materials_without_body_material_mpoint;
                             priority_shader_name = backup_shader_name;
+                        }
+                        else if ( force_color_key.IsPressed() )
+                        {
+                            if( (wearCustomEdit != null &&
+                                 (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx)  
+                                ||
+                                (sce != null && 
+                                 (bool)studioClothesEditor_mainWindowField.GetValue(sce) == true &&
+                                 (int)studioClothesEditor_editModeField.GetValue(sce) == 0 &&
+                                 (int)(WEAR_TYPE)studioClothesEditor_wearTypeField.GetValue(sce) == idx ) )  
+                            {
+                                list_objcolor = list_all_materials_without_body_material_mpoint;
+                                priority_shader_name = backup_shader_name;
+                            }
                         }
                     }
                     else if ( forceColorable ) // Legacy: this is the special case for bras and shorts.
@@ -1104,17 +1114,25 @@ namespace ClassLibrary4
 
                 MaterialCustoms materialCustoms = wearobj_obj.GetComponent<MaterialCustoms>();
 
-                if ( reset_color_key.IsPressed() && !force_color_key.IsPressed() && wearCustomEdit != null &&
-                    (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx ) 
+                if (reset_color_key.IsPressed() && !force_color_key.IsPressed())
                 {
-                    int id = wears.wearParam.wears[idx].id;
-                    if ( materialCustoms && HoneyPot.orig_colors.ContainsKey(id) )
-                    { // Note: orig_colors is captured right at the point of WearObj.SetupMaterials happens 1st time
-                      //       once its captured the data will not be overwritten in away. This is sort my method of
-                      //       restoring the value before "MaterialCustomdata" runtime database. 
-                        wears.wearParam.wears[idx].color = new ColorParameter_PBR2(HoneyPot.orig_colors[id]);
-                    } //       for clothings not having MaterialCustoms, we just nullify its wearParam.
-                    else wears.wearParam.wears[idx].color = null;
+                    if ( (wearCustomEdit != null &&
+                          (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx) 
+                         ||
+                         (sce != null &&
+                          (bool)studioClothesEditor_mainWindowField.GetValue(sce) == true &&
+                          (int)studioClothesEditor_editModeField.GetValue(sce) == 0 &&
+                          (int)(WEAR_TYPE)studioClothesEditor_wearTypeField.GetValue(sce) == idx) ) 
+                    {
+                        int id = wears.wearParam.wears[idx].id;
+                        if (materialCustoms && HoneyPot.orig_colors.ContainsKey(id))
+                        { // Note: orig_colors is captured right at the point of WearObj.SetupMaterials happens 1st time
+                          //       once its captured the data will not be overwritten in away. This is sort my method of
+                          //       restoring the value before "MaterialCustomdata" runtime database. 
+                            wears.wearParam.wears[idx].color = new ColorParameter_PBR2(HoneyPot.orig_colors[id]);
+                        } //       for clothings not having MaterialCustoms, we just nullify its wearParam.
+                        else wears.wearParam.wears[idx].color = null;
+                    }
                 }
 
                 if (materialCustoms == null && list_objcolor.Count != 0)
@@ -2816,7 +2834,14 @@ namespace ClassLibrary4
             {
                 this.wearCustomEdit = Resources.FindObjectsOfTypeAll<WearCustomEdit>()[0];
 			}
-            if( !HoneyPot.allGetListContentDone && HoneyPot.asynctracker == 0 )
+            if ( sce == null && SceneManager.GetActiveScene().name == "Studio" )
+            {   
+                sce = GameObject.Find("StudioClothesEditor").GetComponent("StudioClothesEditor.StudioClothesEditor");
+                studioClothesEditor_mainWindowField = sce.GetType().GetField("mainWindow", BindingFlags.NonPublic | BindingFlags.Instance);
+                studioClothesEditor_editModeField = sce.GetType().GetField("editMode", BindingFlags.NonPublic | BindingFlags.Instance);
+                studioClothesEditor_wearTypeField = sce.GetType().GetField("wearType");
+            }
+            if ( !HoneyPot.allGetListContentDone && HoneyPot.asynctracker == 0 )
             {
                 this.logSave("HoneyPot all StartCoroutine(getListContent) are finished.");
                 HoneyPot.allGetListContentDone = true;
@@ -2915,6 +2940,10 @@ namespace ClassLibrary4
         protected static MaterialCustoms mc;
 
         private WearCustomEdit wearCustomEdit = null;
+        private object sce = null;
+        private static FieldInfo studioClothesEditor_mainWindowField = null;
+        private static FieldInfo studioClothesEditor_editModeField = null;
+        private static FieldInfo studioClothesEditor_wearTypeField = null;
 
         private string assetBundlePath      = Application.dataPath + "/../abdata";
         private string conflictText         = Application.dataPath + "/../UserData/conflict.txt";
