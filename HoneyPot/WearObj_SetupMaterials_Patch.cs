@@ -3,9 +3,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
 using HarmonyLib;
+using Character;
 
 namespace ClassLibrary4
 {
+    [HarmonyPatch(typeof(WearObj), "SetupMaterials", new Type[] { typeof(WearData) })]
+    public class WearObj_SetupMaterials_Prefix
+    {
+        public static void Prefix(WearObj __instance)
+        {
+            WEAR_TYPE type = __instance.type;
+            int id = __instance.wearParam.GetWearID(type);
+            MaterialCustoms mc = __instance.obj.GetComponent<MaterialCustoms>();
+            if ( id >= 0 && !HoneyPot.orig_colors.ContainsKey(id) && mc )
+            {
+                ColorParameter_PBR2 color = new ColorParameter_PBR2(mc);
+                HoneyPot.orig_colors.Add(id, color);
+            }
+        }
+    }
+
     // Note: This is for removing a final instruction inside WearObj.SetupMaterials so that it doesn't out right 
     //       removes wearParam.color when loading a card and sees that particular WearObj doesn't have MaterialCustoms
     //       because ALL HS1 clothings doesn't have MaterialCustoms. 
@@ -14,6 +31,8 @@ namespace ClassLibrary4
     //       2) and now attach a clothing that is NOT colorable -- the wearParam.color from 1) is not cleared because of this patch
     //       3) save the card -- the wearParam.color is in there now.
     //       4) this compounds with ForceColor option that these left over colors will potentially show up unwanted. 
+    //       This has been more or less fixed when I implemented the better ForceColor option.
+
     [HarmonyPatch(typeof(WearObj), "SetupMaterials", new Type[] { typeof(WearData) })]
     public class WearObj_SetupMaterials_Patch
     {

@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Diagnostics;
+using BepInEx.Configuration;
 
 namespace ClassLibrary4
 {
@@ -142,11 +143,8 @@ namespace ClassLibrary4
         [HarmonyPatch(typeof(ColorParameter_PBR2), "SetMaterialCustoms", new Type[] { typeof(MaterialCustoms) })]
         [HarmonyPrefix]
         private static bool Prefix(ColorParameter_PBR2 __instance, MaterialCustoms custom)
-        {
-            if (force_color_everything_that_doesnt_have_materialcustoms &&
-                __instance.mainColor1 == Color.white && __instance.specColor1 == Color.white &&
-                __instance.mainColor2 == Color.white && __instance.specColor2 == Color.white &&
-                __instance.specular1 == 0 && __instance.specular2 == 0 && __instance.smooth1 == 0 && __instance.smooth2 == 0)
+        { 
+            if ( force_color && check_default_color_param(__instance) )
             {
                 self.logSave("HoneyPot ForceColor: ColorParameter_PBR2.SetMaterialCustoms detected default color (should be because wearParam.color was null).");
                 __instance.mainColor1 = custom.GetColor("MainColor");
@@ -160,6 +158,13 @@ namespace ClassLibrary4
                 return false;
             }
             return true;
+        }
+
+        private static bool check_default_color_param(ColorParameter_PBR2 c)
+        {
+            return c.mainColor1 == Color.white && c.specColor1 == Color.white &&
+                   c.mainColor2 == Color.white && c.specColor2 == Color.white &&
+                   c.specular1 == 0 && c.specular2 == 0 && c.smooth1 == 0 && c.smooth2 == 0;
         }
 
         private static MethodInfo MaterialCustoms_Setup = typeof(MaterialCustoms).GetMethod("Setup", new Type[0]);
@@ -819,99 +824,153 @@ namespace ClassLibrary4
         private static MethodInfo WearObj_SetupMaterials    = typeof(WearObj).GetMethod("SetupMaterials", new Type[] { typeof(WearData) });
         private static MethodInfo WearObj_SetupShow         = typeof(WearObj).GetMethod("SetupShow", new Type[0]);
 
+        [HarmonyPrefix]
+        private static void CustomParameter_Load_Prefix()
+        {
+            if (force_color)
+            {
+                self.logSave("-------------------------------");
+                self.logSave(" HoneyPot: we are loading char");
+                self.logSave("-------------------------------");
+                loading_state = LOADING_STATE.FROMFILE;
+            }
+        }
+
+        [HarmonyPrefix]
+        private static void CustomParameter_LoadCoordinate_Prefix()
+        {
+            if (force_color)
+            {
+                self.logSave("-------------------------------");
+                self.logSave(" HoneyPot: we are loading coord");
+                self.logSave("-------------------------------");
+                loading_state = LOADING_STATE.FROMFILE;
+            }
+        }
+
+        [HarmonyPrefix]
+        private static void WearCustomEdit_ChangeOnWear_Prefix(WearCustomEdit __instance, WEAR_TYPE wear, int id)
+        {
+            if (force_color)
+            {
+                self.logSave("---------------------------------------------------");
+                self.logSave(" HoneyPot: we are switching category " + wear.ToString() + " id: " + id);
+                self.logSave("---------------------------------------------------");
+                loading_state = LOADING_STATE.SWITCHING;
+                temp_wear_param = new WearParameter(__instance.human.customParam.wear); // copy so we can compare later
+            }
+        }
+
         [HarmonyPatch(typeof(Wears), "WearInstantiate")]
         [HarmonyPostfix]
         private static void Postfix(Wears __instance, WEAR_TYPE type, Material skinMaterial, Material customHighlightMat_Skin)
         {
             WearObj wearobj = __instance.GetWearObj(type);
-            if (wearobj == null) return;
-            GameObject obj = wearobj.obj;
-
-            if (type == WEAR_TYPE.TOP)
+            if (wearobj != null)
             {
-                Renderer[] componentsInChildren = obj.GetComponentsInChildren<Renderer>(true);
-                bool bodyskin_substituted = false;
-                foreach (Renderer renderer in componentsInChildren)
-                {   // Make sure these leftover default materials are also replaced by the naked body skin
-                    if (renderer.sharedMaterial == null) continue;
-                    if (renderer.sharedMaterial.name.Contains_NoCase("lambert") ||
-                        renderer.sharedMaterial.name.Contains_NoCase("clipping"))
-                    {
-                        renderer.sharedMaterial = (Wears_bodySkinMeshField.GetValue(__instance) as SkinnedMeshRenderer).sharedMaterial;
-                        renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-                        bodyskin_substituted = true;
-                    }
-                }
-                if( bodyskin_substituted )
-                    __instance.ChangeBodyMaterial(Wears_bodySkinMeshField.GetValue(__instance) as SkinnedMeshRenderer);
-            }
+                GameObject obj = wearobj.obj;
 
-            if ((entry_duplicate_flags & CLOTHING_ENTRY_DUPLICATE.SWIM_TO_BRA_N_SHORT) != CLOTHING_ENTRY_DUPLICATE.NONE)
-            { 
-                //Note: It ended up much easier to just change the transform.name as I originally planned. 
-                //      Because there are internal logic about WEAR_SHOW_TYPE related code that is just hard to follow,
-                //      and since the game has been using the prefab transform structure as "the spec" 
-                //      to determine how to show clothings (see WearObj.ShowRoots), this is just cleaner.
-                if (type == WEAR_TYPE.BRA)
+                if (loading_state == LOADING_STATE.SWITCHING && !force_color_key.IsPressed() &&
+                     __instance.wearParam.wears[(int)type].id != temp_wear_param.wears[(int)type].id)
                 {
-                    Transform upper = Transform_Utility.FindTransform(obj.transform, "N_top_a");
-                    if( upper )
-                    {
-                        upper.name = "cf_O_bra_d";
-                        Transform upper2 = Transform_Utility.FindTransform(obj.transform, "N_top_b");
-                        if (upper2) upper2.name = "cf_O_bra_n";
-
-                        WearObj_SetupShow.Invoke(wearobj, new object[0]);
-                        //Note: The transplanted swimsuits are mostly 2-piece-in-1, so we have to hide all lower half
-                        //      The user has to choose the lower half in "Shorts" category manually. 
-                        Transform hide = Transform_Utility.FindTransform(obj.transform, "N_bot_a");
-                        if (hide) hide.gameObject.SetActive(false);
-                        hide = Transform_Utility.FindTransform(obj.transform, "N_bot_b");
-                        if (hide) hide.gameObject.SetActive(false);
-                        hide = Transform_Utility.FindTransform(obj.transform, "N_bot_d");
-                        if (hide) hide.gameObject.SetActive(false);
-                        hide = Transform_Utility.FindTransform(obj.transform, "N_bot_n");
-                        if (hide) hide.gameObject.SetActive(false);
-                        hide = Transform_Utility.FindTransform(obj.transform, "N_bot_op1");
-                        if (hide) hide.gameObject.SetActive(false);
-                    }
+                    self.logSave("HoneyPot: switching to a new clothing on category(" + type + ") AND Force Color Key not pressed, removing WearCustom.color.");
+                    __instance.wearParam.wears[(int)type].color = null;
                 }
-                else if (type == WEAR_TYPE.SHORTS)
+
+                if (type == WEAR_TYPE.TOP)
                 {
-                    Transform lower = Transform_Utility.FindTransform(obj.transform, "N_bot_a");
-                    bool lower_found = false;
-                    if (lower)
-                    {
-                        lower.name = "cf_O_shorts_d";
-                        Transform lower2 = Transform_Utility.FindTransform(obj.transform, "N_bot_b");
-                        if (lower2) lower2.name = "cf_O_shorts_n";
-                        lower_found = true;
+                    Renderer[] componentsInChildren = obj.GetComponentsInChildren<Renderer>(true);
+                    bool bodyskin_substituted = false;
+                    foreach (Renderer renderer in componentsInChildren)
+                    {   // Make sure these leftover default materials are also replaced by the naked body skin
+                        if (renderer.sharedMaterial == null) continue;
+                        if (renderer.sharedMaterial.name.Contains_NoCase("lambert") ||
+                            renderer.sharedMaterial.name.Contains_NoCase("clipping"))
+                        {
+                            renderer.sharedMaterial = (Wears_bodySkinMeshField.GetValue(__instance) as SkinnedMeshRenderer).sharedMaterial;
+                            renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+                            bodyskin_substituted = true;
+                        }
                     }
-                    else
+                    if (bodyskin_substituted)
+                        __instance.ChangeBodyMaterial(Wears_bodySkinMeshField.GetValue(__instance) as SkinnedMeshRenderer);
+                }
+
+                if ((entry_duplicate_flags & CLOTHING_ENTRY_DUPLICATE.SWIM_TO_BRA_N_SHORT) != CLOTHING_ENTRY_DUPLICATE.NONE)
+                {
+                    //Note: It ended up much easier to just change the transform.name as I originally planned. 
+                    //      Because there are internal logic about WEAR_SHOW_TYPE related code that is just hard to follow,
+                    //      and since the game has been using the prefab transform structure as "the spec" 
+                    //      to determine how to show clothings (see WearObj.ShowRoots), this is just cleaner.
+                    if (type == WEAR_TYPE.BRA)
                     {
-                        lower = Transform_Utility.FindTransform(obj.transform, "N_bot_d");
+                        Transform upper = Transform_Utility.FindTransform(obj.transform, "N_top_a");
+                        if (upper)
+                        {
+                            upper.name = "cf_O_bra_d";
+                            Transform upper2 = Transform_Utility.FindTransform(obj.transform, "N_top_b");
+                            if (upper2) upper2.name = "cf_O_bra_n";
+
+                            WearObj_SetupShow.Invoke(wearobj, new object[0]);
+                            //Note: The transplanted swimsuits are mostly 2-piece-in-1, so we have to hide all lower half
+                            //      The user has to choose the lower half in "Shorts" category manually. 
+                            Transform hide = Transform_Utility.FindTransform(obj.transform, "N_bot_a");
+                            if (hide) hide.gameObject.SetActive(false);
+                            hide = Transform_Utility.FindTransform(obj.transform, "N_bot_b");
+                            if (hide) hide.gameObject.SetActive(false);
+                            hide = Transform_Utility.FindTransform(obj.transform, "N_bot_d");
+                            if (hide) hide.gameObject.SetActive(false);
+                            hide = Transform_Utility.FindTransform(obj.transform, "N_bot_n");
+                            if (hide) hide.gameObject.SetActive(false);
+                            hide = Transform_Utility.FindTransform(obj.transform, "N_bot_op1");
+                            if (hide) hide.gameObject.SetActive(false);
+                        }
+                    }
+                    else if (type == WEAR_TYPE.SHORTS)
+                    {
+                        Transform lower = Transform_Utility.FindTransform(obj.transform, "N_bot_a");
+                        bool lower_found = false;
                         if (lower)
                         {
                             lower.name = "cf_O_shorts_d";
-                            Transform lower2 = Transform_Utility.FindTransform(obj.transform, "N_bot_n");
+                            Transform lower2 = Transform_Utility.FindTransform(obj.transform, "N_bot_b");
                             if (lower2) lower2.name = "cf_O_shorts_n";
                             lower_found = true;
                         }
-                    }
-                    if (lower_found)
-                    {
-                        WearObj_SetupShow.Invoke(wearobj, new object[0]);
-                        //Note: The transplanted swimsuits are mostly 2-piece-in-1, so we have to hide all upper half
-                        Transform hide = Transform_Utility.FindTransform(obj.transform, "N_top_a");
-                        if (hide) hide.gameObject.SetActive(false);
-                        hide = Transform_Utility.FindTransform(obj.transform, "N_top_b");
-                        if (hide) hide.gameObject.SetActive(false);
-                        hide = Transform_Utility.FindTransform(obj.transform, "N_top_op1");
-                        if (hide) hide.gameObject.SetActive(false);
+                        else
+                        {
+                            lower = Transform_Utility.FindTransform(obj.transform, "N_bot_d");
+                            if (lower)
+                            {
+                                lower.name = "cf_O_shorts_d";
+                                Transform lower2 = Transform_Utility.FindTransform(obj.transform, "N_bot_n");
+                                if (lower2) lower2.name = "cf_O_shorts_n";
+                                lower_found = true;
+                            }
+                        }
+                        if (lower_found)
+                        {
+                            WearObj_SetupShow.Invoke(wearobj, new object[0]);
+                            //Note: The transplanted swimsuits are mostly 2-piece-in-1, so we have to hide all upper half
+                            Transform hide = Transform_Utility.FindTransform(obj.transform, "N_top_a");
+                            if (hide) hide.gameObject.SetActive(false);
+                            hide = Transform_Utility.FindTransform(obj.transform, "N_top_b");
+                            if (hide) hide.gameObject.SetActive(false);
+                            hide = Transform_Utility.FindTransform(obj.transform, "N_top_op1");
+                            if (hide) hide.gameObject.SetActive(false);
+                        }
                     }
                 }
+                self.setWearShader(__instance, (int)type, type, (type == WEAR_TYPE.BRA || type == WEAR_TYPE.SHORTS) ? true : false);
             }
-            self.setWearShader(__instance, (int)type, type, (type == WEAR_TYPE.BRA || type == WEAR_TYPE.SHORTS) ? true : false);
+            // Note: we know this is the last type, so the WearInstantiate cycle is over, cleanup 
+            //       this need to run every time this is called, cannot be blocked by wearobj == null 
+            if (type == WEAR_TYPE.SHOES && loading_state != LOADING_STATE.NONE)
+            {
+                self.logSave("HoneyPot: final category reached. Cleaning up the loading_state and temp wearParam.");
+                temp_wear_param = null;
+                loading_state = LOADING_STATE.NONE;
+            }
         }
 
         public void setWearShader(Wears wears, int idx, WEAR_TYPE type, bool forceColorable = false)
@@ -1018,15 +1077,46 @@ namespace ClassLibrary4
                     }
                 }
 
-                if ((list_objcolor.Count == 0 && force_color_everything_that_doesnt_have_materialcustoms)
-                    || forceColorable)
-                {   //Note: list_objcolor == 0 means we didn't find priority_shader_name either.
-                    //Note: forceColorable would color every renderer unconditionally.
-                    list_objcolor = list_all_materials_without_body_material_mpoint;
-                    priority_shader_name = backup_shader_name;
+                if ( list_objcolor.Count == 0 )
+                {   // Note: list_objcolor == 0 means we didn't find priority_shader_name either.
+                    //       When this and only this should we ever consider about force color options.
+                    //       And this also means it will color all renderers unconditonally, so sometimes it is not desirable.
+                    if ( force_color ) 
+                    {   // Note: I know, this really is more complicated than it should be. And I have no way of knowing
+                        //       if I will be able to support StudioClothEditor / PHSAddon in the same way. Will investigate. 
+                        if ( ( wears.wearParam.wears[idx].color != null &&
+                              !check_default_color_param(wears.wearParam.wears[idx].color) )
+                              ||
+                             ( force_color_key.IsPressed() && 
+                               wearCustomEdit != null && 
+                              (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx ) )
+                        {
+                            list_objcolor = list_all_materials_without_body_material_mpoint;
+                            priority_shader_name = backup_shader_name;
+                        }
+                    }
+                    else if ( forceColorable ) // Legacy: this is the special case for bras and shorts.
+                    {   
+                        list_objcolor = list_all_materials_without_body_material_mpoint;
+                        priority_shader_name = backup_shader_name;
+                    }
                 }
 
                 MaterialCustoms materialCustoms = wearobj_obj.GetComponent<MaterialCustoms>();
+
+                if ( reset_color_key.IsPressed() && !force_color_key.IsPressed() && wearCustomEdit != null &&
+                    (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx ) 
+                {
+                    int id = wears.wearParam.wears[idx].id;
+                    if ( materialCustoms && HoneyPot.orig_colors.ContainsKey(id) )
+                    { // Note: orig_colors is captured right at the point of WearObj.SetupMaterials happens 1st time
+                      //       once its captured the data will not be overwritten in away. This is sort my method of
+                      //       restoring the value before "MaterialCustomdata" runtime database. 
+                        wears.wearParam.wears[idx].color = new ColorParameter_PBR2(HoneyPot.orig_colors[id]);
+                    } //       for clothings not having MaterialCustoms, we just nullify its wearParam.
+                    else wears.wearParam.wears[idx].color = null;
+                }
+
                 if (materialCustoms == null && list_objcolor.Count != 0)
                 {
                     this.logSave(" -- This wear doesn't have MaterialCustoms, try adding one: " + wearData.assetbundleName.Replace("\\", "/") + ", shader: " + priority_shader_name);
@@ -1040,16 +1130,6 @@ namespace ClassLibrary4
                     }
                     match_correct_shader_property(materialCustoms, priority_shader_name);
                     MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
-                    //logSave(" [Debug] materialCustoms -------------------------------");
-                    //logSave("    - MainColor     : " + materialCustoms.GetColor("MainColor"));
-                    //logSave("    - MainSpecColor : " + materialCustoms.GetColor("MainSpecColor"));
-                    //logSave("    - MainMetallic  : " + materialCustoms.GetFloat("MainMetallic"));
-                    //logSave("    - MainSmoothness: " + materialCustoms.GetFloat("MainSmoothness"));
-                    //logSave("    - SubColor      : " + materialCustoms.GetColor("SubColor"));
-                    //logSave("    - SubSpecColor  : " + materialCustoms.GetColor("SubSpecColor"));
-                    //logSave("    - SubMetallic   : " + materialCustoms.GetFloat("SubMetallic"));
-                    //logSave("    - SubSmoothness : " + materialCustoms.GetFloat("SubSmoothness"));
-                    //logSave(" [end of Debug] ----------------------------------------");
                 }
                 WearObj_SetupMaterials.Invoke(wearobj, new object[] { null }); //the WearData is never used/checked in this call
                 wearobj.UpdateColorCustom();
@@ -2708,10 +2788,16 @@ namespace ClassLibrary4
                 HarmonyMethod acceobj_updatecolorcustom_prefix  = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_UpdateColorCustom_Prefix));
                 HarmonyMethod head_changeeyebrow_postfix = new HarmonyMethod(typeof(HoneyPot), nameof(Head_ChangeEyebrow_Postfix));
                 HarmonyMethod head_changeeyelash_postfix = new HarmonyMethod(typeof(HoneyPot), nameof(Head_ChangeEyelash_Postfix));
+                HarmonyMethod customparam_load_prefix = new HarmonyMethod(typeof(HoneyPot), nameof(CustomParameter_Load_Prefix));
+                HarmonyMethod customparam_loadcoord_prefix = new HarmonyMethod(typeof(HoneyPot), nameof(CustomParameter_LoadCoordinate_Prefix));
+                HarmonyMethod wearcustomedit_changeonwear_prefix = new HarmonyMethod(typeof(HoneyPot), nameof(WearCustomEdit_ChangeOnWear_Prefix));
                 harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("SetupMaterials", new Type[] { typeof(AccessoryData) }), transpiler: acceobj_setupmaterials_transpiler);
                 harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("UpdateColorCustom"), prefix: acceobj_updatecolorcustom_prefix);
                 harmony.Patch(typeof(Head).GetMethod("ChangeEyebrow"), postfix: head_changeeyebrow_postfix);
                 harmony.Patch(typeof(Head).GetMethod("ChangeEyelash"), postfix: head_changeeyelash_postfix);
+                harmony.Patch(typeof(CustomParameter).GetMethod("Load", new Type[] { typeof(BinaryReader) }), prefix: customparam_load_prefix);
+                harmony.Patch(typeof(CustomParameter).GetMethod("LoadCoordinate", new Type[] { typeof(BinaryReader) }), prefix: customparam_loadcoord_prefix);
+                harmony.Patch(typeof(WearCustomEdit).GetMethod("ChangeOnWear"), prefix: wearcustomedit_changeonwear_prefix);
                 this.logSave("Dynamic Harmony patches timestamp: " + t.ElapsedMilliseconds.ToString());
                 if ( Singleton<Studio.Studio>.Instance != null )
                 {
@@ -2814,10 +2900,12 @@ namespace ClassLibrary4
 
         private static bool isFirst = true;
         private static bool allGetListContentDone = false;
-        public  static bool force_color_everything_that_doesnt_have_materialcustoms = false;
+        public  static bool force_color = false;
         public  static bool PBRsp_alpha_blend_to_hsstandard = false;
         public  static bool hsstandard_on_hair = false;
         public  static CLOTHING_ENTRY_DUPLICATE entry_duplicate_flags = CLOTHING_ENTRY_DUPLICATE.NONE;
+        public  static KeyboardShortcut force_color_key;
+        public  static KeyboardShortcut reset_color_key;
 
         protected static Shader PH_hair_shader;
         protected static Shader PH_hair_shader_c;
@@ -2838,7 +2926,13 @@ namespace ClassLibrary4
         private static Dictionary<string, PresetShader> presets = new Dictionary<string, PresetShader>();
         private static Dictionary<int, string> idFileDict       = new Dictionary<int, string>();
         private static List<string> conflictList                = new List<string>();
-        private static int num_of_conflict_you_should_really_worry_about = 0;
+        private static int  num_of_conflict_you_should_really_worry_about = 0;
+
+        private enum LOADING_STATE { NONE, SWITCHING, FROMFILE };
+
+        private static LOADING_STATE loading_state = LOADING_STATE.NONE;
+        private static WearParameter temp_wear_param = null;
+        public  static Dictionary<int, ColorParameter_PBR2> orig_colors = new Dictionary<int, ColorParameter_PBR2>();
 
         private static Dictionary<string, int> material_rq   = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
         private static Dictionary<string, Shader> PH_shaders = new Dictionary<string, Shader>();
