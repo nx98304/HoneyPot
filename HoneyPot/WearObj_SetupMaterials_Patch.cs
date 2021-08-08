@@ -7,6 +7,14 @@ using Character;
 
 namespace ClassLibrary4
 {
+    // Note: Before HoneyPot calls WearObj.SetupMaterials in the postfix of WearInstantiate, 
+    //       the game will call it first when the WearObj is instantiated in the body of WearInstantiate. 
+    //       so this makes sure we intercept the MaterialCustoms initial value from the abdata right after it is loaded. 
+    //       This is needed for the reset color functionality that was added in 1.5.0.       
+    //
+    //       However, technically this implementation is wrong, because actually mod ID can be the same across different
+    //       categories of clothes. We are not sure if modders really used unique IDs for ALL items, 
+    //       or some of them actually reuses certain ranges of IDs in different categories. 
     [HarmonyPatch(typeof(WearObj), "SetupMaterials", new Type[] { typeof(WearData) })]
     public class WearObj_SetupMaterials_Prefix
     {
@@ -15,10 +23,10 @@ namespace ClassLibrary4
             WEAR_TYPE type = __instance.type;
             int id = __instance.wearParam.GetWearID(type);
             MaterialCustoms mc = __instance.obj.GetComponent<MaterialCustoms>();
-            if ( id >= 0 && !HoneyPot.orig_colors.ContainsKey(id) && mc )
+            if ( id >= 0 && !HoneyPot.orig_wear_colors.ContainsKey(id) && mc )
             {
                 ColorParameter_PBR2 color = new ColorParameter_PBR2(mc);
-                HoneyPot.orig_colors.Add(id, color);
+                HoneyPot.orig_wear_colors.Add(id, color);
             }
         }
     }
