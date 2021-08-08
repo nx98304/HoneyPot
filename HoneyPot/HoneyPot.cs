@@ -61,6 +61,7 @@ namespace ClassLibrary4
             { "Shader Forge/PBR_SG Alpha",      new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBR_SG DoubleSide", new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBR_SG Clip",       new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
+            { "Shader Forge/PBR_SG_2Layer",     new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_OverlapColor", "_OverlapSpecularColor", "_OverlapSpecular" } }, 
             { "Shader Forge/PBRsp",               new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBRsp_alpha",         new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
             { "Shader Forge/PBRsp_alpha_culloff", new string[] { "_Color", "_SpecColor", "_Metallic", "_Smoothness", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
@@ -89,11 +90,12 @@ namespace ClassLibrary4
             if ( shader_name.IsNullOrEmpty() ) return;
 
             string key = "";
-            if (MC_Mapping.ContainsKey(shader_name))                  key = shader_name;
-            else if (shader_name.Contains("HSStandard (Two Colors)")) key = "HSStandard (Two Colors)";
-            else if (shader_name.Contains("HSStandard"))              key = "HSStandard";
-            else if (shader_name.Contains("PBRsp_2layer"))            key = "Shader Forge/PBRsp_2layer";
-            else if (shader_name.Contains("ShaderForge_Hair"))        key = "Shader Forge/Hair/ShaderForge_Hair";
+            if (MC_Mapping.ContainsKey(shader_name)) key = shader_name;
+            else if (shader_name.Contains("HSStandard (Two Colors)"))    key = "HSStandard (Two Colors)";
+            else if (shader_name.Contains("HSStandard"))                 key = "HSStandard";
+            else if (shader_name.Contains("PBRsp_2layer"))               key = "Shader Forge/PBRsp_2layer";
+            else if (shader_name.Contains("Shader Forge/PBR_SG_2Layer")) key = "Shader Forge/PBR_SG_2Layer";
+            else if (shader_name.Contains("ShaderForge_Hair"))           key = "Shader Forge/Hair/ShaderForge_Hair";
 
             if( !key.IsNullOrEmpty() )
                 for( int idx = 0; idx < MC_Mapping[key].Length; idx++ )
@@ -726,6 +728,7 @@ namespace ClassLibrary4
             string priority_shader_name = "";
             List<string> list_all_materials_excluding_glass = new List<string>();
             List<string> list_objcolor                      = new List<string>();
+            int max_support_color_count = 1; 
             foreach (Renderer r in renderers_in_acceobj)
             {
                 foreach (Material material in r.materials)
@@ -781,6 +784,7 @@ namespace ClassLibrary4
                         {
                             list_objcolor.Add(material_name);
                             priority_shader_name = material.shader.name;
+
                         }
                         backup_shader_name = material.shader.name;
                     }
