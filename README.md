@@ -13,7 +13,7 @@ Check [here](#1411) for the differences between this and the original (1.4.1 non
 ## Current Status
 
 - Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases).
-- The update log is long, I will not bother anyone here with a huge wall of text. Please just follow the **Requirements & Installations.**
+- The update log is long, I will not bother anyone here with a huge wall of text. Please just follow the **Requirements & Installation.**
 - If you are ＲＥＡＬＬＹ interested, check the update details [here](#150).
 
 ### Requirements & Installation
@@ -28,8 +28,8 @@ Check [here](#1411) for the differences between this and the original (1.4.1 non
 
 ### How to Use
 - `HoneyPot/HoneyPotInspector.exe` to generate `HoneyPot/HoneyPotInspector.txt`. **Without this pre-processed txt file, HoneyPot won't work properly.** 
-- There are many **options in F1's plugin config menu** for HoneyPot 1.5.0+. Most of them are well-described, please read the notes when toggling them.
-- **If you want to make the inspector exe do a complete clean run** (maybe your txt was lost or corrupted, or you are updating across many versions), delete both `HoneyPot/HoneyPotInspector.txt` and `HoneyPot/FileDateMap.txt` first before running inspector. 
+- There are many **options in F1's plugin config menu** for HoneyPot 1.5.0+. Most of them are well-described, please read the tooltips when toggling them.
+- **If you want to make the inspector exe do a complete clean run** (maybe your txt was lost or corrupted, or you are updating across many versions), delete both `HoneyPot/HoneyPotInspector.txt` and `HoneyPot/FileDateTime.txt` first before running inspector. 
 - If you see any **Purple Color of Error**, the first thing to do is to run the `HoneyPotInspector.exe` and try again, because you probably forget to do it.
 - If you see issues that are not Purple Color of Error, or *still* seeing Purple Color of Error despite having run HoneyPotInspector, please consult the [Known Issues](#known-issues) section.
 
