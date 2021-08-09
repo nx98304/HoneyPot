@@ -655,13 +655,93 @@ namespace ClassLibrary4
         #endregion
 
         #region Accessory shader remapping
+        // Note: We don't really know if Harmony can patch a patch. So added this indirection. This is required by
+        //       both AcceObj_SetupMaterials_Prefix and AccessoryInstantiate-postfix, and MoreAccessoriesPH 
+        //       only patches setAccsShader, so we move it out and make it be patched by MoreAccessoriesPH 
+        //       instead of the other functions. 
+        //      (footnote: I had to use hex editor to change the string "setAccsShader" to "getAcceCustom" from 
+        //                 MoreAccessories.dll, because I am still having a hard time setting up the correct  
+        //                 environment to compile that plugin.) 
+        public AccessoryCustom getAcceCustom(AccessoryParameter acceParam, int index)
+        {
+            return acceParam.slot[index];
+        }
+
         [HarmonyPatch(typeof(Accessories), "AccessoryInstantiate")]
         [HarmonyPostfix]
         private static void Postfix(Accessories __instance, AccessoryParameter acceParam, int slot, bool fixAttachParent, AccessoryData prevData)
-        {   //Note: this is required because we removed the UpdateColorCustom right at the end of SetupMaterials 
+        {
+            AccessoryCustom acceCustom = self.getAcceCustom(acceParam, slot);
+            if ( prevData != null && !force_color_key.IsPressed() && acceCustom.id != prevData.id )
+            {   // Note: We don't need the LOADING_STATE.SWITCHING_WEAR condition here because 
+                //       acce swapping doesn't trigger other acces to reload and is self-contained.
+                self.logSave("HoneyPot: switching to a new acce on slot(" + slot + ") AND Force Color Key not pressed, removing AcceCustom.color.");
+                acceCustom.color = null;
+            }
+            //Note: this is required because we removed the UpdateColorCustom right at the end of SetupMaterials 
             //      with the transpiler below
             __instance.UpdateColorCustom(slot);
-            self.setAccsShader(__instance, acceParam, slot);
+            self.setAccsShader(__instance, acceCustom, slot, prevData);
+        }
+        
+        private static bool orig_acce_color_value_exist(int id)
+        {
+            return HoneyPot.orig_acce_colors.ContainsKey(id) && HoneyPot.orig_acce_colors[id] != null;
+        }
+
+        [HarmonyPatch(typeof(MaterialCustomData), "GetAcce", new Type[] { typeof(AccessoryCustom) })]
+        [HarmonyPrefix]
+        private static bool Prefix(AccessoryCustom custom, ref bool __result)
+        {
+            // Note: !HoneyPot.orig_acce_color_value_exist() equals !the_actual_acce_obj.GetComponent<MaterialCustoms>()
+            //       We need it because otherwise the GetAcce(custom) call here would return true and assign
+            //       whatever that's in MaterialCustomData runtime db, and cause the card to gain custom.color, 
+            //       even if right after card loading it is null and is using a non-colorable item. 
+            //       The data might've slip into the runtime db in the past because it was force-colorable at one point.
+
+            //       And then, under ForceColor option, because our Policy after patching for a card on first-loading, 
+            //       is that whatever custom.color that is being read off of the card will be the SOLE reason 
+            //       for an acce to be colorable -- if the custom.color slipped through on the last saving of the card, 
+            //       even if at the time the acce seems to be non-colorable, it would then respond to the custom.color 
+            //       that is being read off of the card on the next loading, becoming colorable again 
+            //       and the color value would be whatever that's in MaterialCustomData. 
+            if ((custom.color == null && !HoneyPot.orig_acce_color_value_exist(custom.id)) || 
+                (loading_state != LOADING_STATE.FROMCARD && reset_color_key.IsPressed()) )
+            {
+                __result = false; // Note: if the item should not have color on load or if we held down color reset key, 
+                return false;     //       make sure that not only GetAcce(AccessoryCustom) main body doesn't get called
+            }                     //       and also the conditional fails so that UpdateColorCustom doesn't get called
+            return true;          //       one more time inside AccessoryCustomEdit.OnChangeAcceItem()
+        }
+
+        private static FieldInfo AcceObj_objField       = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj").GetField("obj");
+        private static FieldInfo AcceObj_slotField      = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj").GetField("slot", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static FieldInfo AcceObj_acceParamfield = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj").GetField("acceParam", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Note: Check WearObj_SetupMaterial_Patches for notes. We do this here because AcceObj is nested
+        //       Otherwise this serves the same purpose of WearObj.SetupMaterials' prefix. 
+        [HarmonyPrefix]
+        public static void AcceObj_SetupMaterials_Prefix(object __instance)
+        {
+            int slot = (int)AcceObj_slotField.GetValue(__instance);
+            AccessoryParameter acceParam = (AcceObj_acceParamfield.GetValue(__instance) as AccessoryParameter);
+            AccessoryCustom acceCustom = self.getAcceCustom(acceParam, slot);
+            if (acceCustom == null) 
+                return;
+            int id = acceCustom.id;
+
+            // Note: don't forget the stupid "AcceParent"
+            GameObject the_actual_acce_obj = (AcceObj_objField.GetValue(__instance) as GameObject).transform.GetChild(0).gameObject;
+            MaterialCustoms mc = the_actual_acce_obj.GetComponent<MaterialCustoms>();
+            if (id >= 0 && !HoneyPot.orig_acce_colors.ContainsKey(id))
+            {   // Note: needed to add null value to id key to block out while being ForceColor, 
+                //       because if the first time SetupMaterial is called and the key isn't added, 
+                //       it's possible for value to be added after the MaterialCustoms is added by HoneyPot later
+                //       Not sure why Wear counterpart doesn't need this -- probably because that they call 
+                //       MaterialCustomData stuff BEFORE Human.Apply/WearInstantiate.
+                ColorParameter_PBR2 color = mc ? new ColorParameter_PBR2(mc) : null;
+                HoneyPot.orig_acce_colors.Add(id, color);
+            }
         }
 
         private static IEnumerable<CodeInstruction> AcceObj_SetupMaterials_Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -695,11 +775,10 @@ namespace ClassLibrary4
         }
 
         private static FieldInfo Accessories_acceObjsField = typeof(Accessories).GetField("acceObjs", BindingFlags.NonPublic | BindingFlags.Instance);
-        private static FieldInfo AcceObj_objField = Assembly.GetAssembly(typeof(Accessories)).GetType("Accessories+AcceObj").GetField("obj");
+        private static FieldInfo accecustomedit_nowtabField = typeof(AccessoryCustomEdit).GetField("nowTab", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        public void setAccsShader(Accessories acce, AccessoryParameter acceParam, int slot)
+        public void setAccsShader(Accessories acce, AccessoryCustom acceCustom, int slot, AccessoryData prevData)
         {
-            AccessoryCustom acceCustom = acceParam.slot[slot];
             AccessoryData accessoryData = CustomDataManager.GetAcceData(acceCustom.type, acceCustom.id);
             if (accessoryData == null)
             {
@@ -728,7 +807,6 @@ namespace ClassLibrary4
             string priority_shader_name = "";
             List<string> list_all_materials_excluding_glass = new List<string>();
             List<string> list_objcolor                      = new List<string>();
-            int max_support_color_count = 1; 
             foreach (Renderer r in renderers_in_acceobj)
             {
                 foreach (Material material in r.materials)
@@ -784,7 +862,6 @@ namespace ClassLibrary4
                         {
                             list_objcolor.Add(material_name);
                             priority_shader_name = material.shader.name;
-
                         }
                         backup_shader_name = material.shader.name;
                     }
@@ -792,24 +869,80 @@ namespace ClassLibrary4
             }
 
             if (list_objcolor.Count == 0)
-            {   //Note: list_objcolor == 0 means we didn't find priority_shader_name either.
-                //      Since acce are always forced colorable, so if we don't find any 4E2D tag then we just
-                //      treat it as if it's all colorable.
-                list_objcolor = list_all_materials_excluding_glass;
-                priority_shader_name = backup_shader_name;
+            {   // Note: list_objcolor == 0 means we didn't find priority_shader_name either.
+                //       When this and only this should we ever consider about force color options.
+                //       And this also means it will color all renderers unconditonally, so sometimes it is not desirable.
+                if (force_color)
+                {   // Note: I know, this really is more complicated than it should be. 
+                    //       Trying to support things like StudioClothesEditor makes it even more complicated, but hey.
+                    if (acceCustom.color != null &&
+                        !check_default_color_param(acceCustom.color))
+                    {
+                        list_objcolor = list_all_materials_excluding_glass;
+                        priority_shader_name = backup_shader_name;
+                    }
+                    else if (loading_state != LOADING_STATE.FROMCARD && force_color_key.IsPressed())
+                    {
+                        if ((acceCustomEdit != null && acceCustomEdit.isActiveAndEnabled &&
+                             (int)accecustomedit_nowtabField.GetValue(acceCustomEdit) == slot)
+                            ||
+                            (sce != null &&
+                             (bool)studioClothesEditor_mainWindowField.GetValue(sce) == true &&
+                             (int)studioClothesEditor_editModeField.GetValue(sce) == 2 &&
+                             (int)studioClothesEditor_accsenField.GetValue(sce) == slot))
+                        {
+                            list_objcolor = list_all_materials_excluding_glass;
+                            priority_shader_name = backup_shader_name;
+                        }
+                    }
+                }
             }
 
             //Note: wait DUDE what the fuck. acceobj_obj is always going to be "AcceParent" which will never contain 
             //      a MaterialCustoms. I suppose I can still always assume that AcceParent has only 1 child?
             GameObject the_actual_acce_obj = acceobj_obj.transform.GetChild(0).gameObject;
             MaterialCustoms materialCustoms = the_actual_acce_obj.GetComponent<MaterialCustoms>();
+
+            //Note: Unfortunately due to how StudioClothesEditor works (or my lack of understand of it)
+            //      this reset effect ended up a lot worse than clothings. Now it's best for Accessories to 
+            //      use color-lock inside StudioClothesEditor (the opposite of clothings) and use the reset color key
+            //      to restore the material's initial settings. 
+            if (loading_state != LOADING_STATE.FROMCARD && 
+                reset_color_key.IsPressed() && !force_color_key.IsPressed())
+            {
+                if ( (acceCustomEdit != null && acceCustomEdit.isActiveAndEnabled &&
+                      (int)accecustomedit_nowtabField.GetValue(acceCustomEdit) == slot)
+                      ||
+                     (sce != null &&
+                      (bool)studioClothesEditor_mainWindowField.GetValue(sce) == true &&
+                      (int)studioClothesEditor_editModeField.GetValue(sce) == 2 &&
+                      (int)studioClothesEditor_accsenField.GetValue(sce) == slot))
+                {
+                    if (materialCustoms && HoneyPot.orig_acce_color_value_exist(acceCustom.id))
+                    { // Note: orig_colors is captured right at the point of WearObj.SetupMaterials happens 1st time
+                      //       once its captured the data will not be overwritten in away. This is sort my method of
+                      //       restoring the value before "MaterialCustomdata" runtime database. 
+                        acceCustom.color = new ColorParameter_PBR2(HoneyPot.orig_acce_colors[acceCustom.id]);
+                    } //       for clothings not having MaterialCustoms, we just nullify its wearParam.
+                    else acceCustom.color = null;
+
+                    if( prevData != null && acce_previously_has_mc && prevData.id == accessoryData.id )
+                    {   // Note: when reseting color, if the acceobj previously has MaterialCustoms, 
+                        //       don't get rid of it. Wear doesn't need this stuff because in the outside
+                        //       they call MaterialCustomData stuff BEFORE Human.Apply/WearInstantiate ... 
+                        list_objcolor = list_all_materials_excluding_glass;
+                        priority_shader_name = backup_shader_name;
+                    }
+                }
+            }
+
             if (materialCustoms == null && priority_shader_name != "")
             {
                 this.logSave(" -- This accessory doesn't have MaterialCustoms, try adding one: " + accessoryData.assetbundleName.Replace("\\", "/") + ", shader: " + priority_shader_name);
                 materialCustoms = the_actual_acce_obj.AddComponent<MaterialCustoms>();
-                materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
+                materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.default_mc.parameters.Length];
                 int idx = 0;
-                foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
+                foreach (MaterialCustoms.Parameter copy in HoneyPot.default_mc.parameters)
                 {
                     materialCustoms.parameters[idx] = new MaterialCustoms.Parameter(copy);
                     materialCustoms.parameters[idx++].materialNames = list_objcolor.ToArray();
@@ -819,6 +952,15 @@ namespace ClassLibrary4
                 match_correct_shader_property_data_range(materialCustoms, priority_shader_name);
             }
             acce.UpdateColorCustom(slot);
+
+            if (loading_state != LOADING_STATE.FROMCARD) acce_previously_has_mc = (materialCustoms != null);
+
+            if (acceCustomEdit != null && acceCustomEdit.isActiveAndEnabled &&
+                (int)accecustomedit_nowtabField.GetValue(acceCustomEdit) == slot)
+            {
+                // Note: The same as wearCustomEdit's situation
+                acceCustomEdit.UpdateColorUI(slot);
+            }
         }
         #endregion
 
@@ -836,8 +978,14 @@ namespace ClassLibrary4
                 self.logSave("-------------------------------");
                 self.logSave(" HoneyPot: we are loading char");
                 self.logSave("-------------------------------");
-                loading_state = LOADING_STATE.FROMFILE;
+                loading_state = LOADING_STATE.FROMCARD;
             }
+        }
+
+        [HarmonyPostfix]
+        private static void CustomParameter_Load_Postfix()
+        {
+            if (force_color) loading_state = LOADING_STATE.NONE;
         }
 
         [HarmonyPrefix]
@@ -848,8 +996,14 @@ namespace ClassLibrary4
                 self.logSave("-------------------------------");
                 self.logSave(" HoneyPot: we are loading coord");
                 self.logSave("-------------------------------");
-                loading_state = LOADING_STATE.FROMFILE;
+                loading_state = LOADING_STATE.FROMCARD;
             }
+        }
+
+        [HarmonyPostfix]
+        private static void CustomParameter_LoadCoordinate_Postfix()
+        {
+            if (force_color) loading_state = LOADING_STATE.NONE;
         }
 
         [HarmonyPrefix]
@@ -860,7 +1014,7 @@ namespace ClassLibrary4
                 self.logSave("---------------------------------------------------");
                 self.logSave(" HoneyPot: we are switching category " + wear.ToString() + " id: " + id);
                 self.logSave("---------------------------------------------------");
-                loading_state = LOADING_STATE.SWITCHING;
+                loading_state = LOADING_STATE.SWITCHING_WEAR;
                 temp_wear_param = new WearParameter(__instance.human.customParam.wear); // copy so we can compare later
             }
         }
@@ -874,7 +1028,7 @@ namespace ClassLibrary4
             {
                 GameObject obj = wearobj.obj;
 
-                if (loading_state == LOADING_STATE.SWITCHING && !force_color_key.IsPressed() &&
+                if (loading_state == LOADING_STATE.SWITCHING_WEAR && !force_color_key.IsPressed() &&
                      __instance.wearParam.wears[(int)type].id != temp_wear_param.wears[(int)type].id)
                 {
                     self.logSave("HoneyPot: switching to a new clothing on category(" + type + ") AND Force Color Key not pressed, removing WearCustom.color.");
@@ -969,9 +1123,9 @@ namespace ClassLibrary4
             }
             // Note: we know this is the last type, so the WearInstantiate cycle is over, cleanup 
             //       this need to run every time this is called, cannot be blocked by wearobj == null 
-            if (type == WEAR_TYPE.SHOES && loading_state != LOADING_STATE.NONE)
+            if (type == WEAR_TYPE.SHOES && loading_state == LOADING_STATE.SWITCHING_WEAR)
             {
-                self.logSave("HoneyPot: final category reached. Cleaning up the loading_state and temp wearParam.");
+                self.logSave("HoneyPot: final category reached. Cleaning up temp wearParam.");
                 temp_wear_param = null;
                 loading_state = LOADING_STATE.NONE;
             }
@@ -1094,9 +1248,9 @@ namespace ClassLibrary4
                             list_objcolor = list_all_materials_without_body_material_mpoint;
                             priority_shader_name = backup_shader_name;
                         }
-                        else if ( force_color_key.IsPressed() )
+                        else if( loading_state != LOADING_STATE.FROMCARD && force_color_key.IsPressed() )
                         {
-                            if( (wearCustomEdit != null &&
+                            if( (wearCustomEdit != null && wearCustomEdit.isActiveAndEnabled &&
                                  (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx)  
                                 ||
                                 (sce != null && 
@@ -1118,9 +1272,10 @@ namespace ClassLibrary4
 
                 MaterialCustoms materialCustoms = wearobj_obj.GetComponent<MaterialCustoms>();
 
-                if (reset_color_key.IsPressed() && !force_color_key.IsPressed())
+                if (loading_state != LOADING_STATE.FROMCARD &&
+                    reset_color_key.IsPressed() && !force_color_key.IsPressed())
                 {
-                    if ( (wearCustomEdit != null &&
+                    if ( (wearCustomEdit != null && wearCustomEdit.isActiveAndEnabled &&
                           (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx) 
                          ||
                          (sce != null &&
@@ -1129,11 +1284,11 @@ namespace ClassLibrary4
                           (int)(WEAR_TYPE)studioClothesEditor_wearTypeField.GetValue(sce) == idx) ) 
                     {
                         int id = wears.wearParam.wears[idx].id;
-                        if (materialCustoms && HoneyPot.orig_colors.ContainsKey(id))
+                        if (materialCustoms && HoneyPot.orig_wear_colors.ContainsKey(id))
                         { // Note: orig_colors is captured right at the point of WearObj.SetupMaterials happens 1st time
                           //       once its captured the data will not be overwritten in away. This is sort my method of
                           //       restoring the value before "MaterialCustomdata" runtime database. 
-                            wears.wearParam.wears[idx].color = new ColorParameter_PBR2(HoneyPot.orig_colors[id]);
+                            wears.wearParam.wears[idx].color = new ColorParameter_PBR2(HoneyPot.orig_wear_colors[id]);
                         } //       for clothings not having MaterialCustoms, we just nullify its wearParam.
                         else wears.wearParam.wears[idx].color = null;
                     }
@@ -1143,9 +1298,9 @@ namespace ClassLibrary4
                 {
                     this.logSave(" -- This wear doesn't have MaterialCustoms, try adding one: " + wearData.assetbundleName.Replace("\\", "/") + ", shader: " + priority_shader_name);
                     materialCustoms = wearobj_obj.AddComponent<MaterialCustoms>();
-                    materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.mc.parameters.Length];
+                    materialCustoms.parameters = new MaterialCustoms.Parameter[HoneyPot.default_mc.parameters.Length];
                     int k = 0;
-                    foreach (MaterialCustoms.Parameter copy in HoneyPot.mc.parameters)
+                    foreach (MaterialCustoms.Parameter copy in HoneyPot.default_mc.parameters)
                     {
                         materialCustoms.parameters[k] = new MaterialCustoms.Parameter(copy);
                         materialCustoms.parameters[k++].materialNames = list_objcolor.ToArray();
@@ -1155,12 +1310,13 @@ namespace ClassLibrary4
                 }
                 WearObj_SetupMaterials.Invoke(wearobj, new object[] { null }); //the WearData is never used/checked in this call
                 wearobj.UpdateColorCustom();
-                if (this.wearCustomEdit != null && (int)wearcustomedit_nowtabField.GetValue(this.wearCustomEdit) == idx)
+                if (wearCustomEdit != null && wearCustomEdit.isActiveAndEnabled && 
+                    (int)wearcustomedit_nowtabField.GetValue(wearCustomEdit) == idx)
                 {
                     // After a HS clothing is loaded, if wearCustomEdit is present and it is choosing the this wear slot
                     // Try to force the LoadedCoordinate() to enable color UI. Because before this point in time
                     // This HS clothing is deemed non-colorchangable because of its MaterialCustom is not set.
-                    this.wearCustomEdit.LoadedCoordinate(type);
+                    wearCustomEdit.LoadedCoordinate(type);
                 }
             }
             catch (Exception ex)
@@ -1314,7 +1470,7 @@ namespace ClassLibrary4
                 this.logSave("Somehow Standard shader cannot be loaded.");
             }
             GameObject proxy_to_get_material_customs = bundle.LoadAsset<GameObject>("p_cf_yayoi_top");
-            HoneyPot.mc = proxy_to_get_material_customs.GetComponentInChildren<MaterialCustoms>();
+            HoneyPot.default_mc = proxy_to_get_material_customs.GetComponentInChildren<MaterialCustoms>();
 
             bundle.Unload(false);
 
@@ -2806,19 +2962,28 @@ namespace ClassLibrary4
                 this.logSave("List crawled timestamp: " + t.ElapsedMilliseconds.ToString());
 				this.readInspector();
                 this.logSave("Inspector established timestamp: " + t.ElapsedMilliseconds.ToString());
-                HarmonyMethod acceobj_setupmaterials_transpiler = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_SetupMaterials_Transpiler), new[] { typeof(IEnumerable<CodeInstruction>) });
+                HarmonyMethod acceobj_setupmaterials_prefix     = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_SetupMaterials_Prefix), new Type[] { typeof(AccessoryData) });
+                HarmonyMethod acceobj_setupmaterials_transpiler = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_SetupMaterials_Transpiler), new Type[] { typeof(IEnumerable<CodeInstruction>) });
                 HarmonyMethod acceobj_updatecolorcustom_prefix  = new HarmonyMethod(typeof(HoneyPot), nameof(AcceObj_UpdateColorCustom_Prefix));
                 HarmonyMethod head_changeeyebrow_postfix = new HarmonyMethod(typeof(HoneyPot), nameof(Head_ChangeEyebrow_Postfix));
                 HarmonyMethod head_changeeyelash_postfix = new HarmonyMethod(typeof(HoneyPot), nameof(Head_ChangeEyelash_Postfix));
-                HarmonyMethod customparam_load_prefix = new HarmonyMethod(typeof(HoneyPot), nameof(CustomParameter_Load_Prefix));
-                HarmonyMethod customparam_loadcoord_prefix = new HarmonyMethod(typeof(HoneyPot), nameof(CustomParameter_LoadCoordinate_Prefix));
+                HarmonyMethod customparam_load_prefix  = new HarmonyMethod(typeof(HoneyPot), nameof(CustomParameter_Load_Prefix));
+                HarmonyMethod customparam_load_postfix = new HarmonyMethod(typeof(HoneyPot), nameof(CustomParameter_Load_Postfix));
+                HarmonyMethod customparam_loadcoord_prefix  = new HarmonyMethod(typeof(HoneyPot), nameof(CustomParameter_LoadCoordinate_Prefix));
+                HarmonyMethod customparam_loadcoord_postfix = new HarmonyMethod(typeof(HoneyPot), nameof(CustomParameter_LoadCoordinate_Postfix));
                 HarmonyMethod wearcustomedit_changeonwear_prefix = new HarmonyMethod(typeof(HoneyPot), nameof(WearCustomEdit_ChangeOnWear_Prefix));
-                harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("SetupMaterials", new Type[] { typeof(AccessoryData) }), transpiler: acceobj_setupmaterials_transpiler);
+                harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("SetupMaterials", new Type[] { typeof(AccessoryData) }), 
+                    prefix    : acceobj_setupmaterials_prefix, 
+                    transpiler: acceobj_setupmaterials_transpiler);
                 harmony.Patch(typeof(Accessories).GetNestedType("AcceObj", BindingFlags.NonPublic).GetMethod("UpdateColorCustom"), prefix: acceobj_updatecolorcustom_prefix);
                 harmony.Patch(typeof(Head).GetMethod("ChangeEyebrow"), postfix: head_changeeyebrow_postfix);
                 harmony.Patch(typeof(Head).GetMethod("ChangeEyelash"), postfix: head_changeeyelash_postfix);
-                harmony.Patch(typeof(CustomParameter).GetMethod("Load", new Type[] { typeof(BinaryReader) }), prefix: customparam_load_prefix);
-                harmony.Patch(typeof(CustomParameter).GetMethod("LoadCoordinate", new Type[] { typeof(BinaryReader) }), prefix: customparam_loadcoord_prefix);
+                harmony.Patch(typeof(CustomParameter).GetMethod("Load", new Type[] { typeof(BinaryReader) }), 
+                    prefix : customparam_load_prefix,
+                    postfix: customparam_load_postfix);
+                harmony.Patch(typeof(CustomParameter).GetMethod("LoadCoordinate", new Type[] { typeof(BinaryReader) }), 
+                    prefix : customparam_loadcoord_prefix,
+                    postfix: customparam_loadcoord_postfix);
                 harmony.Patch(typeof(WearCustomEdit).GetMethod("ChangeOnWear"), prefix: wearcustomedit_changeonwear_prefix);
                 this.logSave("Dynamic Harmony patches timestamp: " + t.ElapsedMilliseconds.ToString());
                 if ( Singleton<Studio.Studio>.Instance != null )
@@ -2834,9 +2999,10 @@ namespace ClassLibrary4
                 t.Stop();
                 this.logSave("All shader prepared - HoneyPot first run used time: " + t.ElapsedMilliseconds.ToString());
             }
-            if( this.wearCustomEdit == null && SceneManager.GetActiveScene().name == "EditScene" ) 
+            if( wearCustomEdit == null && acceCustomEdit == null && SceneManager.GetActiveScene().name == "EditScene" ) 
             {
-                this.wearCustomEdit = Resources.FindObjectsOfTypeAll<WearCustomEdit>()[0];
+                wearCustomEdit = Resources.FindObjectsOfTypeAll<WearCustomEdit>()[0];
+                acceCustomEdit = Resources.FindObjectsOfTypeAll<AccessoryCustomEdit>()[0];
 			}
             if ( sce == null && SceneManager.GetActiveScene().name == "Studio" )
             {   
@@ -2844,6 +3010,7 @@ namespace ClassLibrary4
                 studioClothesEditor_mainWindowField = sce.GetType().GetField("mainWindow", BindingFlags.NonPublic | BindingFlags.Instance);
                 studioClothesEditor_editModeField = sce.GetType().GetField("editMode", BindingFlags.NonPublic | BindingFlags.Instance);
                 studioClothesEditor_wearTypeField = sce.GetType().GetField("wearType");
+                studioClothesEditor_accsenField = sce.GetType().GetField("accsen", BindingFlags.NonPublic | BindingFlags.Instance);
             }
             if ( !HoneyPot.allGetListContentDone && HoneyPot.asynctracker == 0 )
             {
@@ -2941,13 +3108,15 @@ namespace ClassLibrary4
         protected static Shader PH_hair_shader_o;
         protected static Shader PH_hair_shader_co;
 
-        protected static MaterialCustoms mc;
+        protected static MaterialCustoms default_mc;
 
-        private WearCustomEdit wearCustomEdit = null;
+        private WearCustomEdit      wearCustomEdit = null;
+        private AccessoryCustomEdit acceCustomEdit = null;
         private object sce = null;
         private static FieldInfo studioClothesEditor_mainWindowField = null;
         private static FieldInfo studioClothesEditor_editModeField = null;
         private static FieldInfo studioClothesEditor_wearTypeField = null;
+        private static FieldInfo studioClothesEditor_accsenField = null;
 
         private string assetBundlePath      = Application.dataPath + "/../abdata";
         private string conflictText         = Application.dataPath + "/../UserData/conflict.txt";
@@ -2961,11 +3130,13 @@ namespace ClassLibrary4
         private static List<string> conflictList                = new List<string>();
         private static int  num_of_conflict_you_should_really_worry_about = 0;
 
-        private enum LOADING_STATE { NONE, SWITCHING, FROMFILE };
+        private enum LOADING_STATE { NONE, SWITCHING_WEAR, FROMCARD };
 
         private static LOADING_STATE loading_state = LOADING_STATE.NONE;
         private static WearParameter temp_wear_param = null;
-        public  static Dictionary<int, ColorParameter_PBR2> orig_colors = new Dictionary<int, ColorParameter_PBR2>();
+        private static bool          acce_previously_has_mc = false;
+        public  static Dictionary<int, ColorParameter_PBR2> orig_wear_colors = new Dictionary<int, ColorParameter_PBR2>();
+        public  static Dictionary<int, ColorParameter_PBR2> orig_acce_colors = new Dictionary<int, ColorParameter_PBR2>();
 
         private static Dictionary<string, int> material_rq   = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
         private static Dictionary<string, Shader> PH_shaders = new Dictionary<string, Shader>();
