@@ -4,16 +4,99 @@
 
 Some notes about this repository: 
 
-A lot of my early monkey patches have been reorganized, and a lot of empty functions presumably left by Amamiya-san are also now cleaned up. The code and comment quality still need some improvements, but in general with the notes I have left, it should not be too confusing. 
+A lot of my early monkey patches have been reorganized, but during the development from 1.4.8 to 1.5.0, unforunately the untidiness has gone up significantly again. Partly it's because of my sloppy programming habits, but partly it's because HoneyPot was designed to handle very messy situations: Not really 1-to-1 shader remapping, HS1 mods not exactly conforming to vanilla abdata structures, the differences between HS1 and PH's seemingly identical data format, and inconsistencies in PH's own logic between wear / acce / hair and item handling. Most of these parts are annotated by comments now.
 
-This can be built with .Net Framework 3.5 and the dll references that's currently in the STN 3.1 pack. The .csproj file in the repository should be a good indicator of what assemblies/dlls to get. Note that I had to change all Harmony 1.0.9 usages to version 2 usages, because it was mixing here and there and you won't be able to build it when it was decompiled by dnSpy. 
+This can be built with .Net Framework 3.5 and the dll references that's currently in the STN 3.1 pack. The current code requires **a publicized version of Assembly-CSharp.dll**; **BepInEx 5.2** and **Harmony 2.** The .csproj file in the repository should be a good indicator of what assemblies/dlls to get. 
 
-I have also changed the version number starting from 1.4.1.1. Check [here](#1411) for the differences between this and the original version. 
+Check [here](#1411) for the differences between this and the original (1.4.1 non-opensourced) version. 
 
 ## Current Status
 
-### 1.4.8
 - Package releases here: [download page](https://github.com/nx98304/HoneyPot/releases).
+- The update log is long, I will not bother anyone here with a huge wall of text. Please just follow the **Requirements & Installations.**
+- If you are ＲＥＡＬＬＹ interested, check the update details [here](#150).
+
+### Requirements & Installation
+- HoneyPot requires **BepInEx 5.2 or above**. If you somehow are using a PH installation without BepInEx and is trying to convert, please checkout BepInEx releases: https://github.com/BepInEx/BepInEx/releases 
+  - **NOTE**: There are other procedures that you must do to convert a fully IPA build to BepInEx + IPA build, which is unrelated to HoneyPot.
+- Download from the releases page and extract the zip into PH root folder. Download the _all package and just overwrite all files. (Backup your `HoneyPot/shader.txt` if needed). If you are upgrading to 1.5.0+ from any versions before (and including) 1.4.7, please do these in order: 
+  - Remove `Plugins/PH_Fixes/PH_Fixes_HoneyPot.dll` if it is present. 
+  - Remove or rename `Plugins/HoneyPot.dll` to something not ending with `.dll` file extension. (And DO NOT use the HoneyPot option from the launcher up until (and including) **BR 3.2 Hotfix 1**)
+  - Extract the HoneyPot package into the PH root folder, overwrite everything. 
+  - Delete `HoneyPot/FileDateTime.txt`, and run `HoneyPotInspector.exe`, so that it would reprocess the whole HS1 abdatas.
+  - If you have a big file at `abdata/MaterialEditor/HSStandard_PH/hsstandardshaders_for_ph`, feel free to remove it (**Keep the XML!**). The shader abdata has relocated. 
+
+### How to Use
+- `HoneyPot/HoneyPotInspector.exe` to generate `HoneyPot/HoneyPotInspector.txt`. **Without this pre-processed txt file, HoneyPot won't work properly.** 
+- There are many **options in F1's plugin config menu** for HoneyPot 1.5.0+. Most of them are well-described, please read the notes when toggling them.
+- **If you want to make the inspector exe do a complete clean run** (maybe your txt was lost or corrupted, or you are updating across many versions), delete both `HoneyPot/HoneyPotInspector.txt` and `HoneyPot/FileDateMap.txt` first before running inspector. 
+- If you see any **Purple Color of Error**, the first thing to do is to run the `HoneyPotInspector.exe` and try again, because you probably forget to do it.
+- If you see issues that are not Purple Color of Error, or *still* seeing Purple Color of Error despite having run HoneyPotInspector, please consult the [Known Issues](#known-issues) section.
+
+## Known Issues
+
+### ...that you need some (easy) manual procedures to fix by yourself
+- Look into **howto_import_type_definition.zip** in the releases page, if you see any of the following: 
+  - Hairs, Clothings, Accessories, Studio items and any other item mods that seem to show up in the list menu in-game, and also show up in the Studio Workspace, but just **don't actually show up in the 3D space**. (Usually means their assetbundle lacks type definitions of `SkinnedMeshRenderer`, `MeshRenderer` or other Renderers from Unity 5.3.x.)
+  - Aforementioned items show up in 3D space, but somehow **textures failed to load**, becoming pure/single color only. (Usually means their assetbundle lacks type definitions of `Texture2D` or `Material` from Unity 5.3.x.) 
+  - Aforementioned items (especially Hairs) seem to show up just fine, but the **transparency and render queue seem wrong**. (Could be the `SetRenderQueue` Monobehavior's type definition from Unity 5.3.x is lacking.)
+  - All above situations will cause error messages like: `The file 'archive:/CAB-...' is corrupted! Remove it and launch unity again!` to be seen in the game's log. Remember checking them. **After investigation, there are no reasonable way to automatically add type definitions to assetbundles.**   
+- Water surfaces in scene/map-like studio items looks solid: remove it using SB3U, and put in standalone water items in studio.
+- Some clothing has wrong Render Queue settings. If a clothing doesn't actually feature half-transparency (not just net-like or with holes that can see through), you would never want it to have RQ values higher than 2500 (meaning transparent to Unity). It will affect the clothing's ability to receive shadows from other objects. Use SB3U to fix the asset permanently or use Material Editor to save the temporary changes to your character/clothing cards. 
+- Most of the crazy bloom issues caused by HS1 mods can be fixed by recalculating tangent information with Mikkelsen method via SB3U. See: https://discord.com/channels/446784086539763712/446787319228268554/865812589652475915
+
+### ...that are related to Xyth24 "PH mods"
+- Xyth24's PH mods aren't really PH mods; they are HS1 mods with `.unity3d` file extension removed. Which means `HoneyPotInspector.exe` will not process them at all. 
+- The hair part of the Xyth24's head mods don't have issues, because all hairs are forced to use PH hair shaders by default. But accessories and other Xyth24 mods will fail to work if they *pretend* to be PH mods. 
+- **Fix step1:** Add `.unity3d` file extension back to Xyth24 abdatas, and run HoneyPotInspector.exe, so it picks up the mods now. 
+- **Fix step2:** Add `.unity3d` file extension to the first line of Xyth24 PH lists accordingly. 
+
+### ...in the current functionalities that might be fixed down the line
+- Is fur shader remapping possible? 
+- There are situations where "1 MaterialCustom needs to correspond to 2 different material/renderer (main/sub)", so sub-color shaders are needed (e.g. using `_Color_3` as the main color) Mostly seen in Roy12 mods, Hard to notice but it's there. Need to port Roy12's HS1 shaders to PH natively (this way a lot of his mods will have significant improvements.)
+  - See: https://discord.com/channels/446784086539763712/446787319228268554/871384502595903489
+- Importing Alloy/Core series shaders into PH. (I think we already have a couple, but modders like KKUL uses more of them.) 
+- It *may* be possible for `HoneyPotInspector.exe` to detect and automate the fixes of crazy bloom issues. Preliminary investigation has begun. See: https://discord.com/channels/446784086539763712/446787088315318303/866319782369296414 
+
+### ...that this mod probably will NEVER fix
+- Custom shader-heavy stuff. Like fancy particle effects, complex water effects, etc. 
+- Automatically importing type definitions into HS1 abdatas that don't have them. 
+
+## Possible Roadmap
+
+- Find a way to just disable every surface water / ground water HoneyPot detects. There cannot be any sensible way to remap water shaders.
+- Further code clean up to make variables in the code humanly readable, and start to annotate the code with comments
+- What's up with the Studio Item category changes? I cannot determine the original reason of doing it. 
+- Importing Tattoos, Tanlines, Facial makeups, Male brow and other material or texture-based mods. (Currently only Female brows and eyelashes are experimentally supported.)
+- It seems to be possible to add Studio item shader remapping to Importer.dll. 
+
+## Update Logs
+
+### 1.5.0
+
+- **BREAKING CHANGE** : 
+  - HoneyPot is now a BepInEx plugin, requiring at least **BepInEx 5.2** to work. `Plugins/HoneyPot.dll` needs to be removed. 
+  - As of **BR 3.2 Hotfix 1**, HoneyPot can no longer be activated or deactivated with the launcher (because it still points to IPA location.)
+  - `HoneyPot/HoneyPotInspector.txt` requires a 100% regenration. (The format didn't change, however there are so many new shader information added with the new HoneyPotInspector, and HoneyPot really relies on them that you just have to do this.)
+- The functionality to duplicate swimsuit into normal clothing categories **now has functioning half-states.** Users also have more control over what to duplicate or not. 
+- Chara Maker can now have an option to use alpha-enabled color picker for clothings and accessories. 
+- An addition of Reset Color Key so that you can reset the color on a colorable (or force-colorable) clothing or accessory, to its modder's original setting (**NOT THE COLORS SAVED IN THE CARD**, if you want to restore colors from a card, simply reload that card would be much easier.) This function is included because PH *remembers* the colors you last picked with color UI. Sometimes this makes it very hard to reset to exactly the clothings' or the accessories' original color. Or sometimes you want to load an old card and restore some of its colors. 
+- ForceColor option now no longer cause old cards to have pure white clothings or accessories. Furthermore, after you activate ForceColor option, you need to use Force Color Key to actually activate a clothing or accessory that were non-colorable to be colorable. So there is very low chance to break your old cards in any way.  
+- Fixed HS1 mods that lack the `(cf|cm)_N_O_root` (or have MULTIPLE of them) causing the clothing fail to be attached correctly.
+- Fixed certain skinned accessories (such as nails) that were acting weirdly due to BonesFramework code. 
+- The `lambert` `clipping` default materials from some HS1 mods no longer causes the body to become Purple Color of Error.
+- Fixed issues where some HS1 hairs would be off-positioned or rotated. Also hair shaders are now mapped better because previously I didn't know about the differences between `ObjHair` and `ObjHairAcs`. 
+- Fixed certain HS1 hairs that need `PBRsp_alpha_blend` equivalent to avoid render queue issues. Now good enough substitute has been found (HSStandard + ALPHABLEND_ON keyword -- thanks to AgiShark!).
+- Slightly reduce the amount of mods that would cause the crazy bloom or pure black issues by stopping using `PBRsp_3mask` as the default hair / clothing / acce shaders. Some HS1 mods lost their bump map, but they are mostly Roy12's as far as I know, and those mods require porting Roy12's HS1 shaders to PH natively -- which will be worked on next. 
+- AgiShark's continuous support on making HSStandard shaders for PH better. Also now it's possible to import shader packages to `HoneyPot/shaders/` directly without any code changes (though you would still have to add the mapping manually in `HoneyPot/shader.txt`). 
+- Accessories materials and shaders are now better handled to reduce the occurances that colors are applied to materials that should not change colors. Note that some items are set up in a way that needs sub-color shaders or custom shaders that we are still unable to map to.
+- Slightly faster HoneyPot loading time when game startup. Now there will be a lot of CAB-String error messages during startup, but they are of no consequences, because when that happens, CAB-Strings will be regenerated for those files and successfully loaded just a few seconds later. 
+- HoneyPotInspector.exe no longer leaves a trail of `*.swap` files after processing HS1 abdatas. 
+- Fixed a performance bug in Chara Maker that your FPS will be about halved before you open the Clothing menu for the first time. 
+- Better mod ID conflict reporting in `UserData/conflict.txt`.
+- If a HS1 list provides wrong path to abdata, now HoneyPot will check if the file actually exists before adding them to the runtime database.
+
+### 1.4.8
 - **BREAKING CHANGE** : 
   - If you have been using **MoreAccessoriesPH**, you need to **replace** `BepInEx/plugins/MoreAccessories.dll` with the one bundled within this version. Special thanks to Joan6694 for accepting my change back to his codebase and helping prepare the new version!
   - **Remove** `Plugins/PH_Fixes/PH_Fixes_HoneyPot.dll`. 
@@ -30,73 +113,6 @@ I have also changed the version number starting from 1.4.1.1. Check [here](#1411
     - **This will make some of your old cards' and scenes' clothings to change color.** You can just change the color back in chara maker because they are now adjustable. If you find this troublesome, just don't save anything and remove this modpref option.
   - Non-colorable clothings & accessories usually imply their materials have only 1 main color to begin with. So in the color UI, the sub color options will show up, but are mostly useless. 
 - A note: the **Standard_555** shader that was added back in 1.4.6 was not transplanted from Unity 5.3.x. Thanks AgiShark for pointing this out. 
-
-### Requirements & Installation
-- HoneyPot is still an IPA mod for now, but make sure your PH installation has **BepInEx 5.2 or above**. If you somehow are using a PH installation without BepInEx and is trying to convert, please checkout BepInEx releases: https://github.com/BepInEx/BepInEx/releases 
-  - **NOTE**: There are other procedures that you must do to convert a fully IPA build to BepInEx + IPA build, which is unrelated to HoneyPot.
-- Download from the releases page and extract the zip into PH root folder. When in doubt, download the _all package and just overwrite all files. (Backup your `HoneyPot/shader.txt` if needed) ; if you have been keeping updated, download the _trim package that only contain the updated files. 
-  - **If you downloaded the _all package, and are upgrading from HoneyPot 1.4.5 or earlier directly**, do a complete clean run by also removing `HoneyPot/HoneyPotInspector.txt`.
-
-### How to Use
-- `HoneyPot/HoneyPotInspector.exe` to generate `HoneyPot/HoneyPotInspector.txt`. **Without this pre-processed txt file, HoneyPot won't work properly.** 
-- **If you want to make the inspector exe do a complete clean run** (maybe your txt was lost or corrupted), delete both `HoneyPot/HoneyPotInspector.txt` and `HoneyPot/FileDateMap.txt` first before running inspector. 
-- If you see any **Purple Color of Error**, the first thing to do is to run the `HoneyPotInspector.exe` and try again, because you probably forget to do it.
-- `HoneyPot/shader.txt` to do the shader remapping. You can try to add new shader remapping rules here. See [How to use shader.txt effectively](#how-to-use-shadertxt-effectively). (The Material Editor mod makes it a lot easier to find suitable remap targets). 
-- If you see issues that are not Purple Color of Error, or *still* seeing Purple Color of Error despite having run HoneyPotInspector, please consult the [Known Issues](#known-issues) section.
-- `UserData/modprefs.ini` options:
-  - set `DoTransport=FALSE` to make HoneyPot NOT adding swimsuits to bras and shorts categories in chara maker.
-  - set `ForceColor=TRUE` to make HoneyPot make all not-already-colorable clothings colorable. **This will make some of your old cards' and scenes' clothings to change color.** You can just change the color back in chara maker because they are now adjustable. If you find this troublesome, just don't save anything and remove this modpref option.
-```
-[HoneyPot] 
-DoTransport=FALSE
-ForceColor=TRUE
-```
-
-## Known Issues
-
-### ...that you need some (easy) manual procedures to fix by yourself
-- Look into **howto_import_type_definition.zip** in the releases page, if you see any of the following: 
-  - Hairs, Clothings, Accessories, Studio items and any other item mods that seem to show up in the list menu in-game, and also show up in the Studio Workspace, but just **don't actually show up in the 3D space**. (Usually means their assetbundle lacks type definitions of `SkinnedMeshRenderer`, `MeshRenderer` or other Renderers from Unity 5.3.x.)
-  - Aforementioned items show up in 3D space, but somehow **textures failed to load**, becoming pure/single color only. (Usually means their assetbundle lacks type definitions of `Texture2D` or `Material` from Unity 5.3.x.) 
-  - Aforementioned items (especially Hairs) seem to show up just fine, but the **transparency and render queue seem wrong**. (Could be the `SetRenderQueue` Monobehavior's type definition from Unity 5.3.x is lacking.)
-  - All above situations will cause error messages like: `The file 'archive:/CAB-...' is corrupted! Remove it and launch unity again!` to be seen in the game's log. Remember checking them. **I don't know how to automatically adding type definitions to assetbundles.**   
-- Water surfaces in scene/map-like studio items looks solid: remove it using SB3U, and put in standalone water items in studio.
-- Some clothing has wrong Render Queue settings. If a clothing doesn't actually feature half-transparency (not just net-like or with holes that can see through), you would never want it to have RQ values higher than 2500 (meaning transparent to Unity). It will affect the clothing's ability to receive shadows from other objects. Use SB3U to fix the asset permanently or use Material Editor to save the temporary changes to your character/clothing cards. 
-- If you encounter HS top clothings that made body skin purple despite having run HoneyPotInspector, currently you will have to use SB3U and remove whatever material that is set on the `o_body_*` meshes manually. The material setting of the body meshes should be `(none)`. 
-
-### ...in the current functionalities that might be fixed down the line
-- Detection for some glass-like materials are still wrong. 
-- Some HS top clothing has a temporary or almost-empty `Material` assigned to `o_body_*` Which is a big issue for PH's loading process, since those materials are missing a lot of textures and settings from normal, working body materials, and PH's loading process will fail with a lot of NREs. 
-- Is fur shader remapping possible? 
-
-### ...that this mod probably will NEVER fix
-- Custom shader-heavy stuff. Like fancy particle effects, complex water effects, etc. 
-
-### ...that are related to Xyth24 "PH mods"
-- Xyth24's PH mods aren't really PH mods; they are HS1 mods with `.unity3d` file extension removed. Which means `HoneyPotInspector.exe` will not process them at all. 
-- The hair part of the Xyth24's head mods don't have issues, because all hairs are forced to use PH hair shaders by default. But accessories and other Xyth24 mods will fail to work if they *pretend* to be PH mods. 
-- **Fix step1:** Add `.unity3d` file extension back to Xyth24 abdatas, and run HoneyPotInspector.exe, so it picks up the mods now. 
-- **Fix step2:** Add `.unity3d` file extension to the first line of Xyth24 PH lists accordingly. 
-
-## Possible Roadmap
-
-- Find a way to just disable every surface water / ground water HoneyPot detects. There cannot be any sensible way to remap water shaders.
-- Further code clean up to make variables in the code humanly readable, and start to annotate the code with comments
-- What's up with the Studio Item category changes? I cannot determine the original reason of doing it. 
-- Importing Tattoos, Tanlines, Facial makeups, Male brow and other material or texture-based mods. (Currently only Female brows and eyelashes are experimentally supported.)
-- Moving the plugin from IPA to fully BepInEx. 
-- Welcome further comments about the project. 
-
-### How to use shader.txt effectively
-shader.txt 's remapping records is fairly limited before. But with the now enhanced `HoneyPotInspector.txt` information, a lot of unknown HS shaders now are represented by its **PathID** (for example, `-7902135702503874624`), and you can now remap that PathID to suitable PH shaders. It's fairly easy to find suitable remapping shaders using Material Editor: 
-- Check undesirable materials with **Material Editor**, try out different PH shaders (yes, there's still limitation here, you can only choose from that list, unless you know how to add new shaders to Material Editor and HoneyPot). 
-- After finding suitable shader, remember the PH shader name and the material name. 
-- Go to `HoneyPotInspector.txt`, use search function of any text reader to find the material name, and take note of its HS shader name. 
-- Go to `shader.txt`, add a line in the form of `HS_shader_name|PH_shader_name` 
-- Multiple HS shaders can map to a single PH shader. Unfortunately if a single HS shader is used on multiple materials, and yet you want to map to different PH shaders, this is currently impossible. 
-- After changing `shader.txt` you need to restart the game. 
-
-## Past updates
 
 ### 1.4.7
 
