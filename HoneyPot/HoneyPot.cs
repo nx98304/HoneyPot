@@ -82,6 +82,19 @@ namespace ClassLibrary4
             { "Shader Forge/Hair/ShaderForge_Hair", new string[] { "_Color", "_CuticleColor", "_CuticleExp", "_CuticleY", "_FrenelColor", "_not_mapped_", "_FrenelExp" } },
         };                                    //Note: the 7th idx is actually manipulating 6th's alpha value it seems, so only ones that runs TWO colors would need it...
 
+        private int num_of_color_supported(Material m)
+        {
+            int result = 0;
+            if (m.HasProperty("_Color"))        result += 1;
+            if (m.HasProperty("_MainColor"))    result += 1;
+            if (m.HasProperty("_Color_2"))      result += 1;
+            if (m.HasProperty("_OverlapColor")) result += 1;
+            if (m.HasProperty("_Color_3"))      result += 1;
+            if (m.HasProperty("_CuticleColor")) result += 1;
+            if (m.HasProperty("_FrenelColor"))  result += 1;
+            return result;
+        }
+
         private static FieldInfo MC_DataFloat_minField = typeof(MaterialCustoms).GetNestedType("Data_Float").GetField("min", BindingFlags.NonPublic | BindingFlags.Instance);
         private static FieldInfo MC_DataFloat_maxField = typeof(MaterialCustoms).GetNestedType("Data_Float").GetField("max", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -807,6 +820,7 @@ namespace ClassLibrary4
             string priority_shader_name = "";
             List<string> list_all_materials_excluding_glass = new List<string>();
             List<string> list_objcolor                      = new List<string>();
+            int max_num_of_color_supported = 0;
             foreach (Renderer r in renderers_in_acceobj)
             {
                 foreach (Material material in r.materials)
@@ -861,7 +875,12 @@ namespace ClassLibrary4
                         if (r.tag == "ObjColor" && !list_objcolor.Contains(material_name))
                         {
                             list_objcolor.Add(material_name);
-                            priority_shader_name = material.shader.name;
+                            int num_of_color = num_of_color_supported(material);
+                            if (num_of_color >= max_num_of_color_supported )
+                            {
+                                max_num_of_color_supported = num_of_color;
+                                priority_shader_name = material.shader.name;
+                            }
                         }
                         backup_shader_name = material.shader.name;
                     }
@@ -1148,6 +1167,7 @@ namespace ClassLibrary4
                 string priority_shader_name = "";
                 List<string> list_objcolor = new List<string>();
                 List<string> list_all_materials_without_body_material_mpoint = new List<string>();
+                int max_num_of_color_supported = 0;
 
                 foreach (Renderer renderer in renderers_in_wearobj)
                 {
@@ -1226,7 +1246,13 @@ namespace ClassLibrary4
                             if (renderer.tag.Contains("ObjColor") && !list_objcolor.Contains(material_name))
                             {
                                 list_objcolor.Add(material_name);
-                                priority_shader_name = material.shader.name;
+                                int num_of_color = num_of_color_supported(material);
+                                if (num_of_color >= max_num_of_color_supported)
+                                {   //Note: make sure the material we picked is the material with shader that 
+                                    //      supported the highest count of colors.
+                                    max_num_of_color_supported = num_of_color;
+                                    priority_shader_name = material.shader.name;
+                                }
                                 //Note: Since we know this renderer has ObjColor, it **must** intended to be colored.
                                 //      so its material and shader must be the one that is more suitable for coloring.
                             }
