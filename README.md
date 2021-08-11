@@ -43,6 +43,7 @@ Check [here](#1411) for the differences between this and the original (1.4.1 non
   - All above situations will cause error messages like: `The file 'archive:/CAB-...' is corrupted! Remove it and launch unity again!` to be seen in the game's log. Remember checking them. **After investigation, there are no reasonable way to automatically add type definitions to assetbundles.**   
 - Water surfaces in scene/map-like studio items looks solid: remove it using SB3U, and put in standalone water items in studio.
 - Some clothing has wrong Render Queue settings. If a clothing doesn't actually feature half-transparency (not just net-like or with holes that can see through), you would never want it to have RQ values higher than 2500 (meaning transparent to Unity). It will affect the clothing's ability to receive shadows from other objects. Use SB3U to fix the asset permanently or use Material Editor to save the temporary changes to your character/clothing cards. 
+- Certain mods will use shaders named like `PathID=6 in external resources` when viewed with sb3ugs. `HoneyPotInspector.exe` now simply resolve all those cases into `Standard` shader. If you want to install a mod that have this kinds of shader setup, and you know they are not `Standard`, you will have to change them in sb3ugs manually. `HoneyPotInspector.exe` was never designed to resolve that. 
 - Most of the **crazy bloom issues** caused by HS1 mods can be fixed by **recalculating tangent** information with Mikkelsen method via SB3U. See: https://discord.com/channels/446784086539763712/446787319228268554/865812589652475915
 
 ### ...that are related to Xyth24 "PH mods"
@@ -61,6 +62,7 @@ Check [here](#1411) for the differences between this and the original (1.4.1 non
 ### ...that this mod probably will NEVER fix
 - Custom shader-heavy stuff. Like fancy particle effects, complex water effects, etc. 
 - Automatically importing type definitions into HS1 abdatas that don't have them. 
+- HS1 abdatas that refer to external resources for essential shaders. 
 
 ## Possible Roadmap
 
