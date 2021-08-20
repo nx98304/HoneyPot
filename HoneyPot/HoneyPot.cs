@@ -1361,26 +1361,61 @@ namespace ClassLibrary4
             {
                 try
                 {
-                    string[] array = text.Split(new char[]
+                    if ( text.IsNullOrEmpty() ) continue; // Note: To guarantee array has at least 1 Length.
+                    
+                    string[] array = text.Split(',');
+                    int n = array.Length;
+                    int crq = -2;
+                    string filepath_pipe_material = array[0];
+                    string shader_name = "";
+                    if (n >= 3) // Note: It's only possible to have CRQ data when we have >= 3 Length
                     {
-                        ','
-                    });
-                    if (array.Length != 0)
-                    {
-                        string key = array[0];
-                        string value = "";
-                        int value2 = -2;
-                        if (array.Length > 1)
+                        if (int.TryParse(array[n - 1], out crq))
                         {
-                            value = array[1];
-                            if (array.Length > 2)
+                            StringBuilder str = new StringBuilder();
+                            str.Append(filepath_pipe_material);
+                            for (int i = 1; i <= n - 3; i++) // Note: when n >= 4, this for loop will run.
+                                str.Append(String.Concat(",", array[i]));
+
+                            filepath_pipe_material = str.ToString(); // So this contains everything [0..n-3]
+                            shader_name = array[n - 2];
+                            if (shader_name.IsNullOrEmpty())
                             {
-                                value2 = int.Parse(array[2]);
+                                logSave("HoneyPot: " + filepath_pipe_material + " has empty shader name -- YOU SHOULD RE-RUN HONEYPOTINSPECTOR.");
                             }
                         }
-                        HoneyPot.inspector[key] = value;
-                        HoneyPot.material_rq[key] = value2;
+                        else
+                        {                        
+                            // Note: when n >= 3 and the n-1 value isn't CRQ, there can be these possibilities --
+                            //       FilePath|Mat,MatTrail,Shader_Name
+                            //       FilePath|Mat,MatTrail,[EmptyShaderName]
+                            //       FilePath|Mat,,Shader_Name (technically the MatTrail is empty, mat name has an ending comma)
+                            //       FilePath|,,[whatever] (the material name is just a comma)
+                            //       Or the mat name has more than 1 comma in it, which *should* fall into above categories..
+                            //       The key is all about checking if array[n-1] is an int or not.
+                            //       In this case, we simply assume array[n-1] is shader_name instead. 
+                            StringBuilder str = new StringBuilder();
+                            str.Append(filepath_pipe_material);
+                            for (int i = 1; i <= n - 2; i++) // Note: when n >= 3, this for loop will run.
+                                str.Append(String.Concat(",", array[i]));
+                            filepath_pipe_material = str.ToString(); // So this contains everything [0..n-2]
+                            shader_name = array[n - 1];
+                            logSave("HoneyPot: " + filepath_pipe_material + " has old format in the inspector txt -- YOU SHOULD RE-RUN HONEYPOTINSPECTOR.");
+                        }
                     }
+                    else if (n == 2)
+                    {
+                        // Note: This actually can be wrong, because consider FilePath|Material,Material_Trailing
+                        //       but there is nothing we can do if the user doesn't run HoneyPotInspector. :/ 
+                        shader_name = array[1];
+                        logSave("HoneyPot: " + filepath_pipe_material + " has old format in the inspector txt -- YOU SHOULD RE-RUN HONEYPOTINSPECTOR.");
+                    }
+                    else if (n == 1)
+                    {
+                        logSave("HoneyPot: " + filepath_pipe_material + " has old format in the inspector txt -- YOU SHOULD RE-RUN HONEYPOTINSPECTOR.");
+                    } 
+                    HoneyPot.inspector[filepath_pipe_material] = shader_name;
+                    HoneyPot.material_rq[filepath_pipe_material] = crq;
                 }
                 catch (Exception)
                 {
