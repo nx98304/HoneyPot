@@ -481,16 +481,16 @@ namespace ClassLibrary4
                                 }
                             }
 
-                            if (shader_name.Contains("Distortion"))
+                            /*if (shader_name.Contains("Distortion"))
                             {
                                 this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
                                 particle_mat.shader = HoneyPot.presets["Particle Add"].shader;
                             }
-                            else if (is_probably_add || shader_name.Contains("Add") || shader_name.Contains("add"))
+                            else */if (is_probably_add || shader_name.Contains_NoCase("add") )
                             {
                                 particle_mat.shader = HoneyPot.presets["Particle Add"].shader;
                             }
-                            else if (is_probably_blend || shader_name.Contains("Blend") || shader_name.Contains("blend"))
+                            else if (is_probably_blend || shader_name.Contains_NoCase("blend") )
                             {
                                 particle_mat.shader = HoneyPot.presets["Particle Alpha Blend"].shader;
                             }
@@ -539,14 +539,14 @@ namespace ClassLibrary4
 
                             this.logSave("shader_name:" + shader_name);
 
-                            if (shader_name.Contains_NoCase("distortion"))
+                            /*if (shader_name.Contains_NoCase("distortion"))
                             {
                                 this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
                                 shader_name = "Particle Add";
                                 material.shader = HoneyPot.presets[shader_name].shader;
                                 if (guessing_renderqueue == -1) guessing_renderqueue = 4123;
                             }
-                            else if (shader_name.Contains_NoCase("alphatest"))
+                            else*/ if (shader_name.Contains_NoCase("alphatest"))
                             {
                                 if (guessing_renderqueue <= 2500)
                                 {
