@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ClassLibrary4
 {
-    [BepInPlugin("BepInEx.Honeypot", "HoneyPot", "1.5.0.1")]
+    [BepInPlugin("BepInEx.Honeypot", "HoneyPot", "1.6.0")]
     public class HoneyPotWrapper : BaseUnityPlugin
     {
         void Awake()

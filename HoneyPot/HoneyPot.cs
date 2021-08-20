@@ -31,6 +31,17 @@ namespace ClassLibrary4
         }
 
         #region important helpers (RQ, MaterialCustoms parameter remapping, Standard shader rendertype setup)
+        // Note: After v1.6.0, HoneyPot is basically matching true shader names, and the shader.txt
+        //       remappings mostly vanished overnight. But there are still a few things we have to use 
+        //       shader.txt.
+        private static Shader get_shader(string key)
+        {
+            if (presets.ContainsKey(key))    return presets[key].shader;
+            if (PH_shaders.ContainsKey(key)) return PH_shaders[key];
+            self.logSave("HoneyPot.get_shader: " + key + " not found.");
+            return null;
+        }
+
         //Generalized Render Queue retrival: SRQ MB will have the last say if it is present, 
         //                                   otherwise use the CustomRenderQueue value. 
         private int getRenderQueue(string inspector_key, SetRenderQueue setRQ_MB)
@@ -227,9 +238,10 @@ namespace ClassLibrary4
         private static void Head_ChangeEyebrow_Postfix(Head __instance)
         {
             Human h = head_humanField.GetValue(__instance) as Human;
-            if (HoneyPot.idFileDict.ContainsKey(h.customParam.head.eyeBrowID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha"))
+            Shader s = get_shader("Shader Forge/PBRsp_texture_alpha");
+            if (HoneyPot.idFileDict.ContainsKey(h.customParam.head.eyeBrowID) && s != null)
             {
-                h.head.Rend_eyebrow.material.shader = HoneyPot.presets["PBRsp_texture_alpha"].shader;
+                h.head.Rend_eyebrow.material.shader = s; 
             }
         }
 
@@ -237,9 +249,10 @@ namespace ClassLibrary4
         private static void Head_ChangeEyelash_Postfix(Head __instance)
         {
             Human h = head_humanField.GetValue(__instance) as Human;
-            if (HoneyPot.idFileDict.ContainsKey(h.customParam.head.eyeLashID) && HoneyPot.presets.ContainsKey("PBRsp_texture_alpha_culloff"))
+            Shader s = get_shader("Shader Forge/PBRsp_texture_alpha_culloff");
+            if (HoneyPot.idFileDict.ContainsKey(h.customParam.head.eyeLashID) && s != null)
             {
-                h.head.Rend_eyelash.material.shader = HoneyPot.presets["PBRsp_texture_alpha_culloff"].shader;
+                h.head.Rend_eyelash.material.shader = s;
             }
         }
         #endregion
@@ -325,11 +338,11 @@ namespace ClassLibrary4
                                 bool culloff = shader_name.Contains_NoCase("culloff") ? true : false;
                                 //Note: So, for HS hairs, ideally we want to convert all of them to PH hair shader
                                 //      because that's usually just better, but hairs that use "HSStandard" is an exception.
-                                if (hsstandard_on_hair && 
-                                    HoneyPot.presets.ContainsKey(shader_name) && HoneyPot.presets[shader_name].shader.name.Contains("HSStandard"))
+                                Shader s = get_shader(shader_name);
+                                if (hsstandard_on_hair && s != null && shader_name.Contains("HSStandard"))
                                 {
-                                    material.shader = HoneyPot.presets[shader_name].shader;
-                                    this.logSave("shader (RQ " + rq + "): " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
+                                    material.shader = s;
+                                    this.logSave("shader (RQ " + rq + "): " + shader_name + " ==> " + material.shader.name);
 
                                     this.logSave(" - HSStandard shader family detected for Hairs, trying to assign RenderType...");
                                     setup_standard_shader_render_type(material);
@@ -339,19 +352,19 @@ namespace ClassLibrary4
                                     {   //Note: remember, we originally don't care whatever HS hair shader it uses, so it's not guaranteed 
                                         //      that the shader_name is in presets at all.
                                         string temp_shader_name = shader_name;
-                                        if ( !HoneyPot.presets.ContainsKey(shader_name) )
+                                        if ( get_shader(temp_shader_name) == null )
                                         {
-                                            temp_shader_name = rq <= 2500 ? "Standard" : "PBRsp_3mask_alpha";
+                                            temp_shader_name = rq <= 2500 ? "Standard" : "Shader Forge/PBRsp_3mask_alpha";
                                         }
-                                        material.shader = HoneyPot.presets[temp_shader_name].shader;
-                                        logSave("This part of the hair is hair embedded accessories. Normal shader mapping rule applies (RQ " + rq + "): " + shader_name + " ==> " + material.shader.name);
+                                        material.shader = get_shader(temp_shader_name);
+                                        logSave("This part of the hair is hair embedded accessories. Normal shader mapping rule applies (RQ " + rq + "): " + temp_shader_name + " ==> " + material.shader.name);
 
                                         if (material.shader.name.Contains("Standard"))
                                             setup_standard_shader_render_type(material);
                                     }
-                                    else if (PBRsp_alpha_blend_to_hsstandard && rq > 2500 && shader_name == "PBRsp_alpha_blend")
+                                    else if (PBRsp_alpha_blend_to_hsstandard && rq > 2500 && shader_name == "Shader Forge/PBRsp_alpha_blend")
                                     {
-                                        material.shader = HoneyPot.presets["HSStandard"].shader;
+                                        material.shader = get_shader("HSStandard");
                                         material.EnableKeyword("_ALPHABLEND_ON");
                                         material.SetInt("_Mode", 3);   // Fade
                                         material.SetInt("_ZWrite", 0);
@@ -420,8 +433,12 @@ namespace ClassLibrary4
             Projector[] projectors_in_children = obj.GetComponentsInChildren<Projector>(true);
             foreach (Projector p in projectors_in_children)
             {
-                // test
-                p.material.shader = HoneyPot.presets["Particle Add"].shader;
+                if (!p.material.shader.name.IsNullOrEmpty())
+                    continue; // If shader already works, skip it.       
+
+                // TODO: HoneyPotInspector currently doesn't process Projector at all. No way to get the shader name info.
+
+                p.material.shader = get_shader("Particles/Additive");
             }
             foreach (Renderer r in renderers_in_children)
             {
@@ -431,236 +448,211 @@ namespace ClassLibrary4
                     renderertype == typeof(TrailRenderer) ||
                     renderertype == typeof(ParticleRenderer))
                 {
-                    this.logSave(r.name + " is probably an effects renderer, needs special guesses.");
                     Material particle_mat = r.materials[0]; // assume one particle renderer only uses 1 material.
-                    this.logSave("particles!");
-                    this.logSave("material:" + fileName + "|" + particle_mat.name);
+                    if (!particle_mat.shader.name.IsNullOrEmpty())
+                        continue; // If shader already works, skip it.
+
+                    logSave(r.name + " is probably an effects renderer, needs special guesses.");
+                    logSave("particles!");
+                    logSave("material: " + fileName + "|" + particle_mat.name);
 
                     string shader_name = "";
                     string inspector_key = fileName + "|" + particle_mat.name.Replace(" (Instance)", "");
 
-                    if (HoneyPot.inspector.ContainsKey(inspector_key))
+                    if (!HoneyPot.inspector.ContainsKey(inspector_key))
                     {
-                        shader_name = HoneyPot.inspector[inspector_key];
-                        if (shader_name.Length == 0)
-                        {
-                            this.logSave("HoneyPotInspector.txt have record of this PARTICLE material, but failed to read its original shader name, likely the shader used by this prefab was not present in the assetbundle. ");
-                        }
+                        logSave("HoneyPotInspector.txt have no record of this PARTICLE material. Please regenerate HoneyPotInspector.txt.");
+                        continue;
+                    }
+                    shader_name = HoneyPot.inspector[inspector_key];
+                    logSave("shader_name: " + shader_name);
+                    Shader shader = get_shader(shader_name);
+                    if (shader != null)
+                    {
+                        particle_mat.shader = shader;
                     }
                     else
                     {
-                        this.logSave("HoneyPotInspector.txt have no record of this PARTICLE material. Regenerate HoneyPotInspector.txt is recommended, but it rarely helps with particle effects.");
-                    }
-
-                    this.logSave("shader_name:" + shader_name);
-                    if (shader_name.Length > 0)
-                    {
-                        if (HoneyPot.presets.ContainsKey(shader_name))
+                        logSave("The preset shaders weren't prepared for this specific HS particle shader. Likely it was a custom shader. Which we can only guess from now on.");
+                        bool is_probably_add = false;
+                        bool is_probably_blend = false;
+                        bool is_probably_opaque = false;
+                        foreach (string s in particle_mat.shaderKeywords)
+                        {   // given ADD is the most usual type, giving it highest priority
+                            if (s.Contains_NoCase("add"))         is_probably_add = true;
+                            else if (s.Contains_NoCase("blend"))  is_probably_blend = true;
+                            else if (s.Contains_NoCase("normal")) is_probably_opaque = true; // like small flying rocks
+                        }
+                        /*if (shader_name.Contains("Distortion"))
                         {
-                            particle_mat.shader = HoneyPot.presets[shader_name].shader;
+                            this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
+                            particle_mat.shader = HoneyPot.presets["Particle Add"].shader;
+                        }
+                        else */if (is_probably_add || shader_name.Contains_NoCase("add") )
+                        {
+                            particle_mat.shader = get_shader("Particles/Additive");
+                        }
+                        else if (is_probably_blend || shader_name.Contains_NoCase("blend") )
+                        {
+                            particle_mat.shader = get_shader("Particles/Alpha Blended");
+                        }
+                        else if (is_probably_opaque || shader_name.Contains("Cutout") || shader_name.Contains("Diffuse"))
+                        {
+                            particle_mat.shader = get_shader("Standard");
                         }
                         else
                         {
-                            this.logSave("The preset shaders weren't prepared for this specific HS particle shader. Likely it was a custom shader. Which we can only guess from now on.");
-                            bool is_probably_add = false;
-                            bool is_probably_blend = false;
-                            bool is_probably_opaque = false;
-                            foreach (string s in particle_mat.shaderKeywords)
-                            {
-                                if (s.Contains("ADD") || s.Contains("Add") || s.Contains("add")) // given ADD is the most usual type, giving it highest priority
-                                {
-                                    is_probably_add = true;
-                                }
-                                else if (s.Contains("BLEND") || s.Contains("Blend") || s.Contains("blend"))
-                                {
-                                    is_probably_blend = true;
-                                }
-                                else if (s.Contains("NORMAL") || s.Contains("Normal") || s.Contains("normal"))
-                                {
-                                    is_probably_opaque = true; // like small flying rocks
-                                }
-                            }
-
-                            /*if (shader_name.Contains("Distortion"))
-                            {
-                                this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
-                                particle_mat.shader = HoneyPot.presets["Particle Add"].shader;
-                            }
-                            else */if (is_probably_add || shader_name.Contains_NoCase("add") )
-                            {
-                                particle_mat.shader = HoneyPot.presets["Particle Add"].shader;
-                            }
-                            else if (is_probably_blend || shader_name.Contains_NoCase("blend") )
-                            {
-                                particle_mat.shader = HoneyPot.presets["Particle Alpha Blend"].shader;
-                            }
-                            else if (is_probably_opaque || shader_name.Contains("Cutout") || shader_name.Contains("Diffuse"))
-                            {
-                                particle_mat.shader = HoneyPot.presets["Standard"].shader;
-                            }
-                            else
-                            {
-                                particle_mat.shader = HoneyPot.presets["Particle Add"].shader; // catch-all for particles
-                            }
+                            particle_mat.shader = get_shader("Particles/Additive"); // catch-all for particles
                         }
                     }
-                    else
-                    {
-                        this.logSave("Inspector failed to resolve the particle shader name from HS. Which is entirely normal -- however we are going to try guessing what it should map to.");
-                        particle_mat.shader = HoneyPot.presets["Particle Add"].shader; // catch-all for particles
-                    }
-                    this.logSave("shader:" + particle_mat.shader.name);
-                    this.logSave("-- end of one material processing --");
+                    logSave("shader: " + particle_mat.shader.name);
+                    logSave("-- end of one material processing --");
                 }
-                else
+                else // If this is not a Particle-like renderer
                 {
                     foreach (Material material in r.materials)
                     {
+                        if (!material.shader.name.IsNullOrEmpty())
+                            continue; // If shader already works, skip it.
+
                         string shader_name = "";
                         string inspector_key = fileName + "|" + material.name.Replace(" (Instance)", "");
                         int guessing_renderqueue = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
-                        if ("".Equals(material.shader.name))
+                        
+                        logSave("item!");
+                        logSave("material: " + inspector_key);
+
+                        if (!HoneyPot.inspector.ContainsKey(inspector_key))
                         {
-                            this.logSave("item!");
-                            this.logSave("material:" + inspector_key);
-
-                            if (HoneyPot.inspector.ContainsKey(inspector_key))
-                            {
-                                shader_name = HoneyPot.inspector[inspector_key];
-                                if (shader_name.Length == 0)
-                                {
-                                    this.logSave("HoneyPotInspector.txt have record of this material, but failed to read its shader name or PathID.");
-                                }
-                            }
-                            else
-                            {
-                                this.logSave(inspector_key + " not found in HoneyPotInspector.txt. Resort to default (usually means you have to regenerate HoneyPotInspector.txt)");
-                            }
-
-                            this.logSave("shader_name:" + shader_name);
-
-                            /*if (shader_name.Contains_NoCase("distortion"))
-                            {
-                                this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
-                                shader_name = "Particle Add";
-                                material.shader = HoneyPot.presets[shader_name].shader;
-                                if (guessing_renderqueue == -1) guessing_renderqueue = 4123;
-                            }
-                            else*/ if (shader_name.Contains_NoCase("alphatest"))
-                            {
-                                if (guessing_renderqueue <= 2500)
-                                {
-                                    this.logSave("An AlphaTest kind of shader that has non-transparent renderqueue, assigning PBRsp_alpha_culloff");
-                                    shader_name = "PBRsp_alpha_culloff";
-                                }
-                                else
-                                {
-                                    this.logSave("An AlphaTest kind of shader that has transparent renderqueue, assigning PBRsp_3mask_alpha");
-                                    shader_name = "PBRsp_3mask_alpha";
-                                }
-                                material.shader = HoneyPot.presets[shader_name].shader;
-                            }
-                            else
-                            {
-                                if (!HoneyPot.presets.ContainsKey(shader_name))
-                                {
-                                    this.logSave("Shader remapping info not found from shader.txt for this Studio item. Testing a few shader keywords to salvage.");
-                                    foreach (string text2 in material.shaderKeywords)
-                                    {
-                                        this.logSave("shader keywords found:" + text2);
-                                        if ((text2.Contains_NoCase("alphapre") || material.name.Contains_NoCase("glass")) &&
-                                           !(text2.Contains_NoCase("leaf") || text2.Contains_NoCase("frond") || text2.Contains_NoCase("branch"))) //super last-ditch tests for glass-like material
-                                        {
-                                            this.logSave("Possible transparent glasses-like material.");
-                                            shader_name = "Standard";
-                                            material.shader = HoneyPot.presets[shader_name].shader;
-                                            // more hacking for HS glass shaders that I know of. 
-                                            if (material.HasProperty("_Glossiness"))
-                                            {
-                                                float glossiness = material.GetFloat("_Glossiness");
-                                                //glossiness += (1.0f-glossiness) / 2;
-                                                material.SetFloat("_Glossiness", glossiness);
-                                            }
-                                            if (material.HasProperty("_DstBlend"))
-                                            {
-                                                float dstblend = material.GetFloat("_DstBlend");
-                                                if (dstblend < 1.0f) material.SetFloat("_DstBlend", 1.0f);
-                                            }
-                                            if (material.HasProperty("_ZWrite"))
-                                            {
-                                                float zwrite = material.GetFloat("_ZWrite");
-                                                if (zwrite > 0.0f) material.SetFloat("_ZWrite", 0.0f);
-                                            }
-                                            if (material.HasProperty("_Color"))
-                                            {
-                                                Color c = material.GetColor("_Color");
-                                                //c.r *= c.a;
-                                                //c.g *= c.a;
-                                                //c.b *= c.a;
-                                                if (c.a < 0.3f) c.a = 0.3f;
-                                                material.SetColor("_Color", c);
-                                            }
-
-                                            // guessing any glass like item should have a very high render queue;
-                                            // in this case anything you can get from getRenderQueue() is probably wrong and not suitable.
-                                            if (guessing_renderqueue == -1) guessing_renderqueue = 4001;
-                                        }
-                                        else if (text2.Contains_NoCase("trans") || text2.Contains_NoCase("blend"))
-                                        {
-                                            this.logSave("Possible unspecified transparent material.");
-                                            shader_name = "PBRsp_3mask_alpha";
-                                            material.shader = HoneyPot.presets[shader_name].shader;
-                                            // another guess, but make the number different so it's easier to tell.
-                                            if (guessing_renderqueue == -1) guessing_renderqueue = 3123;
-                                        }
-                                        else if (text2.Contains_NoCase("alphatest") || text2.Contains_NoCase("leaf") || text2.Contains_NoCase("frond") || text2.Contains_NoCase("branch"))
-                                        {
-                                            this.logSave("Possible plant / tree / leaf / branch -like materials.");
-                                            shader_name = "PBRsp_alpha_culloff";
-                                            material.shader = HoneyPot.presets[shader_name].shader;
-                                            // in this case, you can probably rely on getRenderQueue() results.
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    this.logSave("Shader remapping info found, remapping " + shader_name + " to " + HoneyPot.presets[shader_name].shader.name);
-                                    material.shader = HoneyPot.presets[shader_name].shader;
-                                    if (material.shader.name.Contains("HSStandard"))
-                                    {
-                                        logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
-                                        setup_standard_shader_render_type(material);
-                                    }
-                                }
-                            }
-
-                            if (!HoneyPot.presets.ContainsKey(shader_name))
-                            {
-                                this.logSave("The preset shaders weren't prepared for this specific HS shader, and all guessing for shader keywords have failed, resorting to default.");
-                                material.shader = HoneyPot.presets["Standard"].shader;
-                                if (material.HasProperty("_Glossiness"))
-                                {
-                                    float glossiness = material.GetFloat("_Glossiness");
-                                    if (glossiness > 0.2f)
-                                    {   // It does seem like the standard shader of PH is somewhat too glossy
-                                        // when it is used as a fallback shader.
-                                        this.logSave("PH Standard tends to have higher gloss than usual for materials/shaders from HS. Try to lower it here.");
-                                        material.SetFloat("_Glossiness", 0.2f);
-                                    }
-                                }
-                            }
-
-                            if (material.HasProperty("_Glossiness") && material.HasProperty("_Color"))
-                            {
-                                Color c = material.GetColor("_Color");
-                                this.logSave(" - Monitor this material's values, see if it is reset or has anomoly: ");
-                                this.logSave(" --- _Glossiness: " + material.GetFloat("_Glossiness"));
-                                this.logSave(" ---       color: (" + c.r + "," + c.g + "," + c.b + "," + c.a + ")");
-                            }
-                            material.renderQueue = guessing_renderqueue;
-                            this.logSave("final shader:" + material.shader.name + ", final RQ = " + material.renderQueue);
-                            this.logSave("-- end of one material processing --");
+                            logSave(inspector_key + " not found in HoneyPotInspector.txt. Resort to default (usually means you have to regenerate HoneyPotInspector.txt)");
+                            continue;
                         }
+                        shader_name = HoneyPot.inspector[inspector_key];
+                        logSave("shader_name: " + shader_name);
+                        /*if (shader_name.Contains_NoCase("distortion"))
+                        {
+                            this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
+                            shader_name = "Particle Add";
+                            material.shader = HoneyPot.presets[shader_name].shader;
+                            if (guessing_renderqueue == -1) guessing_renderqueue = 4123;
+                        }
+                        else
+                        if (shader_name.Contains_NoCase("alphatest"))
+                        {
+                            // @@@ TODO 1.6.0 @@@: Wait........ Do we still need any of this????
+
+                            if (guessing_renderqueue <= 2500)
+                            {
+                                shader_name = "Shader Forge/PBRsp_alpha_culloff";
+                                logSave("An AlphaTest kind of shader that has non-transparent renderqueue, assigning " + shader_name);
+                            }
+                            else
+                            {
+                                shader_name = "Shader Forge/PBRsp_3mask_alpha";
+                                logSave("An AlphaTest kind of shader that has transparent renderqueue, assigning " + shader_name); 
+                            }
+                            material.shader = get_shader(shader_name);
+                        }
+                        else */
+                        {
+                            Shader shader = get_shader(shader_name);
+                            if (shader != null)
+                            {
+                                material.shader = shader;
+                                logSave("Shader remapping info found, remapping " + shader_name + " to " + material.shader.name);
+                                if (material.shader.name.Contains("HSStandard"))
+                                {
+                                    logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
+                                    setup_standard_shader_render_type(material);
+                                }
+                            }
+                            else
+                            {
+                                logSave("Shader remapping info not found from shader.txt for this Studio item. Testing a few shader keywords to salvage.");
+                                foreach (string text2 in material.shaderKeywords)
+                                {
+                                    logSave("shader keywords found:" + text2);
+                                    if ((text2.Contains_NoCase("alphapre") || material.name.Contains_NoCase("glass")) &&
+                                        !(text2.Contains_NoCase("leaf") || text2.Contains_NoCase("frond") || text2.Contains_NoCase("branch"))) //super last-ditch tests for glass-like material
+                                    {
+                                        logSave("Possible transparent glasses-like material.");
+                                        shader_name = "Standard";
+                                        material.shader = get_shader(shader_name);
+                                        // more hacking for HS glass shaders that I know of. 
+                                        if (material.HasProperty("_Glossiness"))
+                                        {
+                                            float glossiness = material.GetFloat("_Glossiness");
+                                            //glossiness += (1.0f-glossiness) / 2;
+                                            material.SetFloat("_Glossiness", glossiness);
+                                        }
+                                        if (material.HasProperty("_DstBlend"))
+                                        {
+                                            float dstblend = material.GetFloat("_DstBlend");
+                                            if (dstblend < 1.0f) material.SetFloat("_DstBlend", 1.0f);
+                                        }
+                                        if (material.HasProperty("_ZWrite"))
+                                        {
+                                            float zwrite = material.GetFloat("_ZWrite");
+                                            if (zwrite > 0.0f) material.SetFloat("_ZWrite", 0.0f);
+                                        }
+                                        if (material.HasProperty("_Color"))
+                                        {
+                                            Color c = material.GetColor("_Color");
+                                            //c.r *= c.a;
+                                            //c.g *= c.a;
+                                            //c.b *= c.a;
+                                            if (c.a < 0.3f) c.a = 0.3f;
+                                            material.SetColor("_Color", c);
+                                        }
+                                        // guessing any glass like item should have a very high render queue;
+                                        // in this case anything you can get from getRenderQueue() is probably wrong and not suitable.
+                                        if (guessing_renderqueue == -1) guessing_renderqueue = 4001;
+                                    }
+                                    else if (text2.Contains_NoCase("trans") || text2.Contains_NoCase("blend"))
+                                    {
+                                        logSave("Possible unspecified transparent material.");
+                                        shader_name = "Shader Forge/PBRsp_3mask_alpha";
+                                        material.shader = get_shader(shader_name);
+                                        // another guess, but make the number different so it's easier to tell.
+                                        if (guessing_renderqueue == -1) guessing_renderqueue = 3123;
+                                    }
+                                    else if (text2.Contains_NoCase("alphatest") || text2.Contains_NoCase("leaf") || text2.Contains_NoCase("frond") || text2.Contains_NoCase("branch"))
+                                    {
+                                        logSave("Possible plant / tree / leaf / branch -like materials.");
+                                        shader_name = "Shader Forge/PBRsp_alpha_culloff";
+                                        material.shader = get_shader(shader_name);
+                                        // in this case, you can probably rely on getRenderQueue() results.
+                                    }
+                                }
+                                // If after the keyword tests, material.shader is still empty, set it to default.
+                                if( material.shader.name.IsNullOrEmpty() )
+                                {
+                                    logSave("The preset shaders weren't prepared for this specific HS shader, and all guessing for shader keywords have failed, resorting to default.");
+                                    shader_name = "Standard";
+                                    material.shader = get_shader(shader_name);
+                                    if (material.HasProperty("_Glossiness"))
+                                    {
+                                        float glossiness = material.GetFloat("_Glossiness");
+                                        if (glossiness > 0.2f)
+                                        {   // It does seem like the standard shader of PH is somewhat too glossy
+                                            // when it is used as a fallback shader.
+                                            logSave("PH Standard tends to have higher gloss than usual for materials/shaders from HS. Try to lower it here.");
+                                            material.SetFloat("_Glossiness", 0.2f);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        //if (material.HasProperty("_Glossiness") && material.HasProperty("_Color"))
+                        //{
+                        //    Color c = material.GetColor("_Color");
+                        //    logSave(" - Monitor this material's values, see if it is reset or has anomoly: ");
+                        //    logSave(" --- _Glossiness: " + material.GetFloat("_Glossiness"));
+                        //    logSave(" ---       color: (" + c.r + "," + c.g + "," + c.b + "," + c.a + ")");
+                        //}
+                        material.renderQueue = guessing_renderqueue;
+                        logSave("final shader: " + material.shader.name + ", final RQ = " + material.renderQueue);
+                        logSave("-- end of one material processing --"); 
                     }
                 }
             }
@@ -830,18 +822,21 @@ namespace ClassLibrary4
 
                     if (material.shader.name.IsNullOrEmpty()) //This is the only way we know it's from HS.
                     {
-                        this.logSave("Acce material: " + inspector_key);
+                        logSave("Acce material: " + inspector_key);
                         int rq = material.renderQueue;
+                        string shader_name = "";
                         if (HoneyPot.inspector.ContainsKey(inspector_key))
                         {
+                            shader_name = HoneyPot.inspector[inspector_key];
                             rq = getRenderQueue(inspector_key, r.gameObject.GetComponent<SetRenderQueue>());
-                            if (HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]))
+                            Shader s = get_shader(shader_name);
+                            if (s != null)
                             {
-                                material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
-                                this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
+                                material.shader = s;
+                                logSave("shader: " + shader_name + " ==> " + material.shader.name);
                                 if (material.shader.name.Contains("HSStandard"))
                                 {
-                                    this.logSave(" - HSStandard shader family detected for Accessories, trying to assign RenderType...");
+                                    logSave(" - HSStandard shader family detected for Accessories, trying to assign RenderType...");
                                     setup_standard_shader_render_type(material);
                                 }
                             }
@@ -854,8 +849,8 @@ namespace ClassLibrary4
                                 //}
                                 //else
                                 //{
-                                material.shader = HoneyPot.presets["Standard"].shader;
-                                this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["Standard"].shader.name/* + " with high RQ to get transparency."*/);
+                                material.shader = get_shader("Standard");
+                                logSave("Unable to map shader " + shader_name + " to PH presets we have. Default to " + material.shader.name/* + " with high RQ to get transparency."*/);
                                 setup_standard_shader_render_type(material);
                                 //}
                             }
@@ -1202,13 +1197,16 @@ namespace ClassLibrary4
                             material.shader.name.IsNullOrEmpty()) //This is the only way we know it's from HS.
                         {
                             int rq = getRenderQueue(inspector_key, renderer.gameObject.GetComponent<SetRenderQueue>());
-                            this.logSave("Wear material: " + inspector_key + " RQ: " + rq);
+                            string shader_name = "";
+                            logSave("Wear material: " + inspector_key + " RQ: " + rq);
                             if (HoneyPot.inspector.ContainsKey(inspector_key))
                             {
-                                if (HoneyPot.presets.ContainsKey(HoneyPot.inspector[inspector_key]))
+                                shader_name = HoneyPot.inspector[inspector_key];
+                                Shader s = get_shader(shader_name);
+                                if (s != null)
                                 {
-                                    material.shader = HoneyPot.presets[HoneyPot.inspector[inspector_key]].shader;
-                                    this.logSave("shader: " + HoneyPot.inspector[inspector_key] + " ==> " + material.shader.name);
+                                    material.shader = s;
+                                    this.logSave("shader: " + shader_name + " ==> " + material.shader.name);
                                     if (material.shader.name.Contains("HSStandard"))
                                     {
                                         logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
@@ -1227,8 +1225,8 @@ namespace ClassLibrary4
                                     //    this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to PBRsp_3mask_alpha as we find RQ value > 2500.");
                                     //    material.shader = HoneyPot.presets["PBRsp_3mask_alpha"].shader;
                                     //}
-                                    material.shader = HoneyPot.presets["Standard"].shader;
-                                    this.logSave(" - Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to Standard.");
+                                    material.shader = get_shader("Standard");
+                                    this.logSave(" - Unable to map shader " + shader_name + " to PH presets we have. Default to " + material.shader.name);
                                     setup_standard_shader_render_type(material);
                                 }
                             }
@@ -1469,15 +1467,13 @@ namespace ClassLibrary4
             HoneyPot.PH_hair_shader_co = PH_shaders["Shader Forge/Hair/ShaderForge_Hair_CullOff Opaque"];
 
             // Adding two specific PresetShader only for simple particle effects: 
-            if (!HoneyPot.presets.ContainsKey("Particle Add"))
+            if (!HoneyPot.PH_shaders.ContainsKey("Particles/Additive"))
             {
-                HoneyPot.presets.Add("Particle Add", new PresetShader());
-                HoneyPot.presets["Particle Add"].shader = Shader.Find("Particles/Additive");
+                HoneyPot.PH_shaders.Add("Particles/Additive", Shader.Find("Particles/Additive"));
             }
-            if (!HoneyPot.presets.ContainsKey("Particle Alpha Blend"))
+            if (!HoneyPot.PH_shaders.ContainsKey("Particles/Alpha Blended"))
             {
-                HoneyPot.presets.Add("Particle Alpha Blend", new PresetShader());
-                HoneyPot.presets["Particle Alpha Blend"].shader = Shader.Find("Particles/Alpha Blended");
+                HoneyPot.PH_shaders.Add("Particles/Alpha Blended", Shader.Find("Particles/Alpha Blended"));
             }
         }
 
