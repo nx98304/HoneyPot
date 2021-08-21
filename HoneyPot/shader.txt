@@ -1,29 +1,5 @@
-PBRsp_3mask|Shader Forge/PBRsp_3mask
-liquid|Shader Forge/liquid
-PBRsp_3mask_alpha|Shader Forge/PBRsp_3mask_alpha
-PBRsp_alpha|Shader Forge/PBRsp_alpha
-PBRsp|Shader Forge/PBRsp
-PBRsp_culloff|Shader Forge/PBRsp_culloff
-PBRsp_2layer|Shader Forge/PBRsp_2layer
-PBRsp_2layer_cutout_culloff|Shader Forge/PBRsp_2layer_cutout_culloff
-PBRsp_2layer_culloff|Shader Forge/PBRsp_2layer_culloff
-PBRsp_alpha_culloff|Shader Forge/PBRsp_alpha_culloff
-PBRsp_2layer_cutout|Shader Forge/PBRsp_2layer_cutout
-PBRsp_3mask_uv|Shader Forge/PBRsp_3mask_uv
-Unlit-Normal|Shader Forge/PBRsp_culloff
-Unlit-Alpha|Shader Forge/PBRsp_alpha_culloff
-PBRsp_texture_alpha|Shader Forge/PBRsp_texture_alpha
-PBRsp_texture_alpha_culloff|Shader Forge/PBRsp_texture_alpha_culloff
-HSStandard|HSStandard
-HSStandard (Single Sided)|HSStandard (Single Sided)
-HSStandard (Two Colors)|HSStandard (Two Colors)
-HSStandard (Two Colors) (Single Sided)|HSStandard (Two Colors) (Single Sided)
 Standard|Standard_555
-hsstandard2side|HSStandard
-Standard_culloff|Standard_culloff
-Standard_culloff00|Standard_culloff
-Standard_culloff01|Standard_culloff
-StandardSpecular|Standard (Specular setup)
-StandardSpecular_culloff|Standard (Specular setup)_culloff
+Standard_culloff|Standard_555
+Normal-VertexLit|Standard_555
+Normal-Diffuse|Standard_555
 -9046184444883282072|Shader Forge/PBRsp_texture_alpha_culloff
-standard|Standard_555
