@@ -42,6 +42,30 @@ namespace ClassLibrary4
             return null;
         }
 
+        // Note: TextAsset in HS1 lists can be lacking type definitions as well... currently we are seeing 
+        //       it will make the int.Parse(str) fail inside the getListContent(), and also throwing exceptions
+        //       inside the coroutine... which is unsolvable. So we have to roll our own int parse.
+        private static int parse_id(string s)
+        {
+            //if (s.IsNullOrEmpty() || s.Length > 10 || int.Parse(s) > Int32.MaxValue) return -1;
+            //int res = 0;
+            //for (int i = s.Length - 1, digit = 1 ; i >= 0 ; i--, digit++) {
+            //    if (s[i] >= 48 && s[i] <= 57)
+            //    {
+            //        res += (s[i] - 48) * digit;
+            //    }
+            //    else return -1; 
+            //}
+            //return res;
+            try {
+                return int.Parse(s);
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
         //Generalized Render Queue retrival: SRQ MB will have the last say if it is present, 
         //                                   otherwise use the CustomRenderQueue value. 
         private int getRenderQueue(string inspector_key, SetRenderQueue setRQ_MB)
@@ -1565,23 +1589,38 @@ namespace ClassLibrary4
         #endregion
 
         #region Processing CustomDataManager, lists & moving them, noticing conflicts. 
-        private void addConflict(int id, string asset1, string asset2, string name1, string name2, bool duplicating = false)
+        private enum LIST_REPORTING_TYPE
+        { CONFLICT, DUPE_FAIL, NOT_FOUND, BAD_ID }
+
+        private void addConflict(int id, string str1, string str2 = "", string str3 = "", string str4 = "", LIST_REPORTING_TYPE err = LIST_REPORTING_TYPE.CONFLICT)
         {
-            if (!asset1.Equals(asset2))
+            if ( err == LIST_REPORTING_TYPE.DUPE_FAIL && !str1.Equals(str2) )
             {
-                if (duplicating)
-                {
-                    HoneyPot.conflictList.Add(string.Concat(
-                        new object[] { "[conflict-when-duplicating] id:", id, ",\n  asset1: ", name1, " (", asset1, ")\n  asset2: ", name2, " (", asset2, ")" }
-                    ));
-                }
-                else
-                {
-                    HoneyPot.conflictList.Add(string.Concat(
-                        new object[] { "[conflict] id:", id, ",\n  asset1: ", name1, " (", asset1, ")\n  asset2: ", name2, " (", asset2, ")" }
-                    ));
-                    HoneyPot.num_of_conflict_you_should_really_worry_about++;
-                }
+                HoneyPot.conflictList.Add(string.Concat(
+                    new object[] { "[conflict-when-duplicating] id:", id, ",\n  asset1: ", str3, " (", str1, ")\n  asset2: ", str4, " (", str2, ")" }
+                ));
+                HoneyPot.list_errors[err]++;
+            }
+            else if ( err == LIST_REPORTING_TYPE.CONFLICT && !str1.Equals(str2) )
+            {
+                HoneyPot.conflictList.Add(string.Concat(
+                    new object[] { "[conflict] id:", id, ",\n  asset1: ", str3, " (", str1, ")\n  asset2: ", str4, " (", str2, ")" }
+                ));
+                HoneyPot.list_errors[err]++;
+            }
+            else if ( err == LIST_REPORTING_TYPE.NOT_FOUND )
+            {
+                HoneyPot.conflictList.Add(string.Concat(
+                    new object[] { "[file-not-found] abdata:", str1, ",\n  list file: ", str2 }
+                ));
+                HoneyPot.list_errors[err]++;
+            }
+            else if ( err == LIST_REPORTING_TYPE.BAD_ID )
+            {
+                HoneyPot.conflictList.Add(string.Concat(
+                    new object[] { "[bad-id] (missing TextAsset type definition?):\n  list file: ", str1 }
+                ));
+                HoneyPot.list_errors[err]++;
             }
         }
 
@@ -1589,9 +1628,11 @@ namespace ClassLibrary4
 		{
 			try
 			{
-                logSave("HoneyPot found " + HoneyPot.conflictList.Count + " ID conflicts in total. Please check UserData/conflict.txt");
-                logSave("  - " + HoneyPot.num_of_conflict_you_should_really_worry_about + " actual mod ID conflicts.");
-                logSave("  - " + (HoneyPot.conflictList.Count - HoneyPot.num_of_conflict_you_should_really_worry_about) + " clothing duplicating attempts failed due to already occupied IDs.");
+                logSave("HoneyPot found " + HoneyPot.conflictList.Count + " list errors in total. Please check UserData/HoneyPot_list_errors.txt");
+                logSave("  - " + HoneyPot.list_errors[LIST_REPORTING_TYPE.CONFLICT] + " actual mod ID conflicts");
+                logSave("  - " + HoneyPot.list_errors[LIST_REPORTING_TYPE.DUPE_FAIL] + " clothing duplicating attempts failed due to already occupied IDs");
+                logSave("  - " + HoneyPot.list_errors[LIST_REPORTING_TYPE.NOT_FOUND] + " entries unable to find the corresponding abdatas");
+                logSave("  - " + HoneyPot.list_errors[LIST_REPORTING_TYPE.BAD_ID] + " entries unable to resolve mod IDs (maybe lacking TextAsset type definitions)");
                 StreamWriter streamWriter = new FileInfo(this.conflictText).CreateText();
 				foreach (string value in HoneyPot.conflictList)
 				{
@@ -1845,7 +1886,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[j].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {                        
@@ -1857,9 +1904,10 @@ namespace ClassLibrary4
                                     num += 838000;
                                 }
 
-                                if( !File.Exists(assetBundleDir + "/" + cells[4]) )
+                                if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -1885,7 +1933,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[k].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -1899,6 +1953,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -1924,7 +1979,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -1938,6 +1999,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -1963,7 +2025,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -1977,6 +2045,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2002,7 +2071,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2016,6 +2091,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2045,7 +2121,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if( og_id < 0 )
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2059,6 +2141,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2090,7 +2173,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2104,6 +2193,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2129,7 +2219,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2143,6 +2239,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2168,7 +2265,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2182,6 +2285,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2208,7 +2312,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2222,6 +2332,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2252,7 +2363,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2266,6 +2383,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2292,7 +2410,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2306,6 +2430,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2333,7 +2458,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2347,6 +2478,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2373,7 +2505,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2387,6 +2525,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2412,7 +2551,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2426,6 +2571,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2451,7 +2597,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2465,6 +2617,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2490,7 +2643,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2504,6 +2663,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2529,7 +2689,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2543,6 +2709,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2568,7 +2735,13 @@ namespace ClassLibrary4
                             string[] cells = all_lines[i].Split(new char[]{'\t'});
                             if (cells.Length > 3)
                             {
-                                int og_id = int.Parse(cells[0]);
+                                int og_id = parse_id(cells[0]);
+                                if (og_id < 0)
+                                {
+                                    logSave("HoneyPot can't process this ID from list: " + fileName);
+                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    continue;
+                                }
                                 int num = og_id % 1000;
                                 if (cells[0].Length > 6)
                                 {
@@ -2582,6 +2755,7 @@ namespace ClassLibrary4
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
                                     logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
+                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
                                     continue;
                                 }
 
@@ -2650,7 +2824,7 @@ namespace ClassLibrary4
                 {
                     int num = wearData.id;
                     logSave("Unable to duplicate " + wearData.name + " [NEW ID:" + wearData.id + "] to target category, because that ID is already occupied by " + toDict[num].name);
-                    this.addConflict(num, toDict[num].assetbundleName + "/" + toDict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, toDict[num].name, wearData.name, true);
+                    this.addConflict(num, toDict[num].assetbundleName + "/" + toDict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, toDict[num].name, wearData.name, LIST_REPORTING_TYPE.DUPE_FAIL);
                 }
             }
         }
@@ -3176,7 +3350,7 @@ namespace ClassLibrary4
         private static FieldInfo studioClothesEditor_accsenField = null;
 
         private string assetBundlePath      = Application.dataPath + "/../abdata";
-        private string conflictText         = Application.dataPath + "/../UserData/conflict.txt";
+        private string conflictText         = Application.dataPath + "/../UserData/HoneyPot_list_errors.txt";
         private string inspectorText        = Application.dataPath + "/../HoneyPot/HoneyPotInspector.txt";
         private string shaderText           = Application.dataPath + "/../HoneyPot/shader.txt";
         private string additionalShaderPath = Application.dataPath + "/../HoneyPot/shaders";
@@ -3185,7 +3359,12 @@ namespace ClassLibrary4
         private static Dictionary<string, PresetShader> presets = new Dictionary<string, PresetShader>();
         private static Dictionary<int, string> idFileDict       = new Dictionary<int, string>();
         private static List<string> conflictList                = new List<string>();
-        private static int  num_of_conflict_you_should_really_worry_about = 0;
+        private static Dictionary<LIST_REPORTING_TYPE, int> list_errors = new Dictionary<LIST_REPORTING_TYPE, int>()
+            { [LIST_REPORTING_TYPE.CONFLICT] = 0,
+              [LIST_REPORTING_TYPE.DUPE_FAIL] = 0,
+              [LIST_REPORTING_TYPE.NOT_FOUND] = 0,
+              [LIST_REPORTING_TYPE.BAD_ID] = 0,
+            };
 
         private enum LOADING_STATE { NONE, SWITCHING_WEAR, FROMCARD };
 
