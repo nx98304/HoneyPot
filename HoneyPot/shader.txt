@@ -3,3 +3,5 @@ Standard_culloff|Standard_555
 Normal-VertexLit|Standard_555
 Normal-Diffuse|Standard_555
 -9046184444883282072|Shader Forge/PBRsp_texture_alpha_culloff
+Ciconia Studio/Double Sided/Effects/Glass/Advanced|Ciconia Studio/Effects/Glass/Old/Double Sided/Advanced
+Ciconia Studio/Effects/Glass/Double Sided/Advanced Reflection|Ciconia Studio/Effects/Glass/Old/Double Sided/Advanced Reflection
