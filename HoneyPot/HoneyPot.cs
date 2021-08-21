@@ -1489,16 +1489,6 @@ namespace ClassLibrary4
             HoneyPot.PH_hair_shader_c  = PH_shaders["Shader Forge/Hair/ShaderForge_Hair_CullOff"];
             HoneyPot.PH_hair_shader_o  = PH_shaders["Shader Forge/Hair/ShaderForge_Hair_Opaque"];
             HoneyPot.PH_hair_shader_co = PH_shaders["Shader Forge/Hair/ShaderForge_Hair_CullOff Opaque"];
-
-            // Adding two specific PresetShader only for simple particle effects: 
-            if (!HoneyPot.PH_shaders.ContainsKey("Particles/Additive"))
-            {
-                HoneyPot.PH_shaders.Add("Particles/Additive", Shader.Find("Particles/Additive"));
-            }
-            if (!HoneyPot.PH_shaders.ContainsKey("Particles/Alpha Blended"))
-            {
-                HoneyPot.PH_shaders.Add("Particles/Alpha Blended", Shader.Find("Particles/Alpha Blended"));
-            }
         }
 
         //Note: The HS1 shaders and additional shaders are no longer embedded since 1.5.0 
@@ -1583,6 +1573,20 @@ namespace ClassLibrary4
                     }
                 }
                 additional_shaders.Unload(false);
+            }
+            // Note: adding a pass to find all remaining potentially useful shaders from Shader.Find().
+            foreach (Shader s in Resources.FindObjectsOfTypeAll<Shader>())
+            {
+                Shader s1 = Shader.Find(s.name);
+                if (s1 != null && !PH_shaders.ContainsKey(s1.name) &&
+                    (s1.name.IndexOf("Legacy Shaders") >= 0 ||
+                     s1.name.IndexOf("Particles") >= 0 ||
+                     s1.name.IndexOf("Unlit") >= 0
+                    ))
+                {
+                    HoneyPot.PH_shaders.Add(s1.name, s1);
+                    logSave("Builtin: " + s1.name);
+                }
             }
             logSave(HoneyPot.PH_shaders.Count + " shaders found.");
         }
