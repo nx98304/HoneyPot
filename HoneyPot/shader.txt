@@ -1,5 +1,6 @@
 Standard|Standard_555
-Standard_culloff|Standard_555
+Standard (Two Sided)|Standard_culloff
+Standard 2-Sided|Standard_culloff
 Normal-VertexLit|Standard_555
 Normal-Diffuse|Standard_555
 -9046184444883282072|Shader Forge/PBRsp_texture_alpha_culloff
