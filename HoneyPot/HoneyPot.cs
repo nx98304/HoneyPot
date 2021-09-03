@@ -1549,7 +1549,8 @@ namespace ClassLibrary4
             foreach ( string fullname in Directory.GetFiles(additionalShaderPath) )
             {
                 string only_filename = fullname.Substring(fullname.LastIndexOfAny(new char[] { '\\', '/' }) + 1);
-                if (only_filename.LastIndexOf(".bak") > 0 ||
+                if (only_filename.LastIndexOf(".bak") > 0 || only_filename.LastIndexOf(".none") > 0 ||
+                    only_filename.LastIndexOf(".unit-y3d") > 0 ||
                     only_filename == "ph_shaders.unity3d") continue; // skipping any backups and the special cases
 
                 AssetBundle additional_shaders = AssetBundle.LoadFromFile(fullname);
