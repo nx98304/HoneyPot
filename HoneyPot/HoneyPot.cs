@@ -511,12 +511,7 @@ namespace ClassLibrary4
                             else if (s.Contains_NoCase("blend"))  is_probably_blend = true;
                             else if (s.Contains_NoCase("normal")) is_probably_opaque = true; // like small flying rocks
                         }
-                        /*if (shader_name.Contains("Distortion"))
-                        {
-                            this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
-                            particle_mat.shader = HoneyPot.presets["Particle Add"].shader;
-                        }
-                        else */if (is_probably_add || shader_name.Contains_NoCase("add") )
+                        if (is_probably_add || shader_name.Contains_NoCase("add") )
                         {
                             particle_mat.shader = get_shader("Particles/Additive");
                         }
@@ -557,31 +552,6 @@ namespace ClassLibrary4
                         }
                         shader_name = HoneyPot.inspector[inspector_key];
                         logSave("shader_name: " + shader_name);
-                        /*if (shader_name.Contains_NoCase("distortion"))
-                        {
-                            this.logSave("We should try to import a Distorion effect to PH to deal with this. Right now let's just use simple particle effect shader.");
-                            shader_name = "Particle Add";
-                            material.shader = HoneyPot.presets[shader_name].shader;
-                            if (guessing_renderqueue == -1) guessing_renderqueue = 4123;
-                        }
-                        else
-                        if (shader_name.Contains_NoCase("alphatest"))
-                        {
-                            // @@@ TODO 1.6.0 @@@: Wait........ Do we still need any of this????
-
-                            if (guessing_renderqueue <= 2500)
-                            {
-                                shader_name = "Shader Forge/PBRsp_alpha_culloff";
-                                logSave("An AlphaTest kind of shader that has non-transparent renderqueue, assigning " + shader_name);
-                            }
-                            else
-                            {
-                                shader_name = "Shader Forge/PBRsp_3mask_alpha";
-                                logSave("An AlphaTest kind of shader that has transparent renderqueue, assigning " + shader_name); 
-                            }
-                            material.shader = get_shader(shader_name);
-                        }
-                        else */
                         {
                             Shader shader = get_shader(shader_name);
                             if (shader != null)
@@ -671,13 +641,6 @@ namespace ClassLibrary4
                                 }
                             }
                         }
-                        //if (material.HasProperty("_Glossiness") && material.HasProperty("_Color"))
-                        //{
-                        //    Color c = material.GetColor("_Color");
-                        //    logSave(" - Monitor this material's values, see if it is reset or has anomoly: ");
-                        //    logSave(" --- _Glossiness: " + material.GetFloat("_Glossiness"));
-                        //    logSave(" ---       color: (" + c.r + "," + c.g + "," + c.b + "," + c.a + ")");
-                        //}
                         material.renderQueue = guessing_renderqueue;
                         logSave("final shader: " + material.shader.name + ", final RQ = " + material.renderQueue);
                         logSave("-- end of one material processing --"); 
