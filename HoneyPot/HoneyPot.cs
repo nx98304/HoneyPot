@@ -1192,16 +1192,6 @@ namespace ClassLibrary4
                 {
                     foreach (Material material in renderer.materials)
                     {
-                        // NOTE: Adding a note to myself here -- Apparently there are HS top clothes 
-                        //       that added a temporary or almost-empty material to o_body_a and/or o_body_b.
-                        //       When the intent isn't total subsitution of the human body (like in some male tops do)
-                        //       It simply breaks PH's body/top loading process due to missing textures I presume. 
-                        //       Because the main game procedures asks for them. 
-                        //       This is extremely problematic because I cannot fix them in this function, 
-                        //       and further patches to Body or Wears classes are needed. I am not sure how to do them yet
-                        //       The only way to avoid mistakes like this right now is to use SB3U to remove those
-                        //       materials manually. Which is easily-doable, but nonetheless an annoyance, 
-                        //       and they are not exactly rare occurrances. 
                         string material_name = material.name.Replace(" (Instance)", "");
                         string inspector_key = wearData.assetbundleName.Replace("\\", "/") + "|" + material_name;
                         //Note @WTFsetWearShader: OK, so, this conditional is unnecessarily cluttered, 
