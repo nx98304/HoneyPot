@@ -90,6 +90,10 @@ namespace ClassLibrary4
 
         // Note: remember, we started out getting the MaterialCustoms from a PBRsp_3mask clothing. 
         //       This is why when we assign MaterialCustoms we need this propertyName remapping.
+        
+        // TODO: We probably need to consider moving this out to a file actually, because there are literally
+        //       hundreds of shaders now we support, and the shaders are de-coupled from the program
+        //       while this material property matching part isn't. 
         Dictionary<string, string[]> MC_Mapping = new Dictionary<string, string[]>()
         {
             { "Shader Forge/PBR_SG",            new string[] { "_MainColor", "_SpecularColor", "_Specular", "_Gloss", "_not_mapped_", "_not_mapped_", "_not_mapped_" } },
