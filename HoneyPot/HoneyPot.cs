@@ -833,17 +833,9 @@ namespace ClassLibrary4
                             }
                             else
                             {
-                                //if (rq <= 2500)
-                                //{
-                                //    this.logSave("Unable to map shader " + HoneyPot.inspector[inspector_key] + " to PH presets we have. Default to " + HoneyPot.presets["PBRsp_3mask"].shader.name);
-                                //    material.shader = HoneyPot.presets["PBRsp_3mask"].shader;
-                                //}
-                                //else
-                                //{
                                 material.shader = get_shader("Standard");
                                 logSave("Unable to map shader " + shader_name + " to PH presets we have. Default to " + material.shader.name/* + " with high RQ to get transparency."*/);
                                 setup_standard_shader_render_type(material);
-                                //}
                             }
                         }
                         material.renderQueue = rq;
