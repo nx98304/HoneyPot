@@ -137,7 +137,7 @@ namespace ClassLibrary4
         private static FieldInfo MC_DataFloat_minField = typeof(MaterialCustoms).GetNestedType("Data_Float").GetField("min", BindingFlags.NonPublic | BindingFlags.Instance);
         private static FieldInfo MC_DataFloat_maxField = typeof(MaterialCustoms).GetNestedType("Data_Float").GetField("max", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        private void match_correct_shader_property(MaterialCustoms mc, string shader_name)
+        private void match_correct_shader_property(MaterialCustoms mc, string shader_name, List<string> subcolor_mats_names = null)
         {
             if ( shader_name.IsNullOrEmpty() ) return;
 
@@ -152,6 +152,13 @@ namespace ClassLibrary4
             if( !key.IsNullOrEmpty() )
                 for( int idx = 0; idx < MC_Mapping[key].Length; idx++ )
                     mc.parameters[idx].propertyName = MC_Mapping[key][idx];
+
+            if( subcolor_mats_names != null && subcolor_mats_names.Count > 0 )
+            {
+                mc.parameters[4].materialNames = subcolor_mats_names.ToArray(); // mc.GetFloat("SubColor");
+                mc.parameters[5].materialNames = subcolor_mats_names.ToArray(); // mc.GetFloat("SubSpecColor");
+                mc.parameters[6].materialNames = subcolor_mats_names.ToArray(); // mc.GetFloat("SubMetallic");
+            }
             
             if( key == "Shader Forge/Hair/ShaderForge_Hair" )
             {
@@ -803,6 +810,7 @@ namespace ClassLibrary4
             string priority_shader_name = "";
             List<string> list_all_materials_excluding_glass = new List<string>();
             List<string> list_objcolor                      = new List<string>();
+            List<string> list_subcolor_materials            = new List<string>();
             int max_num_of_color_supported = 0;
             foreach (Renderer r in renderers_in_acceobj)
             {
@@ -861,6 +869,13 @@ namespace ClassLibrary4
                             }
                         }
                         backup_shader_name = material.shader.name;
+                    }
+                    // Note: special case handling for prefabs that has at least 1 "SubColor" shader in them
+                    //       which is their shader only uses _Color_3, and not _Color. 
+                    if (!material.HasProperty("_Color") && material.HasProperty("_Color_3") &&  
+                        !list_subcolor_materials.Contains(material_name) )
+                    {
+                        list_subcolor_materials.Add(material_name);
                     }
                 }
             }
@@ -923,7 +938,8 @@ namespace ClassLibrary4
                     } //       for clothings not having MaterialCustoms, we just nullify its wearParam.
                     else acceCustom.color = null;
 
-                    if( prevData != null && acce_previously_has_mc && prevData.id == accessoryData.id )
+                    if( prevData != null && acce_previously_has_mc && acce_previous_slot == slot && 
+                        prevData.id == accessoryData.id && list_objcolor.Count == 0 )
                     {   // Note: when reseting color, if the acceobj previously has MaterialCustoms, 
                         //       don't get rid of it. Wear doesn't need this stuff because in the outside
                         //       they call MaterialCustomData stuff BEFORE Human.Apply/WearInstantiate ... 
@@ -944,13 +960,17 @@ namespace ClassLibrary4
                     materialCustoms.parameters[idx] = new MaterialCustoms.Parameter(copy);
                     materialCustoms.parameters[idx++].materialNames = list_objcolor.ToArray();
                 }
-                match_correct_shader_property(materialCustoms, priority_shader_name);
+                match_correct_shader_property(materialCustoms, priority_shader_name, list_subcolor_materials);
                 MaterialCustoms_Setup.Invoke(materialCustoms, new object[0]);
                 match_correct_shader_property_data_range(materialCustoms, priority_shader_name);
             }
             acce.UpdateColorCustom(slot);
 
-            if (loading_state != LOADING_STATE.FROMCARD) acce_previously_has_mc = (materialCustoms != null);
+            if (loading_state != LOADING_STATE.FROMCARD)
+            {
+                acce_previously_has_mc = (materialCustoms != null);
+                acce_previous_slot = slot;
+            }
 
             if (acceCustomEdit != null && acceCustomEdit.isActiveAndEnabled &&
                 (int)accecustomedit_nowtabField.GetValue(acceCustomEdit) == slot)
@@ -3315,6 +3335,7 @@ namespace ClassLibrary4
         private static LOADING_STATE loading_state = LOADING_STATE.NONE;
         private static WearParameter temp_wear_param = null;
         private static bool          acce_previously_has_mc = false;
+        private static int           acce_previous_slot = -1;
         public  static Dictionary<int, ColorParameter_PBR2> orig_wear_colors = new Dictionary<int, ColorParameter_PBR2>();
         public  static Dictionary<int, ColorParameter_PBR2> orig_acce_colors = new Dictionary<int, ColorParameter_PBR2>();
 
