@@ -648,15 +648,12 @@ namespace ClassLibrary4
 
                                     // Note: dealing with legacy shader stuff that we aren't able to get a substitute shader directly:
                                     Texture legacy_emission_map = material.GetTexture("_Illum");
+
                                     if (legacy_emission_map != null)
                                     {
                                         material.EnableKeyword("_EMISSION");
                                         material.SetTexture("_EmissionMap", legacy_emission_map);
-                                        if( material.HasProperty("_Emission") )
-                                        {
-                                            float emi = material.GetFloat("_Emission");
-                                            material.SetColor("_EmissionColor", new Color(emi, emi, emi, 1));
-                                        }
+                                        material.SetColor("_EmissionColor", new Color(1,1,1,1));
                                     }
                                     if (material.GetTexture("_BumpMap") != null)
                                         material.EnableKeyword("_NORMALMAP");
