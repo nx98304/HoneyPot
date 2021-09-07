@@ -565,9 +565,9 @@ namespace ClassLibrary4
                             {
                                 material.shader = shader;
                                 logSave("Shader remapping info found, remapping " + shader_name + " to " + material.shader.name);
-                                if (material.shader.name.Contains("HSStandard"))
+                                if (material.shader.name.Contains("Standard"))
                                 {
-                                    logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
+                                    logSave(" - HSStandard or Standard shader family detected for studio item, trying to assign RenderType...");
                                     setup_standard_shader_render_type(material);
                                 }
                             }
@@ -645,6 +645,21 @@ namespace ClassLibrary4
                                             material.SetFloat("_Glossiness", 0.2f);
                                         }
                                     }
+
+                                    // Note: dealing with legacy shader stuff that we aren't able to get a substitute shader directly:
+                                    Texture legacy_emission_map = material.GetTexture("_Illum");
+                                    if (legacy_emission_map != null)
+                                    {
+                                        material.EnableKeyword("_EMISSION");
+                                        material.SetTexture("_EmissionMap", legacy_emission_map);
+                                        if( material.HasProperty("_Emission") )
+                                        {
+                                            float emi = material.GetFloat("_Emission");
+                                            material.SetColor("_EmissionColor", new Color(emi, emi, emi, 1));
+                                        }
+                                    }
+                                    if (material.GetTexture("_BumpMap") != null)
+                                        material.EnableKeyword("_NORMALMAP");
                                 }
                             }
                         }
