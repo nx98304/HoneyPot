@@ -529,6 +529,7 @@ namespace ClassLibrary4
                         else if (is_probably_opaque || shader_name.Contains("Cutout") || shader_name.Contains("Diffuse"))
                         {
                             particle_mat.shader = get_shader("Standard");
+                            setup_standard_shader_render_type(particle_mat);
                         }
                         else
                         {
@@ -580,35 +581,12 @@ namespace ClassLibrary4
                                     if ((text2.Contains_NoCase("alphapre") || material.name.Contains_NoCase("glass")) &&
                                         !(text2.Contains_NoCase("leaf") || text2.Contains_NoCase("frond") || text2.Contains_NoCase("branch"))) //super last-ditch tests for glass-like material
                                     {
-                                        logSave("Possible transparent glasses-like material.");
-                                        shader_name = "Standard";
+                                        logSave("Possible transparent glasses-like material that we somehow cannot remap at the moment. Using Standard(AlphaPremultiply)");
+                                        shader_name = "Standard_culloff";
                                         material.shader = get_shader(shader_name);
-                                        // more hacking for HS glass shaders that I know of. 
-                                        if (material.HasProperty("_Glossiness"))
-                                        {
-                                            float glossiness = material.GetFloat("_Glossiness");
-                                            //glossiness += (1.0f-glossiness) / 2;
-                                            material.SetFloat("_Glossiness", glossiness);
-                                        }
-                                        if (material.HasProperty("_DstBlend"))
-                                        {
-                                            float dstblend = material.GetFloat("_DstBlend");
-                                            if (dstblend < 1.0f) material.SetFloat("_DstBlend", 1.0f);
-                                        }
-                                        if (material.HasProperty("_ZWrite"))
-                                        {
-                                            float zwrite = material.GetFloat("_ZWrite");
-                                            if (zwrite > 0.0f) material.SetFloat("_ZWrite", 0.0f);
-                                        }
-                                        if (material.HasProperty("_Color"))
-                                        {
-                                            Color c = material.GetColor("_Color");
-                                            //c.r *= c.a;
-                                            //c.g *= c.a;
-                                            //c.b *= c.a;
-                                            if (c.a < 0.3f) c.a = 0.3f;
-                                            material.SetColor("_Color", c);
-                                        }
+                                        material.DisableKeyword("_ALPHATEST_ON");
+                                        material.DisableKeyword("_ALPHABLEND_ON");
+                                        material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
                                         // guessing any glass like item should have a very high render queue;
                                         // in this case anything you can get from getRenderQueue() is probably wrong and not suitable.
                                         if (guessing_renderqueue == -1) guessing_renderqueue = 4001;
@@ -616,17 +594,23 @@ namespace ClassLibrary4
                                     else if (text2.Contains_NoCase("trans") || text2.Contains_NoCase("blend"))
                                     {
                                         logSave("Possible unspecified transparent material.");
-                                        shader_name = "Shader Forge/PBRsp_3mask_alpha";
+                                        shader_name = "Standard";
                                         material.shader = get_shader(shader_name);
+                                        material.DisableKeyword("_ALPHATEST_ON");
+                                        material.EnableKeyword("_ALPHABLEND_ON");
+                                        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
                                         // another guess, but make the number different so it's easier to tell.
                                         if (guessing_renderqueue == -1) guessing_renderqueue = 3123;
                                     }
                                     else if (text2.Contains_NoCase("alphatest") || text2.Contains_NoCase("leaf") || text2.Contains_NoCase("frond") || text2.Contains_NoCase("branch"))
                                     {
                                         logSave("Possible plant / tree / leaf / branch -like materials.");
-                                        shader_name = "Shader Forge/PBRsp_alpha_culloff";
+                                        shader_name = "Standard_culloff";
                                         material.shader = get_shader(shader_name);
-                                        // in this case, you can probably rely on getRenderQueue() results.
+                                        material.EnableKeyword("_ALPHATEST_ON");
+                                        material.DisableKeyword("_ALPHABLEND_ON");
+                                        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                                        if (guessing_renderqueue == -1) guessing_renderqueue = 2451;
                                     }
                                 }
                                 // If after the keyword tests, material.shader is still empty, set it to default.
