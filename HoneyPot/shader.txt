@@ -1,4 +1,5 @@
 Standard (Two Sided)|Standard_culloff
+Standard(Two Sided)|Standard_culloff
 Standard 2-Sided|Standard_culloff
 Normal-VertexLit|Standard
 Normal-Diffuse|Standard
