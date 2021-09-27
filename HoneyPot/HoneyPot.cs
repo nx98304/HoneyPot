@@ -666,19 +666,19 @@ namespace ClassLibrary4
                                             material.SetFloat("_Glossiness", 0.2f);
                                         }
                                     }
-
-                                    // Note: dealing with legacy shader stuff that we aren't able to get a substitute shader directly:
-                                    Texture legacy_emission_map = material.GetTexture("_Illum");
-
-                                    if (legacy_emission_map != null)
-                                    {
-                                        material.EnableKeyword("_EMISSION");
-                                        material.SetTexture("_EmissionMap", legacy_emission_map);
-                                        material.SetColor("_EmissionColor", new Color(1,1,1,1));
-                                    }
-                                    if (material.GetTexture("_BumpMap") != null)
-                                        material.EnableKeyword("_NORMALMAP");
                                 }
+
+                                // Note: For all shaders we aren't able to identify, add some basic feature testing here by 
+                                //       looking at certain textures, and enable Standard shader keywords accordingly.
+                                Texture legacy_emission_map = material.GetTexture("_Illum");
+                                if (legacy_emission_map != null)
+                                {
+                                    material.EnableKeyword("_EMISSION");
+                                    material.SetTexture("_EmissionMap", legacy_emission_map);
+                                    material.SetColor("_EmissionColor", new Color(1, 1, 1, 1));
+                                }
+                                if (material.GetTexture("_BumpMap") != null)
+                                    material.EnableKeyword("_NORMALMAP");
                             }
                         }
                         material.renderQueue = guessing_renderqueue;
