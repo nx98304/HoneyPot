@@ -359,6 +359,10 @@ namespace ClassLibrary4
                 Renderer[] renderers = objHair.GetComponentsInChildren<Renderer>(true);
                 foreach (Renderer r in renderers)
                 {
+                    bool is_under_side_renderer = false;
+                    if (r.name.EndsWith("_u") || r.transform.parent.name.EndsWith("_u"))
+                        is_under_side_renderer = true; // Note: Used for HSStandard special case below
+
                     foreach (Material material in r.materials)
                     {
                         if (HoneyPot.PH_hair_shader != null && "".Equals(material.shader.name))
@@ -397,26 +401,59 @@ namespace ClassLibrary4
                                         if (material.shader.name.Contains("Standard"))
                                             setup_standard_shader_render_type(material);
                                     }
-                                    else if (PBRsp_alpha_blend_to_hsstandard && rq > 2500 && shader_name == "Shader Forge/PBRsp_alpha_blend")
+                                    else if (rq >= 2450)
                                     {
-                                        material.shader = get_shader("HSStandard");
-                                        material.EnableKeyword("_ALPHABLEND_ON");
-                                        material.SetInt("_Mode", 3);   // Fade
-                                        material.SetInt("_ZWrite", 0);
-                                        material.SetInt("_SrcBlend", 5);  // SrcAlpha
-                                        material.SetInt("_DstBlend", 10); // OneMinusSrcAlpha
-                                        material.SetOverrideTag("RenderType", "Transparent");
-                                        logSave("Using HSStandard + _ALPHABLEND_ON for PBRsp_alpha_blend (RQ " + rq + ") ");
+                                        if (shader_name == "Shader Forge/PBRsp_alpha_blend")
+                                        {
+                                            material.shader = get_shader("HSStandard");
+                                            material.EnableKeyword("_ALPHABLEND_ON");
+                                            material.SetInt("_Mode", 3);   // Fade
+                                            material.SetInt("_ZWrite", 0);
+                                            material.SetInt("_SrcBlend", 5);  // SrcAlpha
+                                            material.SetInt("_DstBlend", 10); // OneMinusSrcAlpha
+                                            material.SetOverrideTag("RenderType", "Transparent");
+                                            logSave("Using HSStandard + _ALPHABLEND_ON for " + shader_name + " (RQ " + rq + ") ");
+                                        }
+                                        else if (shader_name == "Custom/Standard Two Sided Soft Blend")
+                                        {
+                                            // Note: This is a huge hack for this particular shader which seems to be a mix of 
+                                            //       AlphaTest and AlphaBlend, and somehow I have to double the alpha of the
+                                            //       AlphaBlend part also..  without a better alternative I chose to draw the 
+                                            //       AlphaBlend part twice by using duplicating the material. 
+                                            material.shader = get_shader("HSStandard");
+                                            if (is_under_side_renderer == false) // guess frontside == ALPHATEST
+                                            {
+                                                material.EnableKeyword("_ALPHATEST_ON");
+                                                material.SetInt("_ZWrite", 1);
+                                                material.SetOverrideTag("RenderType", "TransparentCutout");
+                                                logSave("Using " + material.shader.name + " + _ALPHATEST_ON for " + shader_name + " (RQ " + rq + ") ");
+                                            }
+                                            else
+                                            {
+                                                material.EnableKeyword("_ALPHABLEND_ON");
+                                                material.SetInt("_SrcBlend", 5);  // SrcAlpha
+                                                material.SetInt("_DstBlend", 10); // OneMinusSrcAlpha
+                                                material.SetOverrideTag("RenderType", "Transparent");
+                                                logSave("Using " + material.shader.name + " + _ALPHABLEND_ON for " + shader_name + " (RQ " + rq + ") ");
+
+                                                Material[] mats = new Material[2];
+                                                mats[0] = material;
+                                                mats[1] = new Material(material);
+                                                mats[1].renderQueue = rq;
+                                                r.materials = mats;
+                                                // Note: do we leak Material by doing this??
+                                            }
+                                        }
+                                        else
+                                        {
+                                            material.shader = culloff ? HoneyPot.PH_hair_shader_c : HoneyPot.PH_hair_shader;
+                                            logSave("Usual HS hair shader detected (RQ " + rq + "): " + shader_name + ", mapping appropriate PH hair shaders: " + material.shader.name);
+                                        }
                                     }
-                                    else if (rq <= 2500)
+                                    else // Note: rq < 2450 (opaque)
                                     {
                                         material.shader = culloff ? HoneyPot.PH_hair_shader_co : HoneyPot.PH_hair_shader_o;
                                         logSave("Seemingly non-transparent HS hair shader (RQ " + rq + "): " + shader_name + ", mapping appropriate PH hair shaders: " + material.shader.name);
-                                    }
-                                    else
-                                    {
-                                        material.shader = culloff ? HoneyPot.PH_hair_shader_c : HoneyPot.PH_hair_shader;
-                                        logSave("Usual HS hair shader detected (RQ " + rq + "): " + shader_name + ", trying to mapping appropriate PH hair shaders: " + material.shader.name);
                                     }
                                 }
                             }
@@ -3288,7 +3325,6 @@ namespace ClassLibrary4
         private static bool isFirst = true;
         private static bool allGetListContentDone = false;
         public  static bool force_color = false;
-        public  static bool PBRsp_alpha_blend_to_hsstandard = false;
         public  static bool hsstandard_on_hair = false;
         public  static CLOTHING_ENTRY_DUPLICATE entry_duplicate_flags = CLOTHING_ENTRY_DUPLICATE.NONE;
         public  static KeyboardShortcut force_color_key;

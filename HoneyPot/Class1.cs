@@ -23,7 +23,6 @@ namespace ClassLibrary4
         {
             forceColor        = Config.Bind<bool>("HoneyPot", "ForceColor", false, "[Relevant items reloading required] Enable to force-colorable to all clothing/acce (not limited to HS1 ones); BRAs & SHORTs are force-colorable regardless.\n\nDue to how HoneyPot works, it's possible that some leftover color parameters would be in your card data that is not currently used -- the leftover colors will show up when you activate ForceColor when applicable.\n\nIMPORTANCE NOTICE:\nStudioClothesEditor's color-lock function doesn't work well with HoneyPot currently. For Clothings, you DO NOT want to use color-lock. For Accessories, you DO want to color-lock first before using Force Color Key OR Reset Color Key when clicking on a new acce item, and don't forget click on 'Current color base' before unlocking-color. Do not ask me why.");
             entryDuplicate    = Config.Bind("HoneyPot", "Duplicate clothing entries (Restart Required)", HoneyPot.CLOTHING_ENTRY_DUPLICATE.NONE, "[Game restart required] Enable to duplicate clothing entries into other entries for more flexible clothing setup.\n\nPlease understand that the duplicated entries do need to occupy difference ID ranges, and if you have a lot of clothings to duplicate, some might fail due to ID conflicts, and excess entries in a category may slow down opening of such category's sub-menu.");
-            pbrspAlphaBlend_1 = Config.Bind<bool>("HoneyPot", "Hair: PBRsp_alpha_blend to HSStandard+ALPHABLEND", true, "[Relevant items reloading required] The ported HSStandard when set to alpha blend mode, does seem to serve as good enough PBRsp_alpha_blend substitude.\n\nDo note that the built in PH color options in the hair category doesn't support HSStandard well, you will need Material Editor. Also if prior to activate this option your card is already saved with Material Editor data, Material Editor probably will take higher priority.");
             hairHSStandard    = Config.Bind<bool>("HoneyPot", "Hair: Keep HSStandard on HS1 hairs", true, "[Relevant items reloading required] PH hair shaders are generally better than HS1 shaders even for HS1 hairs, but some hairs that were using HSStandard will NEVER work with PH hair shaders without render queue issue or weird highlights. Use this option with your own judgement.\n\nDo note that the built in PH color options in the hair category doesn't support HSStandard well, you will need Material Editor. Also if prior to activate this option your card is already saved with Material Editor data, Material Editor probably will take higher priority.");
             colorPickerAlphaWearAcce = Config.Bind<bool>("HoneyPot", "Color Picker Alpha", true, "[Relaunching Chara Maker required] Allow alpha value in Clothing & Accessory menu's color pickers.");
             forceColorKey     = Config.Bind("HoneyPot", "Force Color Key", new KeyboardShortcut(KeyCode.LeftShift), "[ForceColor option required] To enable coloring of non-colorable clothings.\n\n[HOLD DOWN] this key when clicking on the clothing/acce of choice in Chara Maker, or in the StudioClothesEditor.\n\nWhen this key is not held down, color options will not be added to non-colorable clothing/acce.");
@@ -37,11 +36,6 @@ namespace ClassLibrary4
             entryDuplicate.SettingChanged += delegate (object sender, EventArgs args)
             {
                 HoneyPot.entry_duplicate_flags = entryDuplicate.Value;
-            };
-
-            pbrspAlphaBlend_1.SettingChanged += delegate (object sender, EventArgs args)
-            {
-                HoneyPot.PBRsp_alpha_blend_to_hsstandard = pbrspAlphaBlend_1.Value;
             };
 
             hairHSStandard.SettingChanged += delegate (object sender, EventArgs args)
@@ -66,7 +60,6 @@ namespace ClassLibrary4
 
             HoneyPot.force_color                                = forceColor.Value;
             HoneyPot.entry_duplicate_flags                      = entryDuplicate.Value;
-            HoneyPot.PBRsp_alpha_blend_to_hsstandard            = pbrspAlphaBlend_1.Value;
             HoneyPot.hsstandard_on_hair                         = hairHSStandard.Value;
             EditMode_CreateColorChangeButton_Patch.allow_alpha  = colorPickerAlphaWearAcce.Value;
             HoneyPot.force_color_key                            = forceColorKey.Value;
@@ -95,7 +88,6 @@ namespace ClassLibrary4
 
         private static ConfigEntry<bool> forceColor;
         private static ConfigEntry<HoneyPot.CLOTHING_ENTRY_DUPLICATE> entryDuplicate;
-        private static ConfigEntry<bool> pbrspAlphaBlend_1;
         private static ConfigEntry<bool> hairHSStandard;
         private static ConfigEntry<bool> colorPickerAlphaWearAcce;
         private static ConfigEntry<KeyboardShortcut> forceColorKey;
