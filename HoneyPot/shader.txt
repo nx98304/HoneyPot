@@ -7,3 +7,5 @@ Normal-Diffuse|Standard
 Ciconia Studio/Double Sided/Effects/Glass/Advanced|Ciconia Studio/Effects/Glass/Old/Double Sided/Advanced
 Ciconia Studio/Effects/Glass/Double Sided/Advanced Reflection|Ciconia Studio/Effects/Glass/Old/Double Sided/Advanced Reflection
 HSShaderForge/SingleColorAlphaBlendSpecModel|HSShaderForge/Masked4ColorAlphaBlend
+HSStandard Liquid|FX/GemNoTransp
+High Quality Glass/Refraction 2|UBER - Specular Setup/Refraction/Core
