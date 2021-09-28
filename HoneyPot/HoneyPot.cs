@@ -499,6 +499,18 @@ namespace ClassLibrary4
             }
         }
 
+        // Note: PH Studio and HS1 StudioNeo has different interpretation for layers higher than 8, apparently.
+        //       The goal is if obj.layer falls into these categories, we should just reassign them to others. 
+        //       10 (PH Map item layer) might be good enough. 
+        // Note: Also -- it's *possible* we need to apply this to main game clothing / hair / accessories as well. 
+        //       Wait and see. 
+        private const int layermask_that_studio_items_shouldnt_be_in =
+            (1 << 16) + // NonCamera in PH Studio 
+            (1 << 20) + // Studio/Col (not sure what is Col)
+            (1 << 21) + // Studio/Select (pretty sure related to gizmo or selected item effect)
+            (1 << 27) + // 27th bit is somehow unassigned and yet not-rendered by PH Studio
+            (1 << 28);  // Mask used by Coord card capture 
+
         public void setItemShader(GameObject obj, string fileName)
         {
             Renderer[] renderers_in_children = obj.GetComponentsInChildren<Renderer>(true);
@@ -514,6 +526,9 @@ namespace ClassLibrary4
             }
             foreach (Renderer r in renderers_in_children)
             {
+                if (((1 << r.gameObject.layer) & layermask_that_studio_items_shouldnt_be_in) != 0)
+                    r.gameObject.layer = 10; // Note: layer for PH "Map" items
+
                 Type renderertype = r.GetType();
                 if (renderertype == typeof(ParticleSystemRenderer) ||
                     renderertype == typeof(LineRenderer) ||
