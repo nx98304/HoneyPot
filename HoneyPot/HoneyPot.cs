@@ -517,8 +517,8 @@ namespace ClassLibrary4
             Projector[] projectors_in_children = obj.GetComponentsInChildren<Projector>(true);
             foreach (Projector p in projectors_in_children)
             {
-                if (!p.material.shader.name.IsNullOrEmpty())
-                    continue; // If shader already works, skip it.       
+                if (!p.material || !p.material.shader.name.IsNullOrEmpty())
+                    continue; // If shader already works, skip it. But don't process it at all if material isn't even exist.      
 
                 // TODO: HoneyPotInspector currently doesn't process Projector at all. No way to get the shader name info.
 
