@@ -2939,6 +2939,8 @@ namespace ClassLibrary4
         #endregion
 
         #region Studio specific lists processing, manipulating category
+        // TODO: The categories here doesn't reflect all HS1 Studio Item categories
+        //       Some items currently are only accessible from the search plugin. 
         public void createCategory()
         {
             if (!Singleton<Info>.Instance.dicItemGroup.ContainsKey(30))
