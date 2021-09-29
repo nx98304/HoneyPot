@@ -881,19 +881,25 @@ namespace ClassLibrary4
                             {
                                 material.shader = s;
                                 logSave("shader: " + shader_name + " ==> " + material.shader.name);
-                                if (material.shader.name.Contains("HSStandard"))
+                                if (material.shader.name.Contains("Standard"))
                                 {
-                                    logSave(" - HSStandard shader family detected for Accessories, trying to assign RenderType...");
+                                    logSave(" - HSStandard or Standard shader family detected for Accessories, trying to assign RenderType...");
                                     setup_standard_shader_render_type(material);
                                 }
                             }
                             else
                             {
                                 material.shader = get_shader("Standard");
-                                logSave("Unable to map shader " + shader_name + " to PH presets we have. Default to " + material.shader.name/* + " with high RQ to get transparency."*/);
+                                logSave("Unable to map shader " + shader_name + " to PH presets we have. Default to " + material.shader.name);
                                 setup_standard_shader_render_type(material);
                             }
                         }
+
+                        // Note: Trying to detect glass-like transparent and help pushing up the rq value if it's too low
+                        if ( material.shader.name.Contains("Standard") && 
+                             material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON") && rq <= 3600 )
+                            rq = 3601;
+
                         material.renderQueue = rq;
                         //important: RQ assignment has to go after shader assignment. 
                         //           fucking implicit setter changes stuff... 
@@ -1248,9 +1254,9 @@ namespace ClassLibrary4
                                 {
                                     material.shader = s;
                                     this.logSave("shader: " + shader_name + " ==> " + material.shader.name);
-                                    if (material.shader.name.Contains("HSStandard"))
+                                    if (material.shader.name.Contains("Standard"))
                                     {
-                                        logSave(" - HSStandard shader family detected for clothing, trying to assign RenderType...");
+                                        logSave(" - HSStandard or Standard shader family detected for clothing, trying to assign RenderType...");
                                         setup_standard_shader_render_type(material);
                                     }
                                 }
