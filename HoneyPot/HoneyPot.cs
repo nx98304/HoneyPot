@@ -1602,62 +1602,99 @@ namespace ClassLibrary4
 
         #region Processing CustomDataManager, lists & moving them, noticing conflicts. 
         private enum LIST_REPORTING_TYPE
-        { CONFLICT, DUPE_FAIL, NOT_FOUND, BAD_ID }
+        { CONFLICT, STUDIO_CONFLICT, NOT_FOUND, BAD_ID, DUPE_FAIL, NUM }
 
-        private void addConflict(int id, string str1, string str2 = "", string str3 = "", string str4 = "", LIST_REPORTING_TYPE err = LIST_REPORTING_TYPE.CONFLICT)
+        private void logConflict(int orig_ID, int converted_ID, string new_listpath, string old_asset, string new_asset, string old_name, string new_name)
         {
-            if ( err == LIST_REPORTING_TYPE.DUPE_FAIL && !str1.Equals(str2) )
-            {
-                HoneyPot.conflictList.Add(string.Concat(
-                    new object[] { "[conflict-when-duplicating] id:", id, ",\n  asset1: ", str3, " (", str1, ")\n  asset2: ", str4, " (", str2, ")" }
-                ));
-                HoneyPot.list_errors[err]++;
-            }
-            else if ( err == LIST_REPORTING_TYPE.CONFLICT && !str1.Equals(str2) )
-            {
-                HoneyPot.conflictList.Add(string.Concat(
-                    new object[] { "[conflict] id:", id, ",\n  asset1: ", str3, " (", str1, ")\n  asset2: ", str4, " (", str2, ")" }
-                ));
-                HoneyPot.list_errors[err]++;
-            }
-            else if ( err == LIST_REPORTING_TYPE.NOT_FOUND )
-            {
-                HoneyPot.conflictList.Add(string.Concat(
-                    new object[] { "[file-not-found] abdata:", str1, ",\n  list file: ", str2 }
-                ));
-                HoneyPot.list_errors[err]++;
-            }
-            else if ( err == LIST_REPORTING_TYPE.BAD_ID )
-            {
-                HoneyPot.conflictList.Add(string.Concat(
-                    new object[] { "[bad-id] (missing TextAsset type definition?):\n  list file: ", str1 }
-                ));
-                HoneyPot.list_errors[err]++;
-            }
+            HoneyPot.conflictLists[LIST_REPORTING_TYPE.CONFLICT].Add(string.Concat(
+                new object[] { "[conflict] ID: ", converted_ID, " (original ID: ", orig_ID, ", list: ", new_listpath, "),\n  conflict asset: ", new_name, " (", new_asset, ")\n  existing asset: ", old_name, " (", old_asset, ")" }
+            ));
+        }
+
+        private void logDupeFail(int orig_ID, int converted_ID, string old_asset, string new_asset, string old_name, string new_name)
+        {
+            HoneyPot.conflictLists[LIST_REPORTING_TYPE.DUPE_FAIL].Add(string.Concat(
+                new object[] { "[duplicate-fail] ID: ", converted_ID, " (ID from original category: ", orig_ID, "),\n  conflict asset: ", new_name, " (", new_asset, ")\n  existing asset: ", old_name, " (", old_asset, ")" }
+            ));
+        }
+
+        private void logStudioConflict(int id, string new_listpath, string old_asset, string new_asset, string old_name, string new_name)
+        {
+            HoneyPot.conflictLists[LIST_REPORTING_TYPE.STUDIO_CONFLICT].Add(string.Concat(
+                new object[] { "[studio-conflict] ID: ", id, ", list: ", new_listpath, ",\n  conflict asset: ", new_name, " (", new_asset, ")\n  existing asset: ", old_name, " (", old_asset, ")" }
+            ));
+        }
+
+        private void logABNotFound(int orig_ID, int converted_ID, string assetpath, string listpath)
+        {
+            HoneyPot.conflictLists[LIST_REPORTING_TYPE.NOT_FOUND].Add(string.Concat(
+                new object[] { "[abdata-not-found] ID: ", converted_ID, " (original ID: ", orig_ID, "),\n     abdata: ", assetpath, ",\n  list file: ", listpath }
+            ));
+        }
+
+        private void logBadList(string listpath)
+        {
+            HoneyPot.conflictLists[LIST_REPORTING_TYPE.BAD_ID].Add(string.Concat(
+                new object[] { "[bad-id] (missing TextAsset type definition or ID not a number?):\n  list file: ", listpath }
+            ));
         }
 
         public void exportConflict()
 		{
-			try
-			{
-                logSave("HoneyPot found " + HoneyPot.conflictList.Count + " list errors in total. Please check UserData/HoneyPot_list_errors.txt");
-                logSave("  - " + HoneyPot.list_errors[LIST_REPORTING_TYPE.CONFLICT] + " actual mod ID conflicts");
-                logSave("  - " + HoneyPot.list_errors[LIST_REPORTING_TYPE.DUPE_FAIL] + " clothing duplicating attempts failed due to already occupied IDs");
-                logSave("  - " + HoneyPot.list_errors[LIST_REPORTING_TYPE.NOT_FOUND] + " entries unable to find the corresponding abdatas");
-                logSave("  - " + HoneyPot.list_errors[LIST_REPORTING_TYPE.BAD_ID] + " entries unable to resolve mod IDs (maybe lacking TextAsset type definitions)");
-                StreamWriter streamWriter = new FileInfo(this.conflictText).CreateText();
-				foreach (string value in HoneyPot.conflictList)
-				{
-					streamWriter.WriteLine(value);
-				}
-				streamWriter.Flush();
-				streamWriter.Close();
-				HoneyPot.conflictList.Clear();
-			}
-            catch (Exception ex)
+            int total_errors = 0;
+            int[] num_errors = new int[(int)LIST_REPORTING_TYPE.NUM];
+            string[] additional_msg = {
+                "=========================== MOD ID Conflicts =========================", 
+                "======================= Studio Item ID Conflicts =====================",
+                "=== List file pointed to non-existent AssetBundles (typo in path?) ===",
+                "===================== Unable to read ID from list ====================\n (It's possible that the list file is missing TextAsset type definition,\n  or the ID number is not in the 0 ~ 2147483647 range.\n  If the list's TextAsset & ID number looked fine in SB3UGS,\n  then it's almost certain your TextAsset type definition is missing from the list file.\n  You need to use a PH-readable HS1 list (list files that has TextAsset type definition) as a template,\n  and copy the list contents of over to the template, much like what is described in [howto_import_type_definition].)",
+                "====== Unable to duplicate clothing category due to existing ID ======\n (Caused by using [Duplicate clothing entries] option.\n  Due to how HoneyPot does the ID calculation when duplicating entries,\n  it's very easy for this to happen. And even in the best case scenario,\n  only 1000 clothings can be duplicated from one entry to another, and usually much less than that.)"
+            };
+
+            StreamWriter streamWriter = new FileInfo(this.conflictText).CreateText();
+            foreach (KeyValuePair<LIST_REPORTING_TYPE, List<string>> entry in HoneyPot.conflictLists)
             {
-                this.logSave(ex.ToString());
+                if (entry.Value.Count > 0)
+                {
+                    streamWriter.WriteLine(additional_msg[(int)entry.Key]);
+                    streamWriter.WriteLine();
+                    streamWriter.WriteLine("Issues detected: " + entry.Value.Count);
+                    streamWriter.WriteLine();
+                    foreach (string str in entry.Value)
+                    {
+                        streamWriter.WriteLine(str);
+                        total_errors++;
+                    }
+                    num_errors[(int)entry.Key] = entry.Value.Count;
+                    entry.Value.Clear();
+                    streamWriter.WriteLine();
+                }
+                else if (entry.Key == LIST_REPORTING_TYPE.STUDIO_CONFLICT && Singleton<Studio.Studio>.Instance == null)
+                {
+                    streamWriter.WriteLine(additional_msg[(int)entry.Key]);
+                    streamWriter.WriteLine(" (Not in Studio Mode, studio item reporting skipped)\n");
+                }
             }
+            streamWriter.Flush();
+            streamWriter.Close();
+
+            logSave("");
+            logSave("=========================================================================");
+            logSave("HoneyPot found " + total_errors + " list errors in total. Please check UserData/HoneyPot_list_errors.txt for detailed information.");
+            logSave("");
+            logSave("  - " + num_errors[(int)LIST_REPORTING_TYPE.CONFLICT] + " actual mod ID conflicts");
+            if (Singleton<Studio.Studio>.Instance != null)
+                logSave("  - " + num_errors[(int)LIST_REPORTING_TYPE.STUDIO_CONFLICT] + " studio item conflicts");
+            else
+                logSave("  - (Not in Studio Mode, studio item reporting skipped)");
+            logSave("  - " + num_errors[(int)LIST_REPORTING_TYPE.NOT_FOUND] + " entries unable to find the corresponding abdatas");
+            logSave("  - " + num_errors[(int)LIST_REPORTING_TYPE.BAD_ID] + " entries unable to resolve mod IDs (lacking TextAsset type definitions or ID is somehow not a number)");
+            if (entry_duplicate_flags != CLOTHING_ENTRY_DUPLICATE.NONE)
+                logSave("  - " + num_errors[(int)LIST_REPORTING_TYPE.DUPE_FAIL] + " clothing duplicating attempts failed due to already occupied IDs");
+            else
+                logSave("  - ([Duplicate clothing entries] option not activated, no clothing duplicating attempts.)");
+            logSave("=========================================================================");
+            logSave("");
         }
 
         //Note: adapted from XUnity.Common.Utilities
@@ -1764,6 +1801,8 @@ namespace ClassLibrary4
                 }
                 foreach (TextAsset textAsset in ab.LoadAllAssets<TextAsset>())
                 {
+                    string full_list_name = fileName + "/" + textAsset.name;
+
                     if (textAsset.name.Contains("ca_f_head"))
                     {
                         acc_dict = CustomDataManager.GetAccessoryDictionary(ACCESSORY_TYPE.HEAD);
@@ -1901,8 +1940,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -1918,8 +1957,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -1932,7 +1971,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, m_shoe_dict[num].assetbundleName + "/" + m_shoe_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, m_shoe_dict[num].name, wearData.name);
+                                    logConflict(og_id, num, full_list_name, m_shoe_dict[num].assetbundleName + "/" + m_shoe_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, m_shoe_dict[num].name, wearData.name);
                                 }
                             }
                         }
@@ -1948,8 +1987,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -1964,8 +2003,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -1978,7 +2017,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, m_wear_dict[num].assetbundleName + "/" + m_wear_dict[num].prefab, wearData2.assetbundleName + "/" + wearData2.prefab, m_wear_dict[num].name, wearData2.name);
+                                    logConflict(og_id, num, full_list_name, m_wear_dict[num].assetbundleName + "/" + m_wear_dict[num].prefab, wearData2.assetbundleName + "/" + wearData2.prefab, m_wear_dict[num].name, wearData2.name);
                                 }
                             }
                         }
@@ -1994,8 +2033,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2010,8 +2049,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2024,7 +2063,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_brow_dict[num].assetbundleName + "/" + f_brow_dict[num].prefab, prefabData.assetbundleName + "/" + prefabData.prefab, f_brow_dict[num].name, prefabData.name);
+                                    logConflict(og_id, num, full_list_name, f_brow_dict[num].assetbundleName + "/" + f_brow_dict[num].prefab, prefabData.assetbundleName + "/" + prefabData.prefab, f_brow_dict[num].name, prefabData.name); ;
                                 }
                             }
                         }
@@ -2040,8 +2079,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2056,8 +2095,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2070,7 +2109,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, eyelash_dict[num].assetbundleName + "/" + eyelash_dict[num].prefab, prefabData2.assetbundleName + "/" + prefabData2.prefab, eyelash_dict[num].name, prefabData2.name);
+                                    logConflict(og_id, num, full_list_name, eyelash_dict[num].assetbundleName + "/" + eyelash_dict[num].prefab, prefabData2.assetbundleName + "/" + prefabData2.prefab, eyelash_dict[num].name, prefabData2.name);
                                 }
                             }
                         }
@@ -2086,8 +2125,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2102,8 +2141,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2120,7 +2159,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_bot_dict[num].assetbundleName + "/" + f_bot_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_bot_dict[num].name, wearData.name);
+                                    logConflict(og_id, num, full_list_name, f_bot_dict[num].assetbundleName + "/" + f_bot_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_bot_dict[num].name, wearData.name);
                                 }
                             }
                         }
@@ -2136,8 +2175,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if( og_id < 0 )
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2152,8 +2191,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2172,7 +2211,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_top_dict[num].assetbundleName + "/" + f_top_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_top_dict[num].name, wearData.name);
+                                    logConflict(og_id, num, full_list_name, f_top_dict[num].assetbundleName + "/" + f_top_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_top_dict[num].name, wearData.name);
                                 }
                             }
                         }
@@ -2188,8 +2227,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2204,8 +2243,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2218,7 +2257,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_panst_dict[num].assetbundleName + "/" + f_panst_dict[num].prefab, wearData5.assetbundleName + "/" + wearData5.prefab, f_panst_dict[num].name, wearData5.name);
+                                    logConflict(og_id, num, full_list_name, f_panst_dict[num].assetbundleName + "/" + f_panst_dict[num].prefab, wearData5.assetbundleName + "/" + wearData5.prefab, f_panst_dict[num].name, wearData5.name);
                                 }
                             }
                         }
@@ -2234,8 +2273,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2250,8 +2289,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2264,7 +2303,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_glove_dict[num].assetbundleName + "/" + f_glove_dict[num].prefab, wearData6.assetbundleName + "/" + wearData6.prefab, f_glove_dict[num].name, wearData6.name);
+                                    logConflict(og_id, num, full_list_name, f_glove_dict[num].assetbundleName + "/" + f_glove_dict[num].prefab, wearData6.assetbundleName + "/" + wearData6.prefab, f_glove_dict[num].name, wearData6.name);
                                 }
                             }
                         }
@@ -2280,8 +2319,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2296,8 +2335,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2311,7 +2350,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_shorts_dict[num].assetbundleName + "/" + f_shorts_dict[num].prefab, wearData7.assetbundleName + "/" + wearData7.prefab, f_shorts_dict[num].name, wearData7.name);
+                                    logConflict(og_id, num, full_list_name, f_shorts_dict[num].assetbundleName + "/" + f_shorts_dict[num].prefab, wearData7.assetbundleName + "/" + wearData7.prefab, f_shorts_dict[num].name, wearData7.name);
                                 }
                             }
                         }
@@ -2327,8 +2366,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2343,8 +2382,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2362,7 +2401,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_bra_dict[num].assetbundleName + "/" + f_bra_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_bra_dict[num].name, wearData.name);
+                                    logConflict(og_id, num, full_list_name, f_bra_dict[num].assetbundleName + "/" + f_bra_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_bra_dict[num].name, wearData.name);
                                 }
                             }
                         }
@@ -2378,8 +2417,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2394,8 +2433,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2409,7 +2448,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_swimtop_dict[num].assetbundleName + "/" + f_swimtop_dict[num].prefab, wearData10.assetbundleName + "/" + wearData10.prefab, f_swimtop_dict[num].name, wearData10.name);
+                                    logConflict(og_id, num, full_list_name, f_swimtop_dict[num].assetbundleName + "/" + f_swimtop_dict[num].prefab, wearData10.assetbundleName + "/" + wearData10.prefab, f_swimtop_dict[num].name, wearData10.name);
                                 }
                             }
                         }
@@ -2425,8 +2464,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2441,8 +2480,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2457,7 +2496,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_swim_dict[num].assetbundleName + "/" + f_swim_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_swim_dict[num].name, wearData.name);
+                                    logConflict(og_id, num, full_list_name, f_swim_dict[num].assetbundleName + "/" + f_swim_dict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, f_swim_dict[num].name, wearData.name);
                                 }
                             }
                         }
@@ -2473,8 +2512,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2489,8 +2528,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2504,7 +2543,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_swimbot_dict[num].assetbundleName + "/" + f_swimbot_dict[num].prefab, wearData12.assetbundleName + "/" + wearData12.prefab, f_swimbot_dict[num].name, wearData12.name);
+                                    logConflict(og_id, num, full_list_name, f_swimbot_dict[num].assetbundleName + "/" + f_swimbot_dict[num].prefab, wearData12.assetbundleName + "/" + wearData12.prefab, f_swimbot_dict[num].name, wearData12.name);
                                 }
                             }
                         }
@@ -2520,8 +2559,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2536,8 +2575,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2550,7 +2589,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_shoe_dict[num].assetbundleName + "/" + f_shoe_dict[num].prefab, wearData13.assetbundleName + "/" + wearData13.prefab, f_shoe_dict[num].name, wearData13.name);
+                                    logConflict(og_id, num, full_list_name, f_shoe_dict[num].assetbundleName + "/" + f_shoe_dict[num].prefab, wearData13.assetbundleName + "/" + wearData13.prefab, f_shoe_dict[num].name, wearData13.name);
                                 }
                             }
                         }
@@ -2566,8 +2605,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2582,8 +2621,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2596,7 +2635,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_socks_dict[num].assetbundleName + "/" + f_socks_dict[num].prefab, wearData14.assetbundleName + "/" + wearData14.prefab, f_socks_dict[num].name, wearData14.name);
+                                    logConflict(og_id, num, full_list_name, f_socks_dict[num].assetbundleName + "/" + f_socks_dict[num].prefab, wearData14.assetbundleName + "/" + wearData14.prefab, f_socks_dict[num].name, wearData14.name);
                                 }
                             }
                         }
@@ -2612,8 +2651,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2628,8 +2667,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2642,7 +2681,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, acc_dict[num].assetbundleName + "/" + acc_dict[num].prefab_F, accessoryData.assetbundleName + "/" + accessoryData.prefab_F, acc_dict[num].name, accessoryData.name);
+                                    logConflict(og_id, num, full_list_name, acc_dict[num].assetbundleName + "/" + acc_dict[num].prefab_F, accessoryData.assetbundleName + "/" + accessoryData.prefab_F, acc_dict[num].name, accessoryData.name);
                                 }
                             }
                         }
@@ -2658,8 +2697,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2674,8 +2713,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2688,7 +2727,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_hair_dict[num].assetbundleName + "/" + f_hair_dict[num].prefab, hairData.assetbundleName + "/" + hairData.prefab, f_hair_dict[num].name, hairData.name);
+                                    logConflict(og_id, num, full_list_name, f_hair_dict[num].assetbundleName + "/" + f_hair_dict[num].prefab, hairData.assetbundleName + "/" + hairData.prefab, f_hair_dict[num].name, hairData.name);
                                 }
                             }
                         }
@@ -2704,8 +2743,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2720,8 +2759,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2734,7 +2773,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, f_hairB_dict[num].assetbundleName + "/" + f_hairB_dict[num].prefab, backHairData.assetbundleName + "/" + backHairData.prefab, f_hairB_dict[num].name, backHairData.name);
+                                    logConflict(og_id, num, full_list_name, f_hairB_dict[num].assetbundleName + "/" + f_hairB_dict[num].prefab, backHairData.assetbundleName + "/" + backHairData.prefab, f_hairB_dict[num].name, backHairData.name);
                                 }
                             }
                         }
@@ -2750,8 +2789,8 @@ namespace ClassLibrary4
                                 int og_id = parse_id(cells[0]);
                                 if (og_id < 0)
                                 {
-                                    logSave("HoneyPot can't process this ID from list: " + fileName);
-                                    addConflict(id:-1, str1:fileName, err:LIST_REPORTING_TYPE.BAD_ID);
+                                    logSave("HoneyPot can't process this ID from list: " + full_list_name);
+                                    logBadList(full_list_name);
                                     continue;
                                 }
                                 int num = og_id % 1000;
@@ -2766,8 +2805,8 @@ namespace ClassLibrary4
 
                                 if (!File.Exists(assetBundleDir + "/" + cells[4]))
                                 {
-                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + fileName);
-                                    addConflict(id:num, str1:cells[4], str2:fileName, err:LIST_REPORTING_TYPE.NOT_FOUND);
+                                    logSave("HoneyPot can't find file: " + cells[4] + ", from list: " + full_list_name);
+                                    logABNotFound(og_id, num, cells[4], full_list_name);
                                     continue;
                                 }
 
@@ -2780,7 +2819,7 @@ namespace ClassLibrary4
                                 }
                                 else
                                 {
-                                    this.addConflict(num, m_hair_dict[num].assetbundleName + "/" + m_hair_dict[num].prefab, backHairData.assetbundleName + "/" + backHairData.prefab, m_hair_dict[num].name, backHairData.name);
+                                    logConflict(og_id, num, full_list_name, m_hair_dict[num].assetbundleName + "/" + m_hair_dict[num].prefab, backHairData.assetbundleName + "/" + backHairData.prefab, m_hair_dict[num].name, backHairData.name);
                                 }
                             }
                         }
@@ -2819,12 +2858,12 @@ namespace ClassLibrary4
         private void transportDict(Dictionary<int, WearData> fromDict, Dictionary<int, WearData> toDict, int add, int order)
         {
             foreach (KeyValuePair<int, WearData> keyValuePair in fromDict)
-            {
+            {   
                 WearData value = keyValuePair.Value;
                 WearData wearData = new WearData(value.id, value.name, value.assetbundleName, value.prefab, order, false);
                 wearData.id = keyValuePair.Key % 1000 + add;
                 if (!toDict.ContainsKey(wearData.id))
-                {
+                { 
                     if (add == 828100)
                     {
                         wearData.name = "#" + wearData.name;
@@ -2836,7 +2875,7 @@ namespace ClassLibrary4
                 {
                     int num = wearData.id;
                     logSave("Unable to duplicate " + wearData.name + " [NEW ID:" + wearData.id + "] to target category, because that ID is already occupied by " + toDict[num].name);
-                    this.addConflict(num, toDict[num].assetbundleName + "/" + toDict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, toDict[num].name, wearData.name, LIST_REPORTING_TYPE.DUPE_FAIL);
+                    logDupeFail(keyValuePair.Key, num, toDict[num].assetbundleName + "/" + toDict[num].prefab, wearData.assetbundleName + "/" + wearData.prefab, toDict[num].name, wearData.name);
                 }
             }
         }
@@ -3122,6 +3161,12 @@ namespace ClassLibrary4
                                 {
                                     Singleton<Info>.Instance.dicItemLoadInfo.Add(itemLoadInfo.no, itemLoadInfo);
                                 }
+                                else
+                                {
+                                    int id = itemLoadInfo.no;
+                                    Info.ItemLoadInfo existing_item = Singleton<Info>.Instance.dicItemLoadInfo[id];
+                                    logStudioConflict(id, fileName, existing_item.bundlePath + "/" + existing_item.fileName, itemLoadInfo.bundlePath + "/" + itemLoadInfo.fileName, existing_item.name, itemLoadInfo.name);
+                                }
                             }
                         }
                     }
@@ -3166,6 +3211,12 @@ namespace ClassLibrary4
                                 if (!Singleton<Info>.Instance.dicItemLoadInfo.ContainsKey(itemLoadInfo.no))
                                 {
                                     Singleton<Info>.Instance.dicItemLoadInfo.Add(itemLoadInfo.no, itemLoadInfo);
+                                }
+                                else
+                                {
+                                    int id = itemLoadInfo.no;
+                                    Info.ItemLoadInfo existing_item = Singleton<Info>.Instance.dicItemLoadInfo[id];
+                                    logStudioConflict(id, fileName, existing_item.bundlePath + "/" + existing_item.fileName, itemLoadInfo.bundlePath + "/" + itemLoadInfo.fileName, existing_item.name, itemLoadInfo.name);
                                 }
                             }
                         }
@@ -3369,12 +3420,13 @@ namespace ClassLibrary4
         private static Dictionary<string, string> inspector     = new Dictionary<string, string>(StringComparer.CurrentCultureIgnoreCase);
         private static Dictionary<string, PresetShader> presets = new Dictionary<string, PresetShader>();
         private static Dictionary<int, string> idFileDict       = new Dictionary<int, string>();
-        private static List<string> conflictList                = new List<string>();
-        private static Dictionary<LIST_REPORTING_TYPE, int> list_errors = new Dictionary<LIST_REPORTING_TYPE, int>()
-            { [LIST_REPORTING_TYPE.CONFLICT] = 0,
-              [LIST_REPORTING_TYPE.DUPE_FAIL] = 0,
-              [LIST_REPORTING_TYPE.NOT_FOUND] = 0,
-              [LIST_REPORTING_TYPE.BAD_ID] = 0,
+        private static Dictionary<LIST_REPORTING_TYPE, List<string>> conflictLists = 
+            new Dictionary<LIST_REPORTING_TYPE, List<string>> { 
+                { LIST_REPORTING_TYPE.CONFLICT, new List<string>() },
+                { LIST_REPORTING_TYPE.STUDIO_CONFLICT, new List<string>() },
+                { LIST_REPORTING_TYPE.NOT_FOUND, new List<string>() },
+                { LIST_REPORTING_TYPE.BAD_ID, new List<string>() },
+                { LIST_REPORTING_TYPE.DUPE_FAIL, new List<string>() },
             };
 
         private enum LOADING_STATE { NONE, SWITCHING_WEAR, FROMCARD };
