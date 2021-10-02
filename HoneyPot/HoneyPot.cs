@@ -342,6 +342,14 @@ namespace ClassLibrary4
                 material.SetFloat(CustomDataManager._Smoothness, __instance.fresnelExp / 8); // mapping 0 - 8 to 0 - 1
                 material.SetFloat(CustomDataManager._Metallic,   __instance.fresnelExp / 8); // mapping 0 - 8 to 0 - 1
             }
+            else if (material.shader.name == "Custom/Standard Two Sided Soft Blend")
+            {
+                material.SetColor(CustomDataManager._SpecColor, __instance.cuticleColor);
+                material.SetFloat("_BumpScale", __instance.cuticleExp / 20); // mapping 0 - 20 to 0 - 1
+                // frenselColor not used. 
+                material.SetFloat(CustomDataManager._Smoothness, __instance.fresnelExp / 8); // mapping 0 - 8 to 0 - 1
+                material.SetFloat(CustomDataManager._Metallic, __instance.fresnelExp / 8); // mapping 0 - 8 to 0 - 1
+            }
             else
             {
                 material.SetColor(CustomDataManager._CuticleColor, __instance.cuticleColor);
@@ -359,10 +367,6 @@ namespace ClassLibrary4
                 Renderer[] renderers = objHair.GetComponentsInChildren<Renderer>(true);
                 foreach (Renderer r in renderers)
                 {
-                    bool is_under_side_renderer = false;
-                    if (r.name.EndsWith("_u") || r.transform.parent.name.EndsWith("_u"))
-                        is_under_side_renderer = true; // Note: Used for HSStandard special case below
-
                     foreach (Material material in r.materials)
                     {
                         if (HoneyPot.PH_hair_shader != null && "".Equals(material.shader.name))
@@ -416,33 +420,7 @@ namespace ClassLibrary4
                                         }
                                         else if (shader_name == "Custom/Standard Two Sided Soft Blend")
                                         {
-                                            // Note: This is a huge hack for this particular shader which seems to be a mix of 
-                                            //       AlphaTest and AlphaBlend, and somehow I have to double the alpha of the
-                                            //       AlphaBlend part also..  without a better alternative I chose to draw the 
-                                            //       AlphaBlend part twice by using duplicating the material. 
-                                            material.shader = get_shader("HSStandard");
-                                            if (is_under_side_renderer == false) // guess frontside == ALPHATEST
-                                            {
-                                                material.EnableKeyword("_ALPHATEST_ON");
-                                                material.SetInt("_ZWrite", 1);
-                                                material.SetOverrideTag("RenderType", "TransparentCutout");
-                                                logSave("Using " + material.shader.name + " + _ALPHATEST_ON for " + shader_name + " (RQ " + rq + ") ");
-                                            }
-                                            else
-                                            {
-                                                material.EnableKeyword("_ALPHABLEND_ON");
-                                                material.SetInt("_SrcBlend", 5);  // SrcAlpha
-                                                material.SetInt("_DstBlend", 10); // OneMinusSrcAlpha
-                                                material.SetOverrideTag("RenderType", "Transparent");
-                                                logSave("Using " + material.shader.name + " + _ALPHABLEND_ON for " + shader_name + " (RQ " + rq + ") ");
-
-                                                Material[] mats = new Material[2];
-                                                mats[0] = material;
-                                                mats[1] = new Material(material);
-                                                mats[1].renderQueue = rq;
-                                                r.materials = mats;
-                                                // Note: do we leak Material by doing this??
-                                            }
+                                            material.shader = get_shader(shader_name);
                                         }
                                         else
                                         {
@@ -465,6 +443,18 @@ namespace ClassLibrary4
                             }
                             material.renderQueue = rq;
                         }
+                    }
+
+                    // Note: Adding Depth Material for everything that is transparent here: 
+                    if (r.materials.Length == 1 && r.materials[0].renderQueue > 2500)
+                    {
+                        Material[] mats = new Material[2];
+                        mats[1] = r.materials[0];
+                        mats[0] = new Material(r.materials[0]);
+                        mats[0].SetOverrideTag("RenderType", "TransparentCutout");
+                        mats[0].SetFloat("_Cutoff", 0.8f);
+                        mats[0].shader = get_shader("Custom/DepthOnly");
+                        r.materials = mats;
                     }
                 }
             }
